@@ -1,10 +1,10 @@
 # Pandoc PDF Toolkit
 
-[![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml/badge.svg)](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml)
+![CI](https://img.shields.io/badge/CI-configured-blue)
+
+[![CI](https://github.com/pablobernardo/pandoc-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/pablobernardo/pandoc-toolkit/actions/workflows/ci.yml)
 
 Toolkit agnóstico para generar PDF con Pandoc vía CLI (`pandoc-pdf`) usando configuración declarativa por repo consumidor (`pdf.config.yaml`).
-
-> Reemplaza `<OWNER>/<REPO>` en el badge por tu repositorio real en GitHub.
 
 ## Comandos principales
 
