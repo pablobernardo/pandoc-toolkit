@@ -1,0 +1,51 @@
+version: 1
+
+project:
+  name: ci-enabled-filters-render
+  base_dir: .
+
+document:
+  title: "CI Enabled Filters Render"
+
+input:
+  chapters_dir: "chapters"
+  glob: "*.md"
+  order: natural
+  explicit_files:
+    - "01-content.md"
+
+output:
+  dir: "output"
+  file_prefix: "ci-enabled"
+  suffix: "${date:YYYYMMDD}"
+  keep_merged_markdown: true
+
+pandoc:
+  pdf_engine: pdflatex
+  toc: false
+  toc_depth: 2
+  number_sections: false
+  template: "templates/default.tex"
+  metadata_file: ""
+  resource_path:
+    - "chapters"
+
+filters:
+  emoji:
+    enabled: true
+    emoji_dir: "output/emoji"
+    include_ballot_icons: true
+  mermaid:
+    enabled: true
+    output_dir: "output/mermaid"
+    background: "transparent"
+  extra_lua_filters: []
+
+runtime:
+  required_commands:
+    - pandoc
+    - pdflatex
+  strict: true
+
+compat:
+  legacy_clearpage_between_h1: true

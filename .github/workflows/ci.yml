@@ -1,0 +1,166 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      run_render_integration:
+        description: "Run L2 semi-real render integration job (Ubuntu)"
+        required: false
+        default: false
+        type: boolean
+      run_render_full:
+        description: "Run L3 full integration job (Ubuntu, with Mermaid CLI)"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "0 3 * * 1"
+
+jobs:
+  l1-tests:
+    name: L1 tests (${{ matrix.os }})
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure scripts are executable
+        run: |
+          chmod +x bin/pandoc-pdf
+          chmod +x tests/run.sh
+          chmod +x scripts/validate-config.py
+          chmod +x scripts/render-native.py
+          chmod +x scripts/render-native.rb
+          chmod +x scripts/prepare-emojis.py
+          chmod +x scripts/preflight.sh
+          chmod +x scripts/preflight.py
+
+      - name: Run L1 CLI test suite
+        run: tests/run.sh
+
+  l2-render-integration:
+    name: L2 render integration (ubuntu, optional)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_render_integration == true }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-latex-base
+
+      - name: Ensure scripts are executable
+        run: |
+          chmod +x bin/pandoc-pdf
+          chmod +x scripts/validate-config.py
+          chmod +x scripts/render-native.py
+          chmod +x scripts/render-native.rb
+          chmod +x scripts/prepare-emojis.py
+          chmod +x scripts/preflight.sh
+          chmod +x scripts/preflight.py
+
+      - name: Validate integration fixture config
+        run: |
+          bin/pandoc-pdf validate-config -c tests/integration/minimal-project/pdf.config.yaml
+
+      - name: Render minimal integration fixture
+        run: |
+          bin/pandoc-pdf render -c tests/integration/minimal-project/pdf.config.yaml
+
+      - name: Assert render artifacts
+        run: |
+          test -n "$(ls -1 tests/integration/minimal-project/output/*.pdf 2>/dev/null)"
+          test -n "$(ls -1 tests/integration/minimal-project/output/*.md 2>/dev/null)"
+
+      - name: Validate enabled-filters fixture config
+        run: |
+          bin/pandoc-pdf validate-config -c tests/integration/enabled-filters-project/pdf.config.yaml
+
+      - name: Validate L3 mermaid fixture config
+        run: |
+          bin/pandoc-pdf validate-config -c tests/integration/l3-mermaid-project/pdf.config.yaml
+
+      - name: Render enabled-filters integration fixture
+        run: |
+          bin/pandoc-pdf render -c tests/integration/enabled-filters-project/pdf.config.yaml
+
+      - name: Assert enabled-filters artifacts
+        run: |
+          test -n "$(ls -1 tests/integration/enabled-filters-project/output/*.pdf 2>/dev/null)"
+          test -n "$(ls -1 tests/integration/enabled-filters-project/output/*.md 2>/dev/null)"
+          test -d tests/integration/enabled-filters-project/output/emoji
+          test -d tests/integration/enabled-filters-project/output/mermaid
+
+  l3-render-full:
+    name: L3 full integration (ubuntu, scheduled/manual)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_render_full == true) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install full runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-latex-base texlive-xetex nodejs npm chromium-browser
+          sudo npm install -g @mermaid-js/mermaid-cli@10.9.1
+
+      - name: Ensure scripts are executable
+        run: |
+          chmod +x bin/pandoc-pdf
+          chmod +x scripts/validate-config.py
+          chmod +x scripts/render-native.py
+          chmod +x scripts/render-native.rb
+          chmod +x scripts/prepare-emojis.py
+          chmod +x scripts/preflight.sh
+          chmod +x scripts/preflight.py
+
+      - name: Run doctor on full integration fixture
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+        run: |
+          bin/pandoc-pdf doctor -c tests/integration/enabled-filters-project/pdf.config.yaml
+
+      - name: Validate enabled-filters fixture config
+        run: |
+          bin/pandoc-pdf validate-config -c tests/integration/enabled-filters-project/pdf.config.yaml
+
+      - name: Render enabled-filters fixture (full runtime)
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+        run: |
+          bin/pandoc-pdf render -c tests/integration/enabled-filters-project/pdf.config.yaml
+
+      - name: Render L3 mermaid fixture (full runtime)
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+        run: |
+          bin/pandoc-pdf render -c tests/integration/l3-mermaid-project/pdf.config.yaml
+
+      - name: Assert full integration artifacts
+        run: |
+          test -n "$(ls -1 tests/integration/enabled-filters-project/output/*.pdf 2>/dev/null)"
+          test -n "$(ls -1 tests/integration/enabled-filters-project/output/*.md 2>/dev/null)"
+          test -d tests/integration/enabled-filters-project/output/emoji
+          test -d tests/integration/enabled-filters-project/output/mermaid
+          test -n "$(ls -1 tests/integration/l3-mermaid-project/output/*.pdf 2>/dev/null)"
+          test -n "$(ls -1 tests/integration/l3-mermaid-project/output/*.md 2>/dev/null)"
+          test -n "$(ls -1 tests/integration/l3-mermaid-project/output/mermaid/*.png 2>/dev/null)"

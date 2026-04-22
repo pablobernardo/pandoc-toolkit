@@ -1,0 +1,51 @@
+version: 1
+
+project:
+  name: render-missing-explicit
+  base_dir: .
+
+document:
+  title: "Render Missing Explicit"
+
+input:
+  chapters_dir: "chapters"
+  glob: "*.md"
+  order: natural
+  explicit_files:
+    - "01-intro.md"
+    - "99-missing.md"
+
+output:
+  dir: "output"
+  file_prefix: "missing"
+  suffix: "${date:YYYYMMDD}"
+  keep_merged_markdown: true
+
+pandoc:
+  pdf_engine: xelatex
+  toc: true
+  toc_depth: 2
+  number_sections: true
+  template: "templates/default.tex"
+  metadata_file: "metadata.yaml"
+  resource_path:
+    - "chapters"
+
+filters:
+  emoji:
+    enabled: true
+    emoji_dir: "output/emoji"
+    include_ballot_icons: true
+  mermaid:
+    enabled: true
+    output_dir: "output/mermaid"
+    background: "transparent"
+  extra_lua_filters: []
+
+runtime:
+  required_commands:
+    - pandoc
+  strict: true
+
+compat:
+  legacy_clearpage_between_h1: true

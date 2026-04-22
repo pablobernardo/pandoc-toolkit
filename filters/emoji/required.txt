@@ -1,0 +1,5 @@
+Emojis needed for markdown lists
+
+- 2610.svg (☐)
+- 2611.svg (☑)
+- 2612.svg (☒)
