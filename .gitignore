@@ -1,2 +1,6 @@
 .DS_Store
 **/.DS_Store
+
+# Artefactos de render locales (tests/ejemplos)
+examples/output/
+tests/integration/**/output/
