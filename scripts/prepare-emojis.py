@@ -3,14 +3,16 @@ from __future__ import annotations
 
 import re
 import shutil
+import subprocess
 import sys
-import urllib.error
-import urllib.request
+from urllib.parse import urlparse
 from pathlib import Path
 
 
 NOTO_BASE_URL = "https://raw.githubusercontent.com/googlefonts/noto-emoji/main/svg"
 TWEMOJI_BASE_URL = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg"
+ALLOWED_HOSTS = {"raw.githubusercontent.com", "cdn.jsdelivr.net"}
+NAME_PATTERN = re.compile(r"^[0-9a-f]+(?:-[0-9a-f]+)*$")
 
 
 def fail(msg: str) -> None:
@@ -98,11 +100,44 @@ def extract_emoji_names(text: str) -> set[str]:
 
 
 def download(url: str, dest: Path) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        return False
+    if parsed.netloc not in ALLOWED_HOSTS:
+        return False
+
+    if parsed.netloc == "raw.githubusercontent.com":
+        if not parsed.path.startswith("/googlefonts/noto-emoji/main/svg/"):
+            return False
+    elif parsed.netloc == "cdn.jsdelivr.net":
+        if not parsed.path.startswith("/gh/twitter/twemoji@14.0.2/assets/svg/"):
+            return False
+
     try:
-        with urllib.request.urlopen(url, timeout=20) as r:
-            dest.write_bytes(r.read())
+        result = subprocess.run(
+            [
+                "curl",
+                "--fail",
+                "--silent",
+                "--show-error",
+                "--location",
+                "--proto",
+                "=https",
+                "--tlsv1.2",
+                "--max-time",
+                "20",
+                "--output",
+                str(dest),
+                url,
+            ],
+            check=False,
+        )
+        if result.returncode != 0 or not dest.exists() or dest.stat().st_size == 0:
+            if dest.exists():
+                dest.unlink()
+            return False
         return True
-    except (urllib.error.URLError, TimeoutError):
+    except OSError:
         return False
 
 
@@ -142,6 +177,9 @@ def main() -> None:
     names = sorted(extract_emoji_names(text))
 
     for name in names:
+        if not NAME_PATTERN.match(name):
+            continue
+
         tw_path = target_dir / f"{name}.svg"
         underscored = name.replace("-", "_").lower()
         noto_name = f"emoji_u{underscored}.svg"
