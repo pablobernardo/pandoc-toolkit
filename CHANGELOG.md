@@ -16,6 +16,19 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ---
 
+## [1.1.3] - released
+
+### Fixed
+
+- `pandoc-pdf update` ahora descarga artefactos autenticados de releases privadas usando la API de assets de GitHub (`assets[].url`) cuando hay token (`PANDOC_PDF_UPDATE_TOKEN` / `GH_TOKEN`), evitando 404 en `browser_download_url`.
+- Añadido header `Accept: application/octet-stream` para descargas vía API de assets.
+
+### Tests
+
+- Nueva regresión en `tests/run.sh` para validar instalación por `update` usando asset API en contexto autenticado (`run_update_install_private_api_asset_test`).
+
+---
+
 ## [1.1.2] - released
 
 ### Fixed

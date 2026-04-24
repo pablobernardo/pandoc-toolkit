@@ -347,6 +347,35 @@ PY
   printf '%s\n' "$asset_url"
 }
 
+release_asset_api_url_from_json() {
+  local response="$1"
+  local asset_name="$2"
+  local asset_url=""
+  if command -v python3 >/dev/null 2>&1; then
+    asset_url="$(python3 - <<'PY' "$response" "$asset_name"
+import json
+import sys
+payload = sys.argv[1]
+name = sys.argv[2]
+try:
+    data = json.loads(payload)
+except Exception:
+    print("")
+    raise SystemExit(0)
+for asset in data.get("assets", []):
+    if isinstance(asset, dict) and asset.get("name") == name:
+        url = asset.get("url", "")
+        print(url if isinstance(url, str) else "")
+        raise SystemExit(0)
+print("")
+PY
+)"
+  else
+    asset_url=""
+  fi
+  printf '%s\n' "$asset_url"
+}
+
 download_file() {
   local url="$1"
   local destination="$2"
@@ -355,8 +384,15 @@ download_file() {
 
   local -a curl_args
   curl_args=(-fsSL "$url" -o "$destination")
+  if [[ "$url" == https://api.github.com/repos/*/releases/assets/* ]]; then
+    curl_args=(-fsSL -H "Accept: application/octet-stream" "$url" -o "$destination")
+  fi
   if [[ -n "$token" ]]; then
-    curl_args=(-fsSL -H "Authorization: Bearer ${token}" "$url" -o "$destination")
+    if [[ "$url" == https://api.github.com/repos/*/releases/assets/* ]]; then
+      curl_args=(-fsSL -H "Authorization: Bearer ${token}" -H "Accept: application/octet-stream" "$url" -o "$destination")
+    else
+      curl_args=(-fsSL -H "Authorization: Bearer ${token}" "$url" -o "$destination")
+    fi
   fi
 
   if ! curl "${curl_args[@]}"; then
@@ -634,8 +670,16 @@ run_update() {
   checksums_name="checksums.txt"
 
   local artifact_url checksums_url
+  local artifact_api_url checksums_api_url
   artifact_url="$(release_asset_url_from_json "$release_json" "$artifact_name")"
   checksums_url="$(release_asset_url_from_json "$release_json" "$checksums_name")"
+  artifact_api_url="$(release_asset_api_url_from_json "$release_json" "$artifact_name")"
+  checksums_api_url="$(release_asset_api_url_from_json "$release_json" "$checksums_name")"
+
+  if [[ -n "${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}" ]]; then
+    [[ -n "$artifact_api_url" ]] && artifact_url="$artifact_api_url"
+    [[ -n "$checksums_api_url" ]] && checksums_url="$checksums_api_url"
+  fi
 
   if [[ -z "$artifact_url" ]]; then
     local msg
