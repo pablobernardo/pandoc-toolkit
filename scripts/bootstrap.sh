@@ -24,19 +24,107 @@ ASSUME_YES=false
 MERMAID_CLI_VERSION="${MERMAID_CLI_VERSION:-10.9.1}"
 PYYAML_VERSION="${PYYAML_VERSION:-6.0.2}"
 
-usage() {
-  cat <<'EOF'
-Bootstrap de instalación — Pandoc PDF Toolkit
+resolve_lang() {
+  local raw="${PANDOC_PDF_LANG:-${LC_ALL:-${LANG:-en}}}"
+  raw="${raw%%.*}"
+  raw="${raw%%@*}"
+  raw="${raw//_/-}"
+  raw="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
 
-Uso:
+  local exact="$raw"
+  local base="${raw%%-*}"
+  if is_supported_locale "$exact"; then
+    printf '%s\n' "$exact"
+    return 0
+  fi
+  if is_supported_locale "$base"; then
+    printf '%s\n' "$base"
+    return 0
+  fi
+  if is_supported_locale "en"; then
+    printf 'en\n'
+    return 0
+  fi
+  printf 'en\n'
+}
+
+LANG_CODE="$(resolve_lang)"
+
+list_supported_locales() {
+  local dir="$ROOT_DIR/i18n/locales"
+  if [[ -d "$dir" ]]; then
+    local file
+    for file in "$dir"/*.json; do
+      [[ -e "$file" ]] || continue
+      file="${file##*/}"
+      printf '%s\n' "${file%.json}"
+    done | sort -u
+    return 0
+  fi
+  printf 'en\n'
+}
+
+is_supported_locale() {
+  local candidate="$1"
+  local loc
+  while IFS= read -r loc; do
+    [[ "$loc" == "$candidate" ]] && return 0
+  done < <(list_supported_locales)
+  return 1
+}
+
+t() {
+  local key="$1"
+  local fallback="$2"
+  local locale_file="$ROOT_DIR/i18n/locales/${LANG_CODE}.json"
+
+  if [[ -f "$locale_file" ]] && command -v python3 >/dev/null 2>&1; then
+    local translated
+    translated="$(python3 - "$locale_file" "$key" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+key = sys.argv[2]
+try:
+    data = json.load(open(path, "r", encoding="utf-8"))
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+value = data.get(key, "")
+print(value if isinstance(value, str) else "")
+PY
+)"
+    if [[ -n "$translated" ]]; then
+      printf '%s\n' "$translated"
+      return 0
+    fi
+  fi
+
+  printf '%s\n' "$fallback"
+}
+
+interp() {
+  local template="$1"
+  local token="$2"
+  local value="$3"
+  printf '%s\n' "${template//\{$token\}/$value}"
+}
+
+usage() {
+  cat <<EOF
+$(t "bootstrap.title" "Installation bootstrap — Pandoc PDF Toolkit")
+
+$(t "bootstrap.usage" "Usage:")
   scripts/bootstrap.sh [--dry-run] [--no-install] [--skip-link] [--yes] [--ci]
 
-Opciones:
-  --dry-run    Muestra comandos sin ejecutarlos
-  --no-install No intenta instalar dependencias (solo verifica)
-  --skip-link  No crea symlink en ~/.local/bin/pandoc-pdf
-  --yes        Modo no interactivo (acepta instalación automáticamente)
-  --ci         Alias para CI: equivalente a --yes --skip-link
+$(t "bootstrap.options" "Options:")
+  --dry-run    $(t "bootstrap.opt.dryrun" "Show commands without executing")
+  --no-install $(t "bootstrap.opt.noinstall" "Do not install dependencies (verify only)")
+  --skip-link  $(t "bootstrap.opt.skiplink" "Do not create symlink in ~/.local/bin/pandoc-pdf")
+  --yes        $(t "bootstrap.opt.yes" "Non-interactive mode (auto-accept installation)")
+  --ci         $(t "bootstrap.opt.ci" "CI alias: equivalent to --yes --skip-link")
 EOF
 }
 
@@ -55,11 +143,11 @@ run_cmd() {
 
 confirm_install() {
   if [[ "${ASSUME_YES}" == "true" ]]; then
-    log "Modo no interactivo activo (--yes): se continúa sin confirmación"
+    log "$(t "bootstrap.non_interactive" "Non-interactive mode enabled (--yes): continuing without prompt")"
     return 0
   fi
 
-  printf '⚠️  Se van a ejecutar instalaciones del sistema. ¿Continuar? [y/N] '
+  printf '⚠️  %s ' "$(t "bootstrap.confirm" "System installations will be executed. Continue? [y/N]")"
   local answer=""
   read -r answer
   case "${answer}" in
@@ -67,7 +155,7 @@ confirm_install() {
       return 0
       ;;
     *)
-      echo "❌ Instalación cancelada por el usuario"
+      echo "❌ $(t "bootstrap.cancelled" "Installation cancelled by user")"
       return 1
       ;;
   esac
@@ -93,24 +181,24 @@ ensure_yaml_parser() {
   fi
 
   if ! has_cmd python3; then
-    echo "❌ No se puede instalar parser YAML: python3 no está disponible"
+    echo "❌ $(t "bootstrap.error.no_python" "Cannot install YAML parser: python3 is not available")"
     return 1
   fi
 
-  log "Instalando PyYAML para python3 (${PYYAML_VERSION})"
+  log "$(t "bootstrap.install.pyyaml" "Installing PyYAML for python3") (${PYYAML_VERSION})"
   run_cmd "python3 -m pip install --user pyyaml==${PYYAML_VERSION}"
 
   if has_python_yaml || has_ruby_yaml; then
     return 0
   fi
 
-  echo "❌ No se ha podido habilitar un parser YAML (PyYAML o Ruby YAML)"
+  echo "❌ $(t "bootstrap.error.yaml_parser" "Could not enable a YAML parser (PyYAML or Ruby YAML)")"
   return 1
 }
 
 install_macos() {
   if ! has_cmd brew; then
-    echo "❌ Homebrew no está instalado. Instálalo desde https://brew.sh"
+    echo "❌ $(t "bootstrap.error.no_brew" "Homebrew is not installed. Install it from https://brew.sh")"
     return 1
   fi
 
@@ -122,17 +210,17 @@ install_macos() {
   has_cmd npm || missing+=(node)
 
   if [[ ${#missing[@]} -gt 0 ]]; then
-    log "Instalando dependencias Homebrew: ${missing[*]}"
+    log "$(t "bootstrap.install.homebrew_deps" "Installing Homebrew dependencies"): ${missing[*]}"
     run_cmd "brew install ${missing[*]}"
   fi
 
   if ! has_cmd mmdc; then
-    log "Instalando Mermaid CLI (${MERMAID_CLI_VERSION})"
+    log "$(t "bootstrap.install.mermaid" "Installing Mermaid CLI") (${MERMAID_CLI_VERSION})"
     run_cmd "npm install -g @mermaid-js/mermaid-cli@${MERMAID_CLI_VERSION}"
   fi
 
   if ! has_cmd xelatex && ! has_cmd lualatex && ! has_cmd pdflatex; then
-    log "No se ha detectado motor TeX. Instalando BasicTeX (puede tardar)."
+    log "$(t "bootstrap.install.basictex" "No TeX engine detected. Installing BasicTeX (may take a while).")"
     run_cmd "brew install --cask basictex"
   fi
 }
@@ -147,12 +235,12 @@ install_linux() {
   done
 
   if [[ -z "${pkg_manager}" ]]; then
-    echo "❌ No se ha detectado un gestor de paquetes soportado (apt-get, dnf, yum, pacman, zypper, apk)."
-    echo "   Instala dependencias manualmente según docs/install.md"
+    echo "❌ $(t "bootstrap.error.no_pkg_manager" "No supported package manager detected (apt-get, dnf, yum, pacman, zypper, apk).")"
+    echo "   $(t "bootstrap.error.manual_install" "Install dependencies manually as documented in docs/install.md")"
     return 1
   fi
 
-  log "Gestor de paquetes detectado: ${pkg_manager}"
+  log "$(t "bootstrap.detected_pkg_manager" "Detected package manager"): ${pkg_manager}"
   case "${pkg_manager}" in
     apt-get)
       run_cmd "sudo apt-get update"
@@ -177,7 +265,7 @@ install_linux() {
   esac
 
   if ! has_cmd mmdc; then
-    log "Instalando Mermaid CLI (${MERMAID_CLI_VERSION})"
+    log "$(t "bootstrap.install.mermaid" "Installing Mermaid CLI") (${MERMAID_CLI_VERSION})"
     run_cmd "sudo npm install -g @mermaid-js/mermaid-cli@${MERMAID_CLI_VERSION}"
   fi
 }
@@ -195,28 +283,30 @@ verify_dependencies() {
   fi
 
   if [[ ${#missing[@]} -gt 0 ]]; then
-    echo "❌ Dependencias faltantes: ${missing[*]}"
+    echo "❌ $(t "bootstrap.error.missing_deps" "Missing dependencies"): ${missing[*]}"
     return 1
   fi
 
   if ! has_python_yaml && ! has_ruby_yaml; then
-    echo "❌ Falta parser YAML: instalá PyYAML o Ruby con YAML"
+    echo "❌ $(t "bootstrap.error.missing_yaml" "Missing YAML parser: install PyYAML or Ruby with YAML")"
     return 1
   fi
 
-  echo "✅ Dependencias detectadas"
+  echo "✅ $(t "bootstrap.deps_detected" "Dependencies detected")"
 }
 
 create_symlink() {
   if [[ "${SKIP_LINK}" == "true" ]]; then
-    log "Se omite creación de symlink por --skip-link"
+    log "$(t "bootstrap.skip_link" "Skipping symlink creation due to --skip-link")"
     return 0
   fi
 
   run_cmd "mkdir -p \"${LOCAL_BIN_DIR}\""
   run_cmd "ln -sf \"${CLI_PATH}\" \"${LINK_PATH}\""
-  echo "✅ Symlink creado: ${LINK_PATH}"
-  echo "ℹ️  Asegúrate de tener ${LOCAL_BIN_DIR} en PATH"
+  echo "✅ $(t "bootstrap.symlink_created" "Symlink created"): ${LINK_PATH}"
+  local path_msg
+  path_msg="$(t "bootstrap.path_hint" "Ensure {path} is in PATH")"
+  echo "ℹ️  $(interp "$path_msg" "path" "${LOCAL_BIN_DIR}")"
 }
 
 run_doctor() {
@@ -226,7 +316,7 @@ run_doctor() {
   fi
 
   if [[ -x "${CLI_PATH}" ]]; then
-    log "Ejecutando doctor"
+    log "$(t "bootstrap.run_doctor" "Running doctor")"
     "${CLI_PATH}" doctor
   fi
 }
@@ -260,7 +350,9 @@ main() {
         exit 0
         ;;
       *)
-        echo "❌ Argumento no reconocido: $1"
+        local msg
+        msg="$(t "bootstrap.error.unknown_arg" "Unknown argument: {arg}")"
+        echo "❌ $(interp "$msg" "arg" "$1")"
         usage
         exit 1
         ;;
@@ -269,7 +361,7 @@ main() {
 
   local os
   os="$(uname -s)"
-  log "Sistema detectado: ${os}"
+  log "$(t "bootstrap.detected_os" "Detected system"): ${os}"
 
   if [[ "${NO_INSTALL}" != "true" ]]; then
     confirm_install
@@ -281,14 +373,16 @@ main() {
         install_linux
         ;;
       *)
-        echo "❌ Sistema no soportado por bootstrap automático: ${os}"
-        echo "   Revisa la instalación manual en docs/install.md"
+        local msg
+        msg="$(t "bootstrap.error.unsupported_os" "System not supported by automatic bootstrap: {os}")"
+        echo "❌ $(interp "$msg" "os" "${os}")"
+        echo "   $(t "bootstrap.error.manual_install" "Install dependencies manually as documented in docs/install.md")"
         ;;
     esac
 
     ensure_yaml_parser
   else
-    log "Se omite instalación por --no-install"
+    log "$(t "bootstrap.skip_install" "Skipping installation due to --no-install")"
   fi
 
   verify_dependencies

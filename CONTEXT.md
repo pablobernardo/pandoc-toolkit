@@ -6,9 +6,16 @@
 
 - Estado general: **CLI estable con render nativo por defecto**.
 - Entry point activo: `bin/pandoc-pdf`.
-- Comandos activos: `--version`, `version`, `info`, `doctor`, `validate-config -c`, `render -c`.
-- Estado de suite local verificado: **PASS=76 FAIL=0** (`tests/run.sh`).
-- Versión actual del toolkit (`VERSION`): **0.9.0**.
+- Comandos activos: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c`.
+- Estado de suite local verificado: **PASS=135 FAIL=0** (`tests/run.sh`).
+- Versión actual del toolkit (`VERSION`): **1.0.0**.
+
+## Convención activa de i18n (persistente)
+
+- ✅ La app es **multiidioma** (locales activos: `en`, `es`, `pt`, `gl`).
+- ✅ Fallback por defecto: **inglés (`en`)**.
+- ✅ Política de implementación: **no hardcodear cadenas user-facing en runtime**; todas las cadenas deben salir de catálogos `i18n/locales/*.json`.
+- ✅ Preferencia de estilo en español: cuando se escriba contenido en español para el proyecto, usar **español de España (es-ES)**.
 
 ## Estado por frente
 
@@ -37,7 +44,7 @@
 - ✅ Política publicada en `.github/SECURITY.md`.
 
 ### 4) Testing y CI
-- ✅ Suite local `tests/run.sh` en verde (PASS=76 FAIL=0).
+- ✅ Suite local `tests/run.sh` en verde (PASS=113 FAIL=0).
 - ✅ CI por niveles:
   - **L1** obligatorio en PR/push (macOS/Linux)
   - **L2** integración semi-real manual
@@ -47,10 +54,11 @@
 - ✅ `README.md`, `docs/install.md`, `docs/usage.md`, `docs/migration.md`, `docs/architecture.md` actualizados.
 - ✅ `docs/release-readiness.md` y `docs/dependency-policy.md` activos.
 - ✅ `CHANGELOG.md` reorganizado para claridad de release (1.0.0 vs Unreleased).
+- ✅ Workflow de release automático disponible (`.github/workflows/release.yml`) para tags `v*`.
 
-## Gap principal (pre 1.0)
+## Gap principal (post 1.0)
 
-Cerrar criterio formal de release 1.0.0 (go/no-go) con evidencia del ciclo final local/CI.
+Consolidar roadmap de v1.1.0 en dos frentes principales: hardening de reportes de seguridad y updater desde releases.
 
 ## Roadmap pendiente real (post 1.0)
 
@@ -58,7 +66,17 @@ Cerrar criterio formal de release 1.0.0 (go/no-go) con evidencia del ciclo final
    - evaluar publicación SARIF en GitHub
    - definir umbrales de severidad para SAST/secrets
 2. **Actualización del CLI**
-   - implementar `pandoc-pdf update` (Linux/macOS) según `docs/self-update-design.md`
+   - ✅ `update --check` implementado
+   - ✅ `update` y `update --to` implementados con descarga + checksum + instalación
+   - ✅ soporte de token para repos privados (`PANDOC_PDF_UPDATE_TOKEN` / `GH_TOKEN`)
+   - ✅ instalación gestionada por versiones (`~/.local/share/pandoc-pdf/versions/<tag>` + `current`)
+   - ✅ bloqueo de instalación cuando se invoca como `pandoc-pdf-dev`
+   - ✅ instalador inicial sin clonado (`scripts/install.sh`) basado en latest release
+   - ⏳ pendiente: hardening final de rollback/observabilidad
+3. **Internacionalización del CLI**
+   - ✅ implementada con catálogos por clave y fallback
+   - ✅ locales actuales: `en`, `es`, `pt`, `gl`
+   - ✅ tests de paridad de claves/placeholders activos
 
 ## Riesgos activos
 
@@ -73,7 +91,6 @@ Cerrar criterio formal de release 1.0.0 (go/no-go) con evidencia del ciclo final
 
 ## Próximo hito recomendado
 
-### M1 — Corte 1.0.0
-1. Ejecutar gate de release completo (10 checks).
-2. Corregir cualquier desvío documental/operativo detectado.
-3. Cortar `1.0.0` con changelog y criterios de seguridad en verde.
+### M2 — Inicio v1.1.0
+1. Completar diseño operacional del updater y artefactos de release.
+2. Cerrar política de severidad y reporting de seguridad en CI.

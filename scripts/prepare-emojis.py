@@ -8,6 +8,15 @@ import sys
 from urllib.parse import urlparse
 from pathlib import Path
 
+try:
+    from i18n_runtime import t
+except Exception:
+    def t(_key: str, fallback: str, **kwargs: object) -> str:
+        try:
+            return fallback.format(**kwargs)
+        except Exception:
+            return fallback
+
 
 NOTO_BASE_URL = "https://raw.githubusercontent.com/googlefonts/noto-emoji/main/svg"
 TWEMOJI_BASE_URL = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg"
@@ -16,7 +25,7 @@ NAME_PATTERN = re.compile(r"^[0-9a-f]+(?:-[0-9a-f]+)*$")
 
 
 def fail(msg: str) -> None:
-    print(f"⚠️ [prepare-emojis] {msg}")
+    print(t("prepare_emojis.error.prefix", "⚠️ [prepare-emojis] {msg}", msg=msg))
     raise SystemExit(1)
 
 
@@ -156,14 +165,25 @@ def ensure_missing_svg(target_dir: Path) -> None:
 
 def main() -> None:
     if len(sys.argv) < 4:
-        fail("Uso: prepare-emojis.py <merged.md> <target_dir> <bundled_emoji_dir>")
+        fail(
+            t(
+                "prepare_emojis.error.usage",
+                "Usage: prepare-emojis.py <merged.md> <target_dir> <bundled_emoji_dir>",
+            )
+        )
 
     md_file = Path(sys.argv[1])
     target_dir = Path(sys.argv[2])
     bundled_dir = Path(sys.argv[3])
 
     if not md_file.exists():
-        fail(f"No existe markdown combinado: {md_file}")
+        fail(
+            t(
+                "prepare_emojis.error.merged_md_missing",
+                "Merged markdown file does not exist: {path}",
+                path=md_file,
+            )
+        )
 
     target_dir.mkdir(parents=True, exist_ok=True)
 

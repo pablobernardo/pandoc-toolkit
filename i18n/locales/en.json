@@ -1,0 +1,150 @@
+{
+  "cli.error.no_yaml_parser": "No YAML parser available",
+  "cli.error.no_yaml_parser.option1": "Option 1: python3 -m pip install pyyaml",
+  "cli.error.no_yaml_parser.option2": "Option 2: install Ruby with stdlib YAML",
+  "cli.error.preflight_not_found": "Executable preflight script not found: {path}",
+  "cli.error.unknown_arg": "Unknown argument: {arg}",
+  "cli.error.config_required": "You must provide -c <pdf.config.yaml>",
+  "cli.error.unknown_command": "Unknown command: {command}",
+  "cli.help.usage": "Usage:",
+  "cli.help.notes": "Notes:",
+  "cli.help.note.render_native": "render uses native implementation.",
+  "cli.help.note.yaml_parsing": "Config parsing supports Python+PyYAML or Ruby stdlib YAML.",
+  "cli.locale.error.missing_target": "You must provide a locale",
+  "cli.locale.error.unsupported": "Unsupported locale: {locale}. Supported: {supported}",
+  "cli.locale.show.language": "language",
+  "cli.locale.show.source": "source",
+  "cli.locale.set.global.saved": "Global locale saved to: {path}",
+  "cli.locale.set.project.saved": "Project locale saved to: {path}",
+  "cli.update.error.missing_curl": "update requires curl to check releases",
+  "cli.update.error.auth_hint": "for private repositories set PANDOC_PDF_UPDATE_TOKEN or GH_TOKEN",
+  "cli.update.error.fetch_latest": "could not fetch latest release metadata from {url}",
+  "cli.update.error.invalid_latest": "latest release payload has no valid tag_name",
+  "cli.update.error.phase1_only": "update install is not available yet; use 'pandoc-pdf update --check'",
+  "cli.update.error.invalid_semver": "could not compare versions: local={local}, latest={latest}",
+  "cli.update.error.download": "could not download {url}",
+  "cli.update.error.checksum_entry": "checksums.txt does not include {artifact}",
+  "cli.update.error.checksum_tool": "no SHA256 tool available (shasum/sha256sum/python3)",
+  "cli.update.error.checksum_mismatch": "checksum mismatch for {artifact}",
+  "cli.update.error.unsupported_platform": "unsupported platform: {os}/{arch}",
+  "cli.update.error.asset_not_found": "artifact not found in release: {artifact}",
+  "cli.update.error.checksums_missing": "release does not provide checksums.txt",
+  "cli.update.error.extract": "could not extract downloaded artifact",
+  "cli.update.error.invalid_artifact": "downloaded artifact does not contain an executable pandoc-pdf",
+  "cli.update.error.install_failed": "update installation failed",
+  "cli.update.error.dev_blocked": "update is disabled for pandoc-pdf-dev; use pandoc-pdf",
+  "cli.update.confirm": "Install {version} to {path}? [y/N]",
+  "cli.update.cancelled": "Update cancelled",
+  "cli.update.installed": "Updated to version {version}",
+  "cli.update.plan.version": "Target version: {version}",
+  "cli.update.plan.artifact": "Artifact: {artifact}",
+  "cli.update.plan.download": "Download URL: {url}",
+  "cli.update.plan.install_path": "Install path: {path}",
+  "cli.update.plan.managed_root": "Managed root: {path}",
+  "cli.update.plan.version_dir": "Version dir: {path}",
+  "cli.update.check.current": "Current version: {version}",
+  "cli.update.check.latest": "Latest version: {version}",
+  "cli.update.check.up_to_date": "You are already on the latest stable version",
+  "cli.update.check.available": "Update available: {current} -> {latest}",
+  "cli.update.check.local_newer": "Local version is newer than latest stable release",
+  "cli.locale.init.created": "File created: {path}",
+  "cli.locale.init.usage": "Load it with: source {path}",
+  "doctor.ok": "Doctor OK: dependencies available",
+  "doctor.missing": "Doctor detected missing dependencies:",
+  "validate.ok": "Config valid",
+  "validate.error.config_not_found": "Config not found: {path}",
+  "validate.error.schema_not_found": "Schema not found: {path}",
+  "validate.error.invalid_path": "Invalid path in '{field}': {detail}",
+  "render.mode.native": "Native mode enabled",
+  "render.output.markdown": "Merged markdown: {path}",
+  "render.output.pdf": "Output PDF: {path}",
+  "render.command.exec": "Running: {command}",
+  "render.warn.emoji_prepare": "Could not auto-prepare emojis; continuing with fallback",
+  "bootstrap.title": "Installation bootstrap — Pandoc PDF Toolkit",
+  "bootstrap.usage": "Usage:",
+  "bootstrap.options": "Options:",
+  "bootstrap.opt.dryrun": "Show commands without executing",
+  "bootstrap.opt.noinstall": "Do not install dependencies (verify only)",
+  "bootstrap.opt.skiplink": "Do not create symlink in ~/.local/bin/pandoc-pdf",
+  "bootstrap.opt.yes": "Non-interactive mode (auto-accept installation)",
+  "bootstrap.opt.ci": "CI alias: equivalent to --yes --skip-link",
+  "bootstrap.non_interactive": "Non-interactive mode enabled (--yes): continuing without prompt",
+  "bootstrap.confirm": "System installations will be executed. Continue? [y/N]",
+  "bootstrap.cancelled": "Installation cancelled by user",
+  "bootstrap.error.no_python": "Cannot install YAML parser: python3 is not available",
+  "bootstrap.install.pyyaml": "Installing PyYAML for python3",
+  "bootstrap.error.yaml_parser": "Could not enable a YAML parser (PyYAML or Ruby YAML)",
+  "bootstrap.error.no_brew": "Homebrew is not installed. Install it from https://brew.sh",
+  "bootstrap.install.homebrew_deps": "Installing Homebrew dependencies",
+  "bootstrap.install.mermaid": "Installing Mermaid CLI",
+  "bootstrap.install.basictex": "No TeX engine detected. Installing BasicTeX (may take a while).",
+  "bootstrap.error.no_pkg_manager": "No supported package manager detected (apt-get, dnf, yum, pacman, zypper, apk).",
+  "bootstrap.error.manual_install": "Install dependencies manually as documented in docs/install.md",
+  "bootstrap.detected_pkg_manager": "Detected package manager",
+  "bootstrap.error.missing_deps": "Missing dependencies",
+  "bootstrap.error.missing_yaml": "Missing YAML parser: install PyYAML or Ruby with YAML",
+  "bootstrap.deps_detected": "Dependencies detected",
+  "bootstrap.deps.ok": "Dependencies detected",
+  "bootstrap.skip_link": "Skipping symlink creation due to --skip-link",
+  "bootstrap.symlink_created": "Symlink created",
+  "bootstrap.path_hint": "Ensure {path} is in PATH",
+  "bootstrap.run_doctor": "Running doctor",
+  "bootstrap.error.unknown_arg": "Unknown argument: {arg}",
+  "bootstrap.detected_os": "Detected system: {os}",
+  "bootstrap.error.unsupported_os": "System not supported by automatic bootstrap: {os}",
+  "bootstrap.skip_install": "Skipping installation due to --no-install"
+  ,"preflight.error.config_parse": "Could not parse config for preflight: {error}"
+  ,"preflight.error.ruby_yaml_parse": "Error parsing YAML converted by Ruby: {error}"
+  ,"preflight.error.usage": "Usage: preflight.py [-c <pdf.config.yaml>]"
+  ,"preflight.error.config_not_found": "Config not found for preflight: {path}"
+  ,"preflight.error.no_yaml_parser": "Preflight with -c requires PyYAML or Ruby YAML available"
+  ,"preflight.error.invalid_required_command": "Invalid command name in runtime.required_commands: {cmd}"
+  ,"render.error.yaml_parse": "Could not parse YAML: {error}"
+  ,"render.error.yaml_root_object": "Root of {path} must be an object/map"
+  ,"render.error.usage": "Usage: render-native.py <config.yaml> <toolkit_root>"
+  ,"render.error.config_not_found": "Config not found: {path}"
+  ,"render.error.required_section": "Invalid or missing required section: {section}"
+  ,"render.error.base_dir_required": "'project.base_dir' is required"
+  ,"render.error.chapters_dir_missing": "input.chapters_dir does not exist: {path}"
+  ,"render.error.explicit_file_missing": "Explicit file not found: {path}"
+  ,"render.error.no_chapters": "No chapters found to render"
+  ,"validate.error.yaml_invalid": "Invalid YAML: {error}"
+  ,"validate.error.yaml_invalid_generic": "Invalid YAML"
+  ,"validate.error.ruby_json_parse": "Could not parse JSON converted from Ruby: {error}"
+  ,"validate.error.root_type": "Root must be of type {type}"
+  ,"validate.error.field_type": "'{label}' must be of type {type}"
+  ,"validate.error.object_type": "'{label}' must be of type object"
+  ,"validate.error.missing_required": "In '{label}' required fields are missing: {fields}"
+  ,"validate.error.extra_fields": "In '{label}' there are disallowed fields: {fields}"
+  ,"validate.error.array_type": "'{label}' must be of type array"
+  ,"validate.error.min_items": "'{label}' must have at least {count} item(s)"
+  ,"validate.error.string_type": "'{label}' must be of type string"
+  ,"validate.error.not_empty": "'{label}' cannot be empty"
+  ,"validate.error.integer_type": "'{label}' must be of type integer"
+  ,"validate.error.minimum": "'{label}' must be >= {minimum}"
+  ,"validate.error.boolean_type": "'{label}' must be of type boolean"
+  ,"validate.error.base_dir_required": "'project.base_dir' is required"
+  ,"validate.error.invalid_chapters_dir": "Invalid path in 'input.chapters_dir': directory does not exist ({path})"
+  ,"validate.error.invalid_template": "Invalid path in 'pandoc.template': file does not exist ({path})"
+  ,"validate.error.invalid_extra_filter": "Invalid path in 'filters.extra_lua_filters[{idx}]': file does not exist ({path})"
+  ,"validate.error.usage": "Usage: validate-config.py <config.yaml> <schema.json>"
+  ,"validate.error.no_yaml_parser": "No YAML parser available (install PyYAML or Ruby)"
+  ,"validate.error.yaml_root_object": "YAML root must be an object/map"
+  ,"validate.error.schema_json_invalid": "Invalid JSON schema: {error}"
+  ,"validate.error.schema_root_object": "Invalid schema: root must be an object"
+  ,"check_i18n.error.invalid_catalog": "invalid catalog at {path}: {error}"
+  ,"check_i18n.error.invalid_catalog_root": "invalid catalog at {path}: root must be object"
+  ,"check_i18n.error.invalid_key": "invalid key in {path}: {key}"
+  ,"check_i18n.error.invalid_value": "invalid value for key '{key}' in {path}"
+  ,"check_i18n.error.locales_dir_missing": "locales directory does not exist: {path}"
+  ,"check_i18n.error.no_catalogs": "no i18n catalogs found"
+  ,"check_i18n.error.missing_base_es": "missing base catalog es.json"
+  ,"check_i18n.error.missing_keys": "{locale}: missing keys compared to es: {keys}"
+  ,"check_i18n.error.extra_keys": "{locale}: extra keys not present in es: {keys}"
+  ,"check_i18n.error.placeholder_mismatch": "{locale}: placeholder mismatch in '{key}' (es={es_placeholders}, {locale}={locale_placeholders})"
+  ,"check_i18n.error.prefix": "❌ i18n check: {msg}"
+  ,"check_i18n.ok": "✅ i18n OK: {locales} locales, {keys} keys verified"
+  ,"prepare_emojis.error.prefix": "⚠️ [prepare-emojis] {msg}"
+  ,"prepare_emojis.error.usage": "Usage: prepare-emojis.py <merged.md> <target_dir> <bundled_emoji_dir>"
+  ,"prepare_emojis.error.merged_md_missing": "Merged markdown file does not exist: {path}"
+}

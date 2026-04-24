@@ -13,15 +13,52 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 - Evaluar publicación de hallazgos de seguridad en formato SARIF.
 - Definir umbrales de severidad y política de fallo para SAST/secrets en CI.
-- Diseñar e implementar `pandoc-pdf update` (Linux/macOS) basado en GitHub Releases.
+- Completar hardening del updater (`pandoc-pdf update`) con rollback robusto y mejoras de observabilidad.
 
 ### Maintenance
 
 - Consolidar revisión periódica de dependencias fijadas y documentar validación por actualización.
+- Documentar guía técnica de i18n para facilitar alta de nuevos idiomas y validación de seguridad.
+
+### Added (Unreleased)
+
+- i18n del CLI y scripts de runtime con catálogos por clave en `en`, `es`, `pt` y `gl`.
+- Comando `pandoc-pdf locale` simplificado a `show`, `set <lang>` y `set --project <lang>`.
+- Soporte de configuración global de idioma en `~/.config/pandoc-pdf/config.env`.
+- Validación de paridad de catálogos/placeholders (`scripts/check-i18n.py`) integrada en tests.
+- Nuevo comando `pandoc-pdf update --check` para comprobar última versión estable en GitHub Releases.
+- Nuevos comandos de actualización desde release:
+  - `pandoc-pdf update`
+  - `pandoc-pdf update --to <tag>`
+  - soporte `--yes`, `--dry-run`, `--install-dir`
+- Soporte de autenticación para repositorios privados en updater mediante `PANDOC_PDF_UPDATE_TOKEN` o `GH_TOKEN`.
+- Instalación gestionada del updater en directorio versionado (`~/.local/share/pandoc-pdf/versions/<tag>`) con puntero `current`.
+- Bloqueo explícito de instalación con `update` cuando el comando se invoca como `pandoc-pdf-dev`.
+- Workflow automático de release (`.github/workflows/release.yml`) para publicar artefactos y `checksums.txt` en tags `v*`.
+- Scripts de distribución:
+  - `scripts/package-release.sh` (genera tarballs + checksums)
+  - `scripts/install.sh` (instalación estable desde latest release sin clonar repo)
+  - `scripts/install-local.sh` (instalación desde repo local al layout gestionado, con opción dev)
+- Runners locales de integración:
+  - `tests/l2-local.sh` (semi-real)
+  - `tests/l3-local.sh` (full runtime con Mermaid)
+
+### Changed (Unreleased)
+
+- CI L2/L3 ahora reutiliza los runners locales (`tests/l2-local.sh`, `tests/l3-local.sh`) para evitar drift entre ejecución local y GitHub Actions.
+- Documentación sincronizada con el estado real del toolkit (comando `locale`, locales activos, estado operativo y guía i18n).
+
+### Fixed (Unreleased)
+
+- Eliminados acoples i18n residuales:
+  - mensajes hardcodeados en `scripts/check-i18n.py` y `scripts/prepare-emojis.py`
+  - etiquetas hardcodeadas de `locale show` en `bin/pandoc-pdf`
+  - cobertura incompleta de claves `bootstrap.*` en catálogos.
+- Homogeneizado texto operativo en raíz (`Makefile`) para evitar mensajes legacy fuera de la estrategia i18n actual.
 
 ---
 
-## [1.0.0] - TBD
+## [1.0.0] - released
 
 Primera versión estable pública del toolkit.
 

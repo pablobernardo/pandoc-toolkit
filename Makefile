@@ -1,4 +1,4 @@
-.PHONY: bootstrap bootstrap-dry bootstrap-yes doctor validate render test
+.PHONY: bootstrap bootstrap-dry bootstrap-yes bootstrap-ci install-release install-local install-local-dev package-release doctor validate render test
 
 bootstrap:
 	bash scripts/bootstrap.sh
@@ -12,19 +12,31 @@ bootstrap-yes:
 bootstrap-ci:
 	bash scripts/bootstrap.sh --ci
 
+install-release:
+	bash scripts/install.sh
+
+install-local:
+	bash scripts/install-local.sh
+
+install-local-dev:
+	bash scripts/install-local.sh dev
+
+package-release:
+	bash scripts/package-release.sh dist
+
 doctor:
 	bin/pandoc-pdf doctor
 
 validate:
 	@if [ -z "$(CONFIG)" ]; then \
-		echo "Uso: make validate CONFIG=pdf.config.yaml"; \
+		echo "Usage: make validate CONFIG=pdf.config.yaml"; \
 		exit 1; \
 	fi
 	bin/pandoc-pdf validate-config -c "$(CONFIG)"
 
 render:
 	@if [ -z "$(CONFIG)" ]; then \
-		echo "Uso: make render CONFIG=pdf.config.yaml"; \
+		echo "Usage: make render CONFIG=pdf.config.yaml"; \
 		exit 1; \
 	fi
 	bin/pandoc-pdf render -c "$(CONFIG)"

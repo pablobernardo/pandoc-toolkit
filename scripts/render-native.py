@@ -10,6 +10,15 @@ from pathlib import Path
 
 import yaml
 
+try:
+    from i18n_runtime import t
+except Exception:
+    def t(_key: str, fallback: str, **kwargs: object) -> str:
+        try:
+            return fallback.format(**kwargs)
+        except Exception:
+            return fallback
+
 
 def die(msg: str) -> None:
     print(f"❌ {msg}")
@@ -36,24 +45,24 @@ def load_yaml_map(path: Path) -> dict:
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception as e:
-        die(f"No se pudo parsear YAML: {e}")
+        die(t("render.error.yaml_parse", "Could not parse YAML: {error}", error=e))
 
     if data is None:
         return {}
     if not isinstance(data, dict):
-        die(f"La raíz de {path} debe ser un objeto/map")
+        die(t("render.error.yaml_root_object", "Root of {path} must be an object/map", path=path))
     return data
 
 
 def main() -> None:
     if len(sys.argv) < 3:
-        die("Uso: render-native.py <config.yaml> <toolkit_root>")
+        die(t("render.error.usage", "Usage: render-native.py <config.yaml> <toolkit_root>"))
 
     cfg_path = Path(sys.argv[1])
     root_dir = Path(sys.argv[2])
 
     if not cfg_path.exists():
-        die(f"Config no encontrada: {cfg_path}")
+        die(t("render.error.config_not_found", "Config not found: {path}", path=cfg_path))
 
     cfg_user = load_yaml_map(cfg_path)
     cfg = cfg_user
@@ -66,7 +75,7 @@ def main() -> None:
     required = ["project", "document", "input", "output", "pandoc"]
     for key in required:
         if key not in cfg or not isinstance(cfg[key], dict):
-            die(f"Sección obligatoria inválida o ausente: {key}")
+            die(t("render.error.required_section", "Invalid or missing required section: {section}", section=key))
 
     project = cfg["project"]
     document = cfg["document"]
@@ -76,7 +85,7 @@ def main() -> None:
 
     base_dir = project.get("base_dir")
     if not base_dir:
-        die("'project.base_dir' es obligatorio")
+        die(t("render.error.base_dir_required", "'project.base_dir' is required"))
 
     base_dir_path = (cfg_path.parent / str(base_dir)).resolve()
     title = document.get("title") or output.get("file_prefix") or "document"
@@ -84,7 +93,7 @@ def main() -> None:
 
     chapters_dir = base_dir_path / str(input_cfg.get("chapters_dir", "chapters"))
     if not chapters_dir.exists():
-        die(f"No existe input.chapters_dir: {chapters_dir}")
+        die(t("render.error.chapters_dir_missing", "input.chapters_dir does not exist: {path}", path=chapters_dir))
 
     explicit_files = input_cfg.get("explicit_files") or []
     if explicit_files:
@@ -92,14 +101,14 @@ def main() -> None:
         for name in explicit_files:
             candidate = chapters_dir / str(name)
             if not candidate.exists():
-                die(f"Archivo explícito no encontrado: {candidate}")
+                die(t("render.error.explicit_file_missing", "Explicit file not found: {path}", path=candidate))
             selected_files.append(candidate)
     else:
         pattern = str(input_cfg.get("glob", "*.md"))
         selected_files = sorted(chapters_dir.glob(pattern), key=lambda p: p.name)
 
     if not selected_files:
-        die("No se encontraron capítulos para renderizar")
+        die(t("render.error.no_chapters", "No chapters found to render"))
 
     output_dir = base_dir_path / str(output.get("dir", "output"))
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -185,7 +194,7 @@ def main() -> None:
             ]
             prep = subprocess.run(prep_cmd)
             if prep.returncode != 0:
-                print("⚠️  No se pudieron preparar emojis automáticamente; continúo con fallback")
+                print(f"⚠️  {t('render.warn.emoji_prepare', 'Could not auto-prepare emojis; continuing with fallback')}")
 
     mermaid_output_dir = Path(str(mermaid_cfg.get("output_dir", "output/mermaid")))
     if not mermaid_output_dir.is_absolute():
@@ -228,10 +237,10 @@ def main() -> None:
     env["PANDOC_MERMAID_OUTPUT_DIR"] = str(mermaid_output_dir)
     env["PANDOC_MERMAID_BACKGROUND"] = str(mermaid_cfg.get("background", "transparent"))
 
-    print("✅ Modo nativo activo")
-    print(f"📄 Markdown combinado: {md_out}")
-    print(f"🖨️  PDF de salida: {pdf_out}")
-    print(f"▶ Ejecutando: {' '.join(cmd)}")
+    print(f"✅ {t('render.mode.native', 'Native mode enabled')}")
+    print(f"📄 {t('render.output.markdown', 'Merged markdown: {path}', path=md_out)}")
+    print(f"🖨️  {t('render.output.pdf', 'Output PDF: {path}', path=pdf_out)}")
+    print(f"▶ {t('render.command.exec', 'Running: {command}', command=' '.join(cmd))}")
 
     result = subprocess.run(cmd, env=env)
     raise SystemExit(result.returncode)

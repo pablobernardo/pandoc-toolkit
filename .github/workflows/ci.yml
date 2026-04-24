@@ -75,38 +75,11 @@ jobs:
           chmod +x scripts/prepare-emojis.py
           chmod +x scripts/preflight.sh
           chmod +x scripts/preflight.py
+          chmod +x tests/l2-local.sh
 
-      - name: Validate integration fixture config
+      - name: Run L2 local integration runner
         run: |
-          bin/pandoc-pdf validate-config -c tests/integration/minimal-project/pdf.config.yaml
-
-      - name: Render minimal integration fixture
-        run: |
-          bin/pandoc-pdf render -c tests/integration/minimal-project/pdf.config.yaml
-
-      - name: Assert render artifacts
-        run: |
-          test -n "$(ls -1 tests/integration/minimal-project/output/*.pdf 2>/dev/null)"
-          test -n "$(ls -1 tests/integration/minimal-project/output/*.md 2>/dev/null)"
-
-      - name: Validate enabled-filters fixture config
-        run: |
-          bin/pandoc-pdf validate-config -c tests/integration/enabled-filters-project/pdf.config.yaml
-
-      - name: Validate L3 mermaid fixture config
-        run: |
-          bin/pandoc-pdf validate-config -c tests/integration/l3-mermaid-project/pdf.config.yaml
-
-      - name: Render enabled-filters integration fixture
-        run: |
-          bin/pandoc-pdf render -c tests/integration/enabled-filters-project/pdf.config.yaml
-
-      - name: Assert enabled-filters artifacts
-        run: |
-          test -n "$(ls -1 tests/integration/enabled-filters-project/output/*.pdf 2>/dev/null)"
-          test -n "$(ls -1 tests/integration/enabled-filters-project/output/*.md 2>/dev/null)"
-          test -d tests/integration/enabled-filters-project/output/emoji
-          test -d tests/integration/enabled-filters-project/output/mermaid
+          bash tests/l2-local.sh
 
   l3-render-full:
     name: L3 full integration (ubuntu, scheduled/manual)
@@ -132,35 +105,8 @@ jobs:
           chmod +x scripts/prepare-emojis.py
           chmod +x scripts/preflight.sh
           chmod +x scripts/preflight.py
+          chmod +x tests/l3-local.sh
 
-      - name: Run doctor on full integration fixture
-        env:
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+      - name: Run L3 local integration runner
         run: |
-          bin/pandoc-pdf doctor -c tests/integration/enabled-filters-project/pdf.config.yaml
-
-      - name: Validate enabled-filters fixture config
-        run: |
-          bin/pandoc-pdf validate-config -c tests/integration/enabled-filters-project/pdf.config.yaml
-
-      - name: Render enabled-filters fixture (full runtime)
-        env:
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
-        run: |
-          bin/pandoc-pdf render -c tests/integration/enabled-filters-project/pdf.config.yaml
-
-      - name: Render L3 mermaid fixture (full runtime)
-        env:
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
-        run: |
-          bin/pandoc-pdf render -c tests/integration/l3-mermaid-project/pdf.config.yaml
-
-      - name: Assert full integration artifacts
-        run: |
-          test -n "$(ls -1 tests/integration/enabled-filters-project/output/*.pdf 2>/dev/null)"
-          test -n "$(ls -1 tests/integration/enabled-filters-project/output/*.md 2>/dev/null)"
-          test -d tests/integration/enabled-filters-project/output/emoji
-          test -d tests/integration/enabled-filters-project/output/mermaid
-          test -n "$(ls -1 tests/integration/l3-mermaid-project/output/*.pdf 2>/dev/null)"
-          test -n "$(ls -1 tests/integration/l3-mermaid-project/output/*.md 2>/dev/null)"
-          test -n "$(ls -1 tests/integration/l3-mermaid-project/output/mermaid/*.png 2>/dev/null)"
+          PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser bash tests/l3-local.sh

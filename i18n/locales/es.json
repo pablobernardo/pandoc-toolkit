@@ -1,0 +1,150 @@
+{
+  "cli.error.no_yaml_parser": "No hay parser YAML disponible",
+  "cli.error.no_yaml_parser.option1": "Opción 1: python3 -m pip install pyyaml",
+  "cli.error.no_yaml_parser.option2": "Opción 2: instalar Ruby con stdlib YAML",
+  "cli.error.preflight_not_found": "No se encontró preflight ejecutable: {path}",
+  "cli.error.unknown_arg": "Argumento no reconocido: {arg}",
+  "cli.error.config_required": "Debes indicar -c <pdf.config.yaml>",
+  "cli.error.unknown_command": "Comando desconocido: {command}",
+  "cli.help.usage": "Uso:",
+  "cli.help.notes": "Notas:",
+  "cli.help.note.render_native": "render usa implementación nativa.",
+  "cli.help.note.yaml_parsing": "El parseo de config soporta Python+PyYAML o Ruby stdlib YAML.",
+  "cli.locale.error.missing_target": "Debes indicar un locale",
+  "cli.locale.error.unsupported": "Locale no soportado: {locale}. Soportados: {supported}",
+  "cli.locale.show.language": "idioma",
+  "cli.locale.show.source": "fuente",
+  "cli.locale.set.global.saved": "Idioma global guardado en: {path}",
+  "cli.locale.set.project.saved": "Idioma de proyecto guardado en: {path}",
+  "cli.update.error.missing_curl": "update requiere curl para consultar releases",
+  "cli.update.error.auth_hint": "para repositorios privados define PANDOC_PDF_UPDATE_TOKEN o GH_TOKEN",
+  "cli.update.error.fetch_latest": "no se pudo obtener metadata de la última release desde {url}",
+  "cli.update.error.invalid_latest": "la respuesta de latest release no trae un tag_name válido",
+  "cli.update.error.phase1_only": "la instalación por update todavía no está disponible; usa 'pandoc-pdf update --check'",
+  "cli.update.error.invalid_semver": "no se pudieron comparar versiones: local={local}, latest={latest}",
+  "cli.update.error.download": "no se pudo descargar {url}",
+  "cli.update.error.checksum_entry": "checksums.txt no incluye {artifact}",
+  "cli.update.error.checksum_tool": "no hay herramienta SHA256 disponible (shasum/sha256sum/python3)",
+  "cli.update.error.checksum_mismatch": "checksum no válido para {artifact}",
+  "cli.update.error.unsupported_platform": "plataforma no soportada: {os}/{arch}",
+  "cli.update.error.asset_not_found": "no se encontró el artefacto en la release: {artifact}",
+  "cli.update.error.checksums_missing": "la release no incluye checksums.txt",
+  "cli.update.error.extract": "no se pudo extraer el artefacto descargado",
+  "cli.update.error.invalid_artifact": "el artefacto descargado no contiene un ejecutable pandoc-pdf",
+  "cli.update.error.install_failed": "falló la instalación de update",
+  "cli.update.error.dev_blocked": "update está deshabilitado para pandoc-pdf-dev; usa pandoc-pdf",
+  "cli.update.confirm": "¿Instalar la versión {version} en {path}? [y/N]",
+  "cli.update.cancelled": "Actualización cancelada",
+  "cli.update.installed": "Actualizado a la versión {version}",
+  "cli.update.plan.version": "Versión objetivo: {version}",
+  "cli.update.plan.artifact": "Artefacto: {artifact}",
+  "cli.update.plan.download": "URL de descarga: {url}",
+  "cli.update.plan.install_path": "Ruta de instalación: {path}",
+  "cli.update.plan.managed_root": "Raíz gestionada: {path}",
+  "cli.update.plan.version_dir": "Directorio de versión: {path}",
+  "cli.update.check.current": "Versión actual: {version}",
+  "cli.update.check.latest": "Última versión: {version}",
+  "cli.update.check.up_to_date": "Ya estás en la última versión estable",
+  "cli.update.check.available": "Update disponible: {current} -> {latest}",
+  "cli.update.check.local_newer": "La versión local es más nueva que la última release estable",
+  "cli.locale.init.created": "Archivo creado: {path}",
+  "cli.locale.init.usage": "Cárgalo con: source {path}",
+  "doctor.ok": "Doctor OK: dependencias disponibles",
+  "doctor.missing": "Doctor detectó dependencias faltantes:",
+  "validate.ok": "Config válida",
+  "validate.error.config_not_found": "Config no encontrada: {path}",
+  "validate.error.schema_not_found": "Schema no encontrado: {path}",
+  "validate.error.invalid_path": "Ruta inválida en '{field}': {detail}",
+  "render.mode.native": "Modo nativo activo",
+  "render.output.markdown": "Markdown combinado: {path}",
+  "render.output.pdf": "PDF de salida: {path}",
+  "render.command.exec": "Ejecutando: {command}",
+  "render.warn.emoji_prepare": "No se pudieron preparar emojis automáticamente; continúo con fallback",
+  "bootstrap.title": "Bootstrap de instalación — Pandoc PDF Toolkit",
+  "bootstrap.usage": "Uso:",
+  "bootstrap.options": "Opciones:",
+  "bootstrap.opt.dryrun": "Muestra comandos sin ejecutarlos",
+  "bootstrap.opt.noinstall": "No intenta instalar dependencias (solo verifica)",
+  "bootstrap.opt.skiplink": "No crea symlink en ~/.local/bin/pandoc-pdf",
+  "bootstrap.opt.yes": "Modo no interactivo (acepta instalación automáticamente)",
+  "bootstrap.opt.ci": "Alias para CI: equivalente a --yes --skip-link",
+  "bootstrap.non_interactive": "Modo no interactivo activo (--yes): se continúa sin confirmación",
+  "bootstrap.confirm": "Se van a ejecutar instalaciones del sistema. ¿Continuar? [y/N]",
+  "bootstrap.cancelled": "Instalación cancelada por el usuario",
+  "bootstrap.error.no_python": "No se puede instalar parser YAML: python3 no está disponible",
+  "bootstrap.install.pyyaml": "Instalando PyYAML para python3",
+  "bootstrap.error.yaml_parser": "No se ha podido habilitar un parser YAML (PyYAML o Ruby YAML)",
+  "bootstrap.error.no_brew": "Homebrew no está instalado. Instálalo desde https://brew.sh",
+  "bootstrap.install.homebrew_deps": "Instalando dependencias Homebrew",
+  "bootstrap.install.mermaid": "Instalando Mermaid CLI",
+  "bootstrap.install.basictex": "No se ha detectado motor TeX. Instalando BasicTeX (puede tardar).",
+  "bootstrap.error.no_pkg_manager": "No se ha detectado un gestor de paquetes soportado (apt-get, dnf, yum, pacman, zypper, apk).",
+  "bootstrap.error.manual_install": "Instala dependencias manualmente según docs/install.md",
+  "bootstrap.detected_pkg_manager": "Gestor de paquetes detectado",
+  "bootstrap.error.missing_deps": "Dependencias faltantes",
+  "bootstrap.error.missing_yaml": "Falta parser YAML: instala PyYAML o Ruby con YAML",
+  "bootstrap.deps_detected": "Dependencias detectadas",
+  "bootstrap.deps.ok": "Dependencias detectadas",
+  "bootstrap.skip_link": "Se omite creación de symlink por --skip-link",
+  "bootstrap.symlink_created": "Symlink creado",
+  "bootstrap.path_hint": "Asegúrate de tener {path} en PATH",
+  "bootstrap.run_doctor": "Ejecutando doctor",
+  "bootstrap.error.unknown_arg": "Argumento no reconocido: {arg}",
+  "bootstrap.detected_os": "Sistema detectado: {os}",
+  "bootstrap.error.unsupported_os": "Sistema no soportado por bootstrap automático: {os}",
+  "bootstrap.skip_install": "Se omite instalación por --no-install"
+  ,"preflight.error.config_parse": "No se pudo parsear config para preflight: {error}"
+  ,"preflight.error.ruby_yaml_parse": "Error parseando YAML convertido por Ruby: {error}"
+  ,"preflight.error.usage": "Uso: preflight.py [-c <pdf.config.yaml>]"
+  ,"preflight.error.config_not_found": "Config no encontrada para preflight: {path}"
+  ,"preflight.error.no_yaml_parser": "Preflight con -c requiere PyYAML o Ruby YAML disponibles"
+  ,"preflight.error.invalid_required_command": "Nombre de comando inválido en runtime.required_commands: {cmd}"
+  ,"render.error.yaml_parse": "No se pudo parsear YAML: {error}"
+  ,"render.error.yaml_root_object": "La raíz de {path} debe ser un objeto/map"
+  ,"render.error.usage": "Uso: render-native.py <config.yaml> <toolkit_root>"
+  ,"render.error.config_not_found": "Config no encontrada: {path}"
+  ,"render.error.required_section": "Sección obligatoria inválida o ausente: {section}"
+  ,"render.error.base_dir_required": "'project.base_dir' es obligatorio"
+  ,"render.error.chapters_dir_missing": "No existe input.chapters_dir: {path}"
+  ,"render.error.explicit_file_missing": "Archivo explícito no encontrado: {path}"
+  ,"render.error.no_chapters": "No se encontraron capítulos para renderizar"
+  ,"validate.error.yaml_invalid": "YAML inválido: {error}"
+  ,"validate.error.yaml_invalid_generic": "YAML inválido"
+  ,"validate.error.ruby_json_parse": "No se pudo parsear JSON convertido desde Ruby: {error}"
+  ,"validate.error.root_type": "La raíz debe ser de tipo {type}"
+  ,"validate.error.field_type": "'{label}' debe ser de tipo {type}"
+  ,"validate.error.object_type": "'{label}' debe ser de tipo object"
+  ,"validate.error.missing_required": "En '{label}' faltan campos obligatorios: {fields}"
+  ,"validate.error.extra_fields": "En '{label}' hay campos no permitidos: {fields}"
+  ,"validate.error.array_type": "'{label}' debe ser de tipo array"
+  ,"validate.error.min_items": "'{label}' debe tener al menos {count} elemento(s)"
+  ,"validate.error.string_type": "'{label}' debe ser de tipo string"
+  ,"validate.error.not_empty": "'{label}' no puede estar vacío"
+  ,"validate.error.integer_type": "'{label}' debe ser de tipo integer"
+  ,"validate.error.minimum": "'{label}' debe ser >= {minimum}"
+  ,"validate.error.boolean_type": "'{label}' debe ser de tipo boolean"
+  ,"validate.error.base_dir_required": "'project.base_dir' es obligatorio"
+  ,"validate.error.invalid_chapters_dir": "Ruta inválida en 'input.chapters_dir': no existe directorio ({path})"
+  ,"validate.error.invalid_template": "Ruta inválida en 'pandoc.template': no existe fichero ({path})"
+  ,"validate.error.invalid_extra_filter": "Ruta inválida en 'filters.extra_lua_filters[{idx}]': no existe fichero ({path})"
+  ,"validate.error.usage": "Uso: validate-config.py <config.yaml> <schema.json>"
+  ,"validate.error.no_yaml_parser": "No hay parser YAML disponible (instala PyYAML o Ruby)"
+  ,"validate.error.yaml_root_object": "La raíz del YAML debe ser un objeto/map"
+  ,"validate.error.schema_json_invalid": "Schema JSON inválido: {error}"
+  ,"validate.error.schema_root_object": "Schema inválido: la raíz debe ser un objeto"
+  ,"check_i18n.error.invalid_catalog": "catálogo inválido en {path}: {error}"
+  ,"check_i18n.error.invalid_catalog_root": "catálogo inválido en {path}: la raíz debe ser object"
+  ,"check_i18n.error.invalid_key": "clave inválida en {path}: {key}"
+  ,"check_i18n.error.invalid_value": "valor inválido para clave '{key}' en {path}"
+  ,"check_i18n.error.locales_dir_missing": "no existe directorio de locales: {path}"
+  ,"check_i18n.error.no_catalogs": "no hay catálogos i18n"
+  ,"check_i18n.error.missing_base_es": "falta catálogo base es.json"
+  ,"check_i18n.error.missing_keys": "{locale}: faltan claves respecto de es: {keys}"
+  ,"check_i18n.error.extra_keys": "{locale}: tiene claves extra no presentes en es: {keys}"
+  ,"check_i18n.error.placeholder_mismatch": "{locale}: placeholders distintos en '{key}' (es={es_placeholders}, {locale}={locale_placeholders})"
+  ,"check_i18n.error.prefix": "❌ chequeo i18n: {msg}"
+  ,"check_i18n.ok": "✅ i18n OK: {locales} locales, {keys} claves verificadas"
+  ,"prepare_emojis.error.prefix": "⚠️ [prepare-emojis] {msg}"
+  ,"prepare_emojis.error.usage": "Uso: prepare-emojis.py <merged.md> <target_dir> <bundled_emoji_dir>"
+  ,"prepare_emojis.error.merged_md_missing": "No existe markdown combinado: {path}"
+}

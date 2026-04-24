@@ -4,6 +4,62 @@
 require 'yaml'
 require 'time'
 require 'pathname'
+require 'json'
+
+def locales_dir
+  Pathname.new(__dir__).parent + 'i18n' + 'locales'
+end
+
+def available_locales
+  dir = locales_dir
+  return ['en'] unless dir.directory?
+
+  locales = dir.children
+               .select { |p| p.file? && p.extname == '.json' }
+               .map { |p| p.basename('.json').to_s }
+               .reject(&:empty?)
+               .uniq
+               .sort
+
+  locales.empty? ? ['en'] : locales
+end
+
+def resolve_lang(raw = nil)
+  value = (raw || ENV['PANDOC_PDF_LANG'] || ENV['LC_ALL'] || ENV['LANG'] || 'en').to_s
+  value = value.split('.', 2).first.to_s.split('@', 2).first.to_s.tr('_', '-').downcase
+  supported = available_locales
+
+  return value if supported.include?(value)
+
+  base = value.split('-', 2).first
+  return base if supported.include?(base)
+
+  return 'en' if supported.include?('en')
+
+  supported.first
+end
+
+LANG_CODE = resolve_lang
+
+def load_catalog(lang)
+  path = locales_dir + "#{lang}.json"
+  return {} unless path.file?
+
+  data = JSON.parse(File.read(path.to_s, encoding: 'UTF-8'))
+  data.is_a?(Hash) ? data : {}
+rescue StandardError
+  {}
+end
+
+MESSAGES = load_catalog(LANG_CODE).freeze
+
+def t(key, fallback, vars = {})
+  template = MESSAGES.fetch(key, fallback)
+  template.gsub(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/) do
+    k = Regexp.last_match(1).to_sym
+    vars.fetch(k, Regexp.last_match(0)).to_s
+  end
+end
 
 def deep_merge(base, override)
   merged = base.dup
@@ -21,10 +77,10 @@ def load_yaml_map(path)
   data = YAML.safe_load(File.read(path.to_s), permitted_classes: [], aliases: false)
   return {} if data.nil?
 
-  die("La raíz de #{path} debe ser un objeto/map") unless data.is_a?(Hash)
+  die(t('render.error.yaml_root_object', 'Root of {path} must be an object/map', path: path)) unless data.is_a?(Hash)
   data
 rescue StandardError => e
-  die("No se pudo parsear YAML: #{e.message}")
+  die(t('render.error.yaml_parse', 'Could not parse YAML: {error}', error: e.message))
 end
 
 def die(msg)
@@ -41,8 +97,8 @@ end
 cfg_path = Pathname.new(ARGV[0].to_s)
 root_dir = Pathname.new(ARGV[1].to_s)
 
-die('Uso: render-native.rb <config.yaml> <toolkit_root>') if cfg_path.to_s.empty? || root_dir.to_s.empty?
-die("Config no encontrada: #{cfg_path}") unless cfg_path.file?
+die(t('render.error.usage', 'Usage: render-native.rb <config.yaml> <toolkit_root>')) if cfg_path.to_s.empty? || root_dir.to_s.empty?
+die(t('render.error.config_not_found', 'Config not found: {path}', path: cfg_path)) unless cfg_path.file?
 
 cfg_user = load_yaml_map(cfg_path)
 cfg = cfg_user
@@ -51,7 +107,7 @@ defaults_path = root_dir + 'defaults/default.yaml'
 cfg = deep_merge(load_yaml_map(defaults_path), cfg) if defaults_path.file?
 
 %w[project document input output pandoc].each do |k|
-  die("Sección obligatoria inválida o ausente: #{k}") unless cfg[k].is_a?(Hash)
+  die(t('render.error.required_section', 'Invalid or missing required section: {section}', section: k)) unless cfg[k].is_a?(Hash)
 end
 
 project = cfg['project']
@@ -61,21 +117,21 @@ output = cfg['output']
 pandoc = cfg['pandoc']
 
 base_dir = project['base_dir']
-die("'project.base_dir' es obligatorio") if base_dir.nil? || base_dir.to_s.strip.empty?
+die(t('render.error.base_dir_required', "'project.base_dir' is required")) if base_dir.nil? || base_dir.to_s.strip.empty?
 
 base_dir_path = (cfg_path.dirname + base_dir.to_s).expand_path
 title = document['title'] || output['file_prefix'] || 'document'
 suffix = resolve_suffix(output['suffix'])
 
 chapters_dir = (base_dir_path + (input_cfg['chapters_dir'] || 'chapters').to_s).expand_path
-die("No existe input.chapters_dir: #{chapters_dir}") unless chapters_dir.directory?
+die(t('render.error.chapters_dir_missing', 'input.chapters_dir does not exist: {path}', path: chapters_dir)) unless chapters_dir.directory?
 
 explicit_files = input_cfg['explicit_files'] || []
 selected_files = []
 if explicit_files.is_a?(Array) && !explicit_files.empty?
   explicit_files.each do |name|
     candidate = (chapters_dir + name.to_s).expand_path
-    die("Archivo explícito no encontrado: #{candidate}") unless candidate.file?
+    die(t('render.error.explicit_file_missing', 'Explicit file not found: {path}', path: candidate)) unless candidate.file?
     selected_files << candidate
   end
 else
@@ -83,7 +139,7 @@ else
   selected_files = Dir.glob((chapters_dir + pattern).to_s).sort.map { |f| Pathname.new(f) }
 end
 
-die('No se encontraron capítulos para renderizar') if selected_files.empty?
+die(t('render.error.no_chapters', 'No chapters found to render')) if selected_files.empty?
 
 output_dir = (base_dir_path + (output['dir'] || 'output').to_s).expand_path
 output_dir.mkpath
@@ -155,7 +211,7 @@ if emoji_cfg.fetch('enabled', true)
   prepare_script = (root_dir + 'scripts/prepare-emojis.py').to_s
   if File.file?(prepare_script)
     ok_prep = system('python3', prepare_script, md_out.to_s, emoji_dir.to_s, (root_dir + 'filters/emoji').to_s)
-    puts '⚠️  No se pudieron preparar emojis automáticamente; continúo con fallback' unless ok_prep
+    puts "⚠️  #{t('render.warn.emoji_prepare', 'Could not auto-prepare emojis; continuing with fallback')}" unless ok_prep
   end
 end
 
@@ -193,10 +249,10 @@ ENV['PANDOC_EMOJI_DIR'] = emoji_dir.to_s
 ENV['PANDOC_MERMAID_OUTPUT_DIR'] = mermaid_output_dir.to_s
 ENV['PANDOC_MERMAID_BACKGROUND'] = (mermaid_cfg['background'] || 'transparent').to_s
 
-puts '✅ Modo nativo activo'
-puts "📄 Markdown combinado: #{md_out}"
-puts "🖨️  PDF de salida: #{pdf_out}"
-puts "▶ Ejecutando: #{cmd.join(' ')}"
+puts "✅ #{t('render.mode.native', 'Native mode enabled')}"
+puts "📄 #{t('render.output.markdown', 'Merged markdown: {path}', path: md_out)}"
+puts "🖨️  #{t('render.output.pdf', 'Output PDF: {path}', path: pdf_out)}"
+puts "▶ #{t('render.command.exec', 'Running: {command}', command: cmd.join(' '))}"
 
 ok = system(*cmd)
 exit(ok ? 0 : ($?.exitstatus || 1))

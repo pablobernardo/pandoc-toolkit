@@ -2,7 +2,28 @@
 
 Esta guía deja el comando `pandoc-pdf` disponible para humanos, CI y agentes (OpenCode).
 
-## 0) Instalación rápida (recomendada)
+## 0) Instalación rápida desde release (recomendada para usuarios finales)
+
+Sin clonar repositorio:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/install.sh | bash
+```
+
+Esto instala en layout gestionado:
+
+- `~/.local/share/pandoc-pdf/versions/<tag>`
+- `~/.local/share/pandoc-pdf/current`
+- `~/.local/bin/pandoc-pdf`
+
+Si el repositorio de releases es privado, exporta token antes de instalar:
+
+```bash
+export PANDOC_PDF_UPDATE_TOKEN=<tu_token>
+# o GH_TOKEN
+```
+
+## 1) Instalación de desarrollo (desde repo)
 
 Desde la raíz del repositorio:
 
@@ -32,7 +53,18 @@ bash scripts/bootstrap.sh --yes          # equivalente no interactivo
 bash scripts/bootstrap.sh --ci           # equivalente CI
 ```
 
-## 1) Dependencias del sistema
+## 2) Instalar desde repo local al layout gestionado
+
+Clonado el repo, querés instalarlo en el mismo layout que usa `install-release` (para que `update` funcione correctamente) y además tener la opción de crear el symlink de desarrollo:
+
+```bash
+make install-local          # instala al layout gestionado (versions/<tag> + current + bin)
+make install-local-dev      # instala al layout gestionado + symlink pandoc-pdf-dev -> repo
+```
+
+Esto copia el contenido del repo a `~/.local/share/pandoc-pdf/versions/<VERSION>` y crea los symlinks correspondientes. Usando `install-local-dev`, además queda disponible `pandoc-pdf-dev` que apunta directamente al repo.
+
+## 3) Dependencias del sistema
 
 Instala al menos:
 
@@ -57,13 +89,21 @@ python3 -m pip install pyyaml
 
 Opción B — usar Ruby con YAML stdlib (viene por defecto en macOS).
 
-## 2) Instalar el CLI en PATH
+## 4) Instalar el CLI en PATH (desarrollo)
 
-Desde la raíz de este repo:
+> **Para usuarios finales:** usar `make install-local` (sección 2) en lugar de esta sección.
+
+Esta sección describe la instalación para **desarrollo local** (desde el repo clonado):
 
 ```bash
 mkdir -p "$HOME/.local/bin"
 ln -sf "$(pwd)/bin/pandoc-pdf" "$HOME/.local/bin/pandoc-pdf"
+```
+
+Para desarrollo activo, crear también el symlink de desarrollo que evita colisiones con la instalación estable:
+
+```bash
+ln -sfn "$(pwd)" ~/.local/bin/pandoc-pdf-dev
 ```
 
 Agregar PATH (si no está):
@@ -78,7 +118,7 @@ Persistencia (zsh):
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
 ```
 
-## 3) Verificar instalación
+## 5) Verificar instalación
 
 ```bash
 pandoc-pdf doctor
@@ -86,13 +126,13 @@ pandoc-pdf doctor
 
 Si devuelve `Doctor OK`, el entorno está listo.
 
-## 4) Probar con config de ejemplo
+## 6) Probar con config de ejemplo
 
 ```bash
 pandoc-pdf validate-config -c examples/pdf.config.example.yaml
 ```
 
-## 5) Integración con OpenCode (modelos)
+## 7) Integración con OpenCode (modelos)
 
 Para que los modelos usen el comando correctamente:
 

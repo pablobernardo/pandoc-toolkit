@@ -34,20 +34,19 @@ El estado cambiante (fase actual, decisiones recientes, tareas abiertas) vive en
 - `scripts/render-native.rb`
 - `scripts/prepare-emojis.py`
 - `scripts/preflight.sh`
+- `scripts/check-i18n.py`
+- `scripts/install.sh`
+- `scripts/package-release.sh`
 - `schemas/pdf-config.schema.json`
 - `examples/pdf.config.example.yaml`
 - `defaults/default.yaml`
-- `tests/run.sh`
-- `tests/fixtures/`
-- `tests/integration/`
-- `.github/workflows/ci.yml`
-- `docs/install.md`
-- `docs/usage.md`
-- `docs/migration.md`
 - `templates/default.tex`
+- `i18n/locales/`
 
 ## Planned Additions (target)
-- (sin pendientes estructurales en este bloque)
+- Hardening de rollback y observabilidad del updater (rollback robusto, logs de operación).
+- Evaluación de publicación SARIF y definición de umbrales de severidad para SAST/secrets en CI.
+- Soporte Windows (futuro, sin romper contrato CLI actual).
 
 ## Config Contract (`pdf.config.yaml`)
 Campos obligatorios o esperados del contrato:
@@ -62,11 +61,17 @@ Campos obligatorios o esperados del contrato:
 - `compat`
 
 ## Expected CLI Commands
-- `pandoc-pdf --version`
-- `pandoc-pdf info`
-- `pandoc-pdf render -c pdf.config.yaml`
-- `pandoc-pdf validate-config -c pdf.config.yaml`
+- `pandoc-pdf --version` / `pandoc-pdf version`
+- `pandoc-pdf info` / `pandoc-pdf info --json`
+- `pandoc-pdf locale show`
+- `pandoc-pdf locale set <lang>`
+- `pandoc-pdf locale set --project <lang>`
+- `pandoc-pdf update --check`
+- `pandoc-pdf update`
+- `pandoc-pdf update --to <tag>`
 - `pandoc-pdf doctor`
+- `pandoc-pdf validate-config -c <file>`
+- `pandoc-pdf render -c <file>`
 
 ## Breaking Change Policy
 - Todo cambio breaking en CLI, contrato de config o comportamiento por defecto requiere:

@@ -1,7 +1,6 @@
 # Pandoc PDF Toolkit
 
 ![CI](https://img.shields.io/badge/CI-configured-blue)
-
 [![CI](https://github.com/pablobernardo/pandoc-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/pablobernardo/pandoc-toolkit/actions/workflows/ci.yml)
 
 Toolkit agnóstico para generar PDF con Pandoc vía CLI (`pandoc-pdf`) usando configuración declarativa por repo consumidor (`pdf.config.yaml`).
@@ -11,6 +10,12 @@ Toolkit agnóstico para generar PDF con Pandoc vía CLI (`pandoc-pdf`) usando co
 ```bash
 pandoc-pdf --version
 pandoc-pdf info
+pandoc-pdf locale show
+pandoc-pdf locale set es
+pandoc-pdf locale set --project es
+pandoc-pdf update --check
+pandoc-pdf update
+pandoc-pdf update --to v1.2.3
 pandoc-pdf doctor
 pandoc-pdf validate-config -c pdf.config.yaml
 pandoc-pdf render -c pdf.config.yaml
@@ -22,6 +27,19 @@ pandoc-pdf render -c pdf.config.yaml
 make bootstrap
 ```
 
+Instalación desde repo local al layout gestionado (para desarrollo con `update` funcional):
+
+```bash
+make install-local
+make install-local-dev   # + symlink pandoc-pdf-dev -> repo
+```
+
+Instalación estable desde la última release (sin clonar):
+
+```bash
+make install-release
+```
+
 Opcional (sin ejecutar cambios):
 
 ```bash
@@ -30,6 +48,12 @@ make bootstrap-dry
 make bootstrap-yes
 # modo CI (no interactivo, sin symlink)
 make bootstrap-ci
+```
+
+Si clonas el repositorio, crea el enlace simbólico a `pandoc-pdf-dev` para evitar
+que se sobrescriba en las actualizaciones:
+```bash 
+ln -sfn <ruta_al_repo>/bin/pandoc-pdf ~/.local/bin/pandoc-pdf-dev
 ```
 
 ## CI
@@ -76,6 +100,7 @@ gh run view --log
 - `docs/architecture.md` — arquitectura y tradeoffs
 - `docs/release-readiness.md` — checklist de preparación de release
 - `docs/dependency-policy.md` — política de dependencias y actualizaciones
+- `docs/i18n.md` — estrategia de internacionalización del CLI
 - `.atl/skill-registry.md` — normas operativas para agentes
 - `CONTEXT.md` — estado operativo actual del proyecto
 - `.github/SECURITY.md` — política de seguridad y reporte de vulnerabilidades

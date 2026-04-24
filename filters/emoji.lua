@@ -37,12 +37,20 @@ local function svg_for_hex(hex)
   return first_existing(placeholders)
 end
 
--- Normaliza codepoints: ignora VS-15/VS-16 y ZWJ para que no rompan el flujo
+-- Normaliza codepoints: ignora VS-15/VS-16, ZWJ y combining keycap (U+20E3)
 local function normalize_cp(cp)
-  if cp == 0xFE0F or cp == 0xFE0E or cp == 0x200D then
+  if cp == 0xFE0F or cp == 0xFE0E or cp == 0x200D or cp == 0x20E3 then
     return nil
   end
   return cp
+end
+
+local function is_variation_selector(cp)
+  return cp == 0xFE0F or cp == 0xFE0E
+end
+
+local function is_keycap_base(cp)
+  return cp == 0x0023 or cp == 0x002A or (cp >= 0x0030 and cp <= 0x0039)
 end
 
 -- Solo tratar como "emoji" los codepoints de los planos de Emoji
@@ -66,17 +74,46 @@ local function is_emojiish(cp)
   return false
 end
 
-local function emoji_image_for_cp(cp)
-  local hex = string.format("%x", cp)
+local function emoji_image_for_hex(hex)
   local svg = svg_for_hex(hex)
   if not svg then return nil end
   local attr = pandoc.Attr("", {"emoji"}, {["height"] = "1.05em"})
   return pandoc.Image({}, svg, "", attr)
 end
 
+local function emoji_image_for_cp(cp)
+  local hex = string.format("%x", cp)
+  return emoji_image_for_hex(hex)
+end
+
 local function string_to_inlines(text)
+  local cps = {}
+  for _, cp in utf8.codes(text) do
+    table.insert(cps, cp)
+  end
+
   local out = {}
-  for _, rawcp in utf8.codes(text) do
+  local i = 1
+  while i <= #cps do
+    local rawcp = cps[i]
+
+    -- Keycap sequence: [0-9#*] + optional VS + U+20E3
+    if is_keycap_base(rawcp) then
+      local j = i + 1
+      if j <= #cps and is_variation_selector(cps[j]) then
+        j = j + 1
+      end
+      if j <= #cps and cps[j] == 0x20E3 then
+        local keycap_hex = string.format("%x-20e3", rawcp)
+        local keycap_img = emoji_image_for_hex(keycap_hex)
+        if keycap_img then
+          table.insert(out, keycap_img)
+          i = j + 1
+          goto continue
+        end
+      end
+    end
+
     local cp = normalize_cp(rawcp)
     if cp then
       if is_emojiish(cp) then
@@ -91,6 +128,8 @@ local function string_to_inlines(text)
         table.insert(out, pandoc.Str(utf8.char(cp)))
       end
     end
+    i = i + 1
+    ::continue::
   end
   return out
 end

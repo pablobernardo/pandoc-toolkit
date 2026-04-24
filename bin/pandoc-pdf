@@ -24,23 +24,839 @@ done
 
 SCRIPT_DIR="$(cd -P -- "$(path_dirname "$SOURCE_PATH")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+GLOBAL_CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/pandoc-pdf"
+GLOBAL_ENV_FILE="${GLOBAL_CONFIG_DIR}/config.env"
+PROJECT_ENV_FILE="${ROOT_DIR}/.pandoc-pdf.env"
+
+read_lang_from_env_file() {
+  local file_path="$1"
+  [[ -f "$file_path" ]] || return 1
+
+  local line value
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"
+    case "$line" in
+      *PANDOC_PDF_LANG=*)
+        value="${line#*=}"
+        value="${value%\"}"
+        value="${value#\"}"
+        value="${value%\'}"
+        value="${value#\'}"
+        if [[ -n "$value" ]]; then
+          printf '%s\n' "$value"
+          return 0
+        fi
+        ;;
+    esac
+  done < "$file_path"
+
+  return 1
+}
+
+read_global_lang() {
+  read_lang_from_env_file "$GLOBAL_ENV_FILE"
+}
+
+read_project_lang() {
+  read_lang_from_env_file "$PROJECT_ENV_FILE"
+}
+
+resolve_lang() {
+  local raw="${1:-}"
+  if [[ -z "$raw" ]]; then
+    if [[ -n "${PANDOC_PDF_LANG:-}" ]]; then
+      raw="${PANDOC_PDF_LANG}"
+    else
+      local from_project=""
+      local from_global=""
+      from_project="$(read_project_lang || true)"
+      if [[ -n "$from_project" ]]; then
+        raw="$from_project"
+      else
+        from_global="$(read_global_lang || true)"
+        if [[ -n "$from_global" ]]; then
+          raw="$from_global"
+        else
+          raw="${LC_ALL:-${LANG:-en}}"
+        fi
+      fi
+    fi
+  fi
+
+  raw="${raw%%.*}"
+  raw="${raw%%@*}"
+  raw="${raw//_/-}"
+  local lower
+  lower="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
+
+  local exact="$lower"
+  local base="${lower%%-*}"
+
+  if is_supported_locale "$exact"; then
+    printf '%s\n' "$exact"
+    return 0
+  fi
+  if is_supported_locale "$base"; then
+    printf '%s\n' "$base"
+    return 0
+  fi
+
+  if is_supported_locale "en"; then
+    printf 'en\n'
+    return 0
+  fi
+
+  local first_locale
+  first_locale=""
+  while IFS= read -r first_locale; do
+    printf '%s\n' "$first_locale"
+    return 0
+  done < <(list_supported_locales)
+
+  printf 'en\n'
+}
+
+list_supported_locales() {
+  local dir="$ROOT_DIR/i18n/locales"
+  if [[ -d "$dir" ]]; then
+    local file
+    for file in "$dir"/*.json; do
+      [[ -e "$file" ]] || continue
+      file="${file##*/}"
+      printf '%s\n' "${file%.json}"
+    done | sort -u
+    return 0
+  fi
+
+  printf 'en\n'
+}
+
+is_supported_locale() {
+  local candidate="$1"
+  local loc
+  while IFS= read -r loc; do
+    [[ "$loc" == "$candidate" ]] && return 0
+  done < <(list_supported_locales)
+  return 1
+}
+
+supported_locales_csv() {
+  local first=true
+  local loc
+  while IFS= read -r loc; do
+    if [[ "$first" == true ]]; then
+      printf '%s' "$loc"
+      first=false
+    else
+      printf ', %s' "$loc"
+    fi
+  done < <(list_supported_locales)
+}
+
+CLI_LANG="$(resolve_lang)"
+
+t() {
+  local key="$1"
+  local fallback="$2"
+  local locale_file="$ROOT_DIR/i18n/locales/${CLI_LANG}.json"
+
+  if [[ -f "$locale_file" ]] && command -v python3 >/dev/null 2>&1; then
+    local translated
+    translated="$(python3 - "$locale_file" "$key" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+key = sys.argv[2]
+try:
+    data = json.load(open(path, "r", encoding="utf-8"))
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+value = data.get(key, "")
+print(value if isinstance(value, str) else "")
+PY
+)"
+    if [[ -n "$translated" ]]; then
+      printf '%s\n' "$translated"
+      return 0
+    fi
+  fi
+
+  printf '%s\n' "$fallback"
+}
+
+interp() {
+  local template="$1"
+  local token="$2"
+  local value="$3"
+  printf '%s\n' "${template//\{$token\}/$value}"
+}
 
 usage() {
-  cat <<'EOF'
+  local usage_title
+  local notes_title
+  local note_render_native
+  local note_yaml_parsing
+  usage_title="$(t "cli.help.usage" "Usage:")"
+  notes_title="$(t "cli.help.notes" "Notes:")"
+  note_render_native="$(t "cli.help.note.render_native" "render uses native implementation.")"
+  note_yaml_parsing="$(t "cli.help.note.yaml_parsing" "Config parsing supports Python+PyYAML or Ruby stdlib YAML.")"
+
+  cat <<EOF
 Pandoc PDF Toolkit CLI
 
-Usage:
+${usage_title}
   pandoc-pdf --version
   pandoc-pdf version
   pandoc-pdf info [--json]
+  pandoc-pdf locale [show|set <lang>|set --project <lang>]
+  pandoc-pdf update --check
+  pandoc-pdf update
+  pandoc-pdf update --to vX.Y.Z
   pandoc-pdf doctor [-c <pdf.config.yaml>]
   pandoc-pdf validate-config -c <pdf.config.yaml>
   pandoc-pdf render -c <pdf.config.yaml>
 
-Notes:
-  - render usa implementación nativa.
-  - Config parsing supports Python+PyYAML o Ruby stdlib YAML.
+${notes_title}
+  - ${note_render_native}
+  - ${note_yaml_parsing}
 EOF
+}
+
+parse_semver() {
+  local raw="$1"
+  raw="${raw#v}"
+  if [[ "$raw" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+    printf '%s %s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
+    return 0
+  fi
+  return 1
+}
+
+semver_compare() {
+  local left="$1"
+  local right="$2"
+  local lmaj lmin lpat rmaj rmin rpat
+
+  if ! read -r lmaj lmin lpat < <(parse_semver "$left"); then
+    return 2
+  fi
+  if ! read -r rmaj rmin rpat < <(parse_semver "$right"); then
+    return 2
+  fi
+
+  if (( lmaj > rmaj )); then return 1; fi
+  if (( lmaj < rmaj )); then return 255; fi
+  if (( lmin > rmin )); then return 1; fi
+  if (( lmin < rmin )); then return 255; fi
+  if (( lpat > rpat )); then return 1; fi
+  if (( lpat < rpat )); then return 255; fi
+  return 0
+}
+
+update_api_base() {
+  printf '%s\n' "${PANDOC_PDF_UPDATE_API_BASE:-https://api.github.com/repos/pablobernardo/pandoc-toolkit/releases}"
+}
+
+print_update_auth_hint_if_missing() {
+  local token
+  token="${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}"
+  if [[ -z "$token" ]]; then
+    echo "ℹ️  $(t "cli.update.error.auth_hint" "for private repositories set PANDOC_PDF_UPDATE_TOKEN or GH_TOKEN")" >&2
+  fi
+}
+
+fetch_release_json() {
+  local url="$1"
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "❌ $(t "cli.update.error.missing_curl" "update requires curl to check releases")" >&2
+    return 1
+  fi
+
+  local token
+  token="${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}"
+
+  local -a curl_args
+  curl_args=(-fsSL "$url")
+  if [[ -n "$token" ]]; then
+    curl_args=(-fsSL -H "Authorization: Bearer ${token}" "$url")
+  fi
+
+  local response
+  if ! response="$(curl "${curl_args[@]}" 2>/dev/null)"; then
+    local msg
+    msg="$(t "cli.update.error.fetch_latest" "could not fetch latest release metadata from {url}")"
+    echo "❌ $(interp "$msg" "url" "$url")" >&2
+    print_update_auth_hint_if_missing
+    return 1
+  fi
+  printf '%s\n' "$response"
+}
+
+release_tag_from_json() {
+  local response="$1"
+  local tag=""
+  if command -v python3 >/dev/null 2>&1; then
+    tag="$(python3 - <<'PY' "$response"
+import json
+import sys
+payload = sys.argv[1]
+try:
+    data = json.loads(payload)
+except Exception:
+    print("")
+    raise SystemExit(0)
+value = data.get("tag_name", "")
+print(value if isinstance(value, str) else "")
+PY
+)"
+  else
+    tag="$(printf '%s\n' "$response" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+  fi
+  printf '%s\n' "$tag"
+}
+
+release_asset_url_from_json() {
+  local response="$1"
+  local asset_name="$2"
+  local asset_url=""
+  if command -v python3 >/dev/null 2>&1; then
+    asset_url="$(python3 - <<'PY' "$response" "$asset_name"
+import json
+import sys
+payload = sys.argv[1]
+name = sys.argv[2]
+try:
+    data = json.loads(payload)
+except Exception:
+    print("")
+    raise SystemExit(0)
+for asset in data.get("assets", []):
+    if isinstance(asset, dict) and asset.get("name") == name:
+        url = asset.get("browser_download_url", "")
+        print(url if isinstance(url, str) else "")
+        raise SystemExit(0)
+print("")
+PY
+)"
+  else
+    asset_url="$(printf '%s\n' "$response" | sed -n "s/.*\"name\"[[:space:]]*:[[:space:]]*\"${asset_name}\".*\"browser_download_url\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n1)"
+  fi
+  printf '%s\n' "$asset_url"
+}
+
+download_file() {
+  local url="$1"
+  local destination="$2"
+  local token
+  token="${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}"
+
+  local -a curl_args
+  curl_args=(-fsSL "$url" -o "$destination")
+  if [[ -n "$token" ]]; then
+    curl_args=(-fsSL -H "Authorization: Bearer ${token}" "$url" -o "$destination")
+  fi
+
+  if ! curl "${curl_args[@]}"; then
+    local msg
+    msg="$(t "cli.update.error.download" "could not download {url}")"
+    echo "❌ $(interp "$msg" "url" "$url")" >&2
+    return 1
+  fi
+}
+
+compute_sha256() {
+  local file_path="$1"
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file_path" | awk '{print $1}'
+    return 0
+  fi
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file_path" | awk '{print $1}'
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - <<'PY' "$file_path"
+import hashlib
+import sys
+path = sys.argv[1]
+h = hashlib.sha256()
+with open(path, 'rb') as f:
+    for chunk in iter(lambda: f.read(1024 * 1024), b''):
+        h.update(chunk)
+print(h.hexdigest())
+PY
+    return 0
+  fi
+  return 1
+}
+
+verify_checksum() {
+  local artifact_path="$1"
+  local checksums_path="$2"
+  local artifact_name
+  artifact_name="$(basename "$artifact_path")"
+
+  local expected
+  expected="$(awk -v n="$artifact_name" '$2==n {print $1; exit}' "$checksums_path")"
+  if [[ -z "$expected" ]]; then
+    local msg
+    msg="$(t "cli.update.error.checksum_entry" "checksums.txt does not include {artifact}")"
+    echo "❌ $(interp "$msg" "artifact" "$artifact_name")"
+    return 1
+  fi
+
+  local actual
+  if ! actual="$(compute_sha256 "$artifact_path")"; then
+    echo "❌ $(t "cli.update.error.checksum_tool" "no SHA256 tool available (shasum/sha256sum/python3)")"
+    return 1
+  fi
+
+  if [[ "$expected" != "$actual" ]]; then
+    local msg
+    msg="$(t "cli.update.error.checksum_mismatch" "checksum mismatch for {artifact}")"
+    echo "❌ $(interp "$msg" "artifact" "$artifact_name")"
+    return 1
+  fi
+}
+
+detect_update_platform() {
+  local os arch
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  arch="$(uname -m | tr '[:upper:]' '[:lower:]')"
+
+  case "$os" in
+    darwin) os="darwin" ;;
+    linux) os="linux" ;;
+    *)
+      local msg
+      msg="$(t "cli.update.error.unsupported_platform" "unsupported platform: {os}/{arch}")"
+      msg="$(interp "$msg" "os" "$os")"
+      echo "❌ $(interp "$msg" "arch" "$arch")" >&2
+      return 1
+      ;;
+  esac
+
+  case "$arch" in
+    x86_64|amd64) arch="amd64" ;;
+    arm64|aarch64) arch="arm64" ;;
+    *)
+      local msg
+      msg="$(t "cli.update.error.unsupported_platform" "unsupported platform: {os}/{arch}")"
+      msg="$(interp "$msg" "os" "$os")"
+      echo "❌ $(interp "$msg" "arch" "$arch")" >&2
+      return 1
+      ;;
+  esac
+
+  printf '%s %s\n' "$os" "$arch"
+}
+
+resolve_install_dir() {
+  local explicit_dir="$1"
+  if [[ -n "$explicit_dir" ]]; then
+    printf '%s\n' "$explicit_dir"
+    return 0
+  fi
+
+  local current_bin
+  current_bin="$(command -v pandoc-pdf || true)"
+  if [[ -n "$current_bin" ]]; then
+    local current_dir
+    current_dir="$(dirname "$current_bin")"
+    if [[ -w "$current_dir" ]]; then
+      printf '%s\n' "$current_dir"
+      return 0
+    fi
+  fi
+
+  printf '%s\n' "${HOME}/.local/bin"
+}
+
+resolve_managed_home() {
+  printf '%s\n' "${PANDOC_PDF_UPDATE_HOME:-${HOME}/.local/share/pandoc-pdf}"
+}
+
+run_update() {
+  local check_only=false
+  local explicit_tag=""
+  local non_interactive=false
+  local dry_run=false
+  local install_dir_arg=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --check)
+        check_only=true
+        shift
+        ;;
+      --to)
+        explicit_tag="${2:-}"
+        if [[ -z "$explicit_tag" ]]; then
+          local msg
+          msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+          echo "❌ $(interp "$msg" "arg" "--to")"
+          exit 1
+        fi
+        shift 2
+        ;;
+      --yes)
+        non_interactive=true
+        shift
+        ;;
+      --dry-run)
+        dry_run=true
+        shift
+        ;;
+      --install-dir)
+        install_dir_arg="${2:-}"
+        if [[ -z "$install_dir_arg" ]]; then
+          local msg
+          msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+          echo "❌ $(interp "$msg" "arg" "--install-dir")"
+          exit 1
+        fi
+        shift 2
+        ;;
+      *)
+        local msg
+        msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+        echo "❌ $(interp "$msg" "arg" "$1")"
+        usage
+        exit 1
+        ;;
+    esac
+  done
+
+  local invoked_name
+  invoked_name="$(basename "$0")"
+  if [[ "$invoked_name" == "pandoc-pdf-dev" && "$check_only" != true ]]; then
+    echo "❌ $(t "cli.update.error.dev_blocked" "update is disabled for pandoc-pdf-dev; use pandoc-pdf")" >&2
+    exit 1
+  fi
+
+  local current
+  current="$(get_version_value)"
+
+  local api_base latest_url release_url release_json release_tag
+  api_base="$(update_api_base)"
+  latest_url="${api_base}/latest"
+
+  if [[ "$check_only" == true ]]; then
+    if ! release_json="$(fetch_release_json "$latest_url")"; then
+      exit 1
+    fi
+    release_tag="$(release_tag_from_json "$release_json")"
+    if [[ -z "$release_tag" ]]; then
+      echo "❌ $(t "cli.update.error.invalid_latest" "latest release payload has no valid tag_name")"
+      exit 1
+    fi
+
+    local latest_norm
+    latest_norm="${release_tag#v}"
+    echo "$(interp "$(t "cli.update.check.current" "Current version: {version}")" "version" "$current")"
+    echo "$(interp "$(t "cli.update.check.latest" "Latest version: {version}")" "version" "$latest_norm")"
+
+    local cmp
+    semver_compare "$current" "$latest_norm" || cmp=$?
+    cmp=${cmp:-0}
+    case "$cmp" in
+      0)
+        echo "$(t "cli.update.check.up_to_date" "You are already on the latest stable version")"
+        ;;
+      255)
+        local msg
+        msg="$(t "cli.update.check.available" "Update available: {current} -> {latest}")"
+        msg="$(interp "$msg" "current" "$current")"
+        echo "$(interp "$msg" "latest" "$latest_norm")"
+        ;;
+      1)
+        echo "$(t "cli.update.check.local_newer" "Local version is newer than latest stable release")"
+        ;;
+      *)
+        local msg
+        msg="$(t "cli.update.error.invalid_semver" "could not compare versions: local={local}, latest={latest}")"
+        msg="$(interp "$msg" "local" "$current")"
+        echo "❌ $(interp "$msg" "latest" "$latest_norm")"
+        exit 1
+        ;;
+    esac
+    return 0
+  fi
+
+  if [[ -n "$explicit_tag" ]]; then
+    release_tag="${explicit_tag}"
+    [[ "$release_tag" == v* ]] || release_tag="v${release_tag}"
+    release_url="${api_base}/tags/${release_tag}"
+  else
+    if ! release_json="$(fetch_release_json "$latest_url")"; then
+      exit 1
+    fi
+    release_tag="$(release_tag_from_json "$release_json")"
+    if [[ -z "$release_tag" ]]; then
+      echo "❌ $(t "cli.update.error.invalid_latest" "latest release payload has no valid tag_name")"
+      exit 1
+    fi
+    release_url="${api_base}/tags/${release_tag}"
+  fi
+
+  if ! release_json="$(fetch_release_json "$release_url")"; then
+    exit 1
+  fi
+
+  local os arch
+  if ! read -r os arch < <(detect_update_platform); then
+    exit 1
+  fi
+
+  local artifact_name checksums_name
+  artifact_name="pandoc-pdf_${os}_${arch}.tar.gz"
+  checksums_name="checksums.txt"
+
+  local artifact_url checksums_url
+  artifact_url="$(release_asset_url_from_json "$release_json" "$artifact_name")"
+  checksums_url="$(release_asset_url_from_json "$release_json" "$checksums_name")"
+
+  if [[ -z "$artifact_url" ]]; then
+    local msg
+    msg="$(t "cli.update.error.asset_not_found" "artifact not found in release: {artifact}")"
+    echo "❌ $(interp "$msg" "artifact" "$artifact_name")"
+    exit 1
+  fi
+  if [[ -z "$checksums_url" ]]; then
+    echo "❌ $(t "cli.update.error.checksums_missing" "release does not provide checksums.txt")"
+    exit 1
+  fi
+
+  local install_dir managed_home target_bin
+  install_dir="$(resolve_install_dir "$install_dir_arg")"
+  managed_home="$(resolve_managed_home)"
+  target_bin="${install_dir}/pandoc-pdf"
+
+  local version_dir current_link
+  version_dir="${managed_home}/versions/${release_tag}"
+  current_link="${managed_home}/current"
+
+  if [[ "$dry_run" == true ]]; then
+    echo "$(interp "$(t "cli.update.plan.version" "Target version: {version}")" "version" "${release_tag#v}")"
+    echo "$(interp "$(t "cli.update.plan.artifact" "Artifact: {artifact}")" "artifact" "$artifact_name")"
+    echo "$(interp "$(t "cli.update.plan.download" "Download URL: {url}")" "url" "$artifact_url")"
+    echo "$(interp "$(t "cli.update.plan.install_path" "Install path: {path}")" "path" "$target_bin")"
+    echo "$(interp "$(t "cli.update.plan.managed_root" "Managed root: {path}")" "path" "$managed_home")"
+    echo "$(interp "$(t "cli.update.plan.version_dir" "Version dir: {path}")" "path" "$version_dir")"
+    return 0
+  fi
+
+  mkdir -p "$install_dir"
+  mkdir -p "${managed_home}/versions"
+
+  local tmpdir artifact_path checksums_path extract_dir new_bin
+  tmpdir="$(mktemp -d)"
+  artifact_path="${tmpdir}/${artifact_name}"
+  checksums_path="${tmpdir}/${checksums_name}"
+  extract_dir="${tmpdir}/extract"
+  mkdir -p "$extract_dir"
+
+  if ! download_file "$artifact_url" "$artifact_path"; then
+    rm -rf "$tmpdir"
+    exit 1
+  fi
+  if ! download_file "$checksums_url" "$checksums_path"; then
+    rm -rf "$tmpdir"
+    exit 1
+  fi
+
+  if ! verify_checksum "$artifact_path" "$checksums_path"; then
+    rm -rf "$tmpdir"
+    exit 1
+  fi
+
+  if ! tar -xzf "$artifact_path" -C "$extract_dir"; then
+    echo "❌ $(t "cli.update.error.extract" "could not extract downloaded artifact")"
+    rm -rf "$tmpdir"
+    exit 1
+  fi
+
+  new_bin="${extract_dir}/pandoc-pdf"
+  if [[ ! -x "$new_bin" && -x "${extract_dir}/bin/pandoc-pdf" ]]; then
+    new_bin="${extract_dir}/bin/pandoc-pdf"
+  fi
+  if [[ ! -x "$new_bin" ]]; then
+    echo "❌ $(t "cli.update.error.invalid_artifact" "downloaded artifact does not contain an executable pandoc-pdf")"
+    rm -rf "$tmpdir"
+    exit 1
+  fi
+
+  local install_root
+  install_root="${tmpdir}/install-root"
+  mkdir -p "$install_root"
+
+  if [[ -x "${extract_dir}/bin/pandoc-pdf" ]]; then
+    cp -R "${extract_dir}/." "$install_root/"
+  else
+    mkdir -p "${install_root}/bin"
+    cp "$new_bin" "${install_root}/bin/pandoc-pdf"
+    chmod +x "${install_root}/bin/pandoc-pdf"
+  fi
+
+  if [[ "$non_interactive" != true ]]; then
+    local prompt
+    prompt="$(interp "$(t "cli.update.confirm" "Install {version} to {path}? [y/N]")" "version" "${release_tag#v}")"
+    prompt="$(interp "$prompt" "path" "$target_bin")"
+    printf '%s ' "$prompt"
+    read -r answer
+    case "$answer" in
+      y|Y|yes|YES) ;;
+      *)
+        echo "$(t "cli.update.cancelled" "Update cancelled")"
+        rm -rf "$tmpdir"
+        exit 1
+        ;;
+    esac
+  fi
+
+  local previous_current=""
+  local previous_target=""
+  [[ -L "$current_link" ]] && previous_current="$(readlink "$current_link" || true)"
+  [[ -L "$target_bin" ]] && previous_target="$(readlink "$target_bin" || true)"
+
+  local failed=true
+  rm -rf "$version_dir"
+  if mkdir -p "$version_dir" \
+    && cp -R "$install_root/." "$version_dir/" \
+    && ln -sfn "$version_dir" "$current_link" \
+    && ln -sfn "$current_link/bin/pandoc-pdf" "$target_bin"; then
+    local installed_version
+    installed_version="$($target_bin --version 2>/dev/null | awk '{print $2}')"
+    echo "$(interp "$(t "cli.update.installed" "Updated to version {version}")" "version" "${installed_version:-${release_tag#v}}")"
+    failed=false
+  fi
+
+  if [[ "$failed" == true ]]; then
+    if [[ -n "$previous_current" ]]; then
+      ln -sfn "$previous_current" "$current_link" || true
+    fi
+    if [[ -n "$previous_target" ]]; then
+      ln -sfn "$previous_target" "$target_bin" || true
+    fi
+    rm -rf "$version_dir"
+    rm -rf "$tmpdir"
+    echo "❌ $(t "cli.update.error.install_failed" "update installation failed")"
+    exit 1
+  fi
+
+  rm -rf "$tmpdir"
+  return 0
+}
+
+detect_lang_source() {
+  if [[ -n "${PANDOC_PDF_LANG:-}" ]]; then
+    printf 'PANDOC_PDF_LANG\n'
+    return 0
+  fi
+  if read_project_lang >/dev/null 2>&1; then
+    printf 'project_config\n'
+    return 0
+  fi
+  if read_global_lang >/dev/null 2>&1; then
+    printf 'global_config\n'
+    return 0
+  fi
+  if [[ -n "${LC_ALL:-}" ]]; then
+    printf 'LC_ALL\n'
+    return 0
+  fi
+  if [[ -n "${LANG:-}" ]]; then
+    printf 'LANG\n'
+    return 0
+  fi
+  printf 'default\n'
+}
+
+normalize_lang_or_fail() {
+  local raw="$1"
+  raw="${raw%%.*}"
+  raw="${raw%%@*}"
+  raw="${raw//_/-}"
+  local lower
+  lower="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
+
+  if is_supported_locale "$lower"; then
+    printf '%s\n' "$lower"
+    return 0
+  fi
+
+  local base="${lower%%-*}"
+  if is_supported_locale "$base"; then
+    printf '%s\n' "$base"
+    return 0
+  fi
+
+  return 1
+}
+
+run_locale() {
+  local action="${1:-show}"
+  shift || true
+
+  case "$action" in
+    show)
+      echo "$(t "cli.locale.show.language" "language"): ${CLI_LANG}"
+      echo "$(t "cli.locale.show.source" "source"): $(detect_lang_source)"
+      ;;
+    set)
+      local scope="global"
+      if [[ "${1:-}" == "--project" ]]; then
+        scope="project"
+        shift || true
+      fi
+
+      local target="${1:-}"
+      if [[ -z "$target" ]]; then
+        echo "❌ $(t "cli.locale.error.missing_target" "You must provide a locale or --team")"
+        exit 1
+      fi
+      shift || true
+
+      if [[ $# -gt 0 ]]; then
+        local msg
+        msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+        echo "❌ $(interp "$msg" "arg" "$1")"
+        exit 1
+      fi
+
+      local normalized
+      if ! normalized="$(normalize_lang_or_fail "$target")"; then
+        local msg
+        msg="$(t "cli.locale.error.unsupported" "Unsupported locale: {locale}. Supported: {supported}")"
+        msg="$(interp "$msg" "locale" "$target")"
+        echo "❌ $(interp "$msg" "supported" "$(supported_locales_csv)")"
+        exit 1
+      fi
+
+      if [[ "$scope" == "project" ]]; then
+        printf 'export PANDOC_PDF_LANG=%s\n' "$normalized" > "$PROJECT_ENV_FILE"
+        local saved_msg
+        saved_msg="$(t "cli.locale.set.project.saved" "Project locale saved to: {path}")"
+        echo "$(interp "$saved_msg" "path" "$PROJECT_ENV_FILE")"
+      else
+        mkdir -p "$GLOBAL_CONFIG_DIR"
+        printf 'export PANDOC_PDF_LANG=%s\n' "$normalized" > "$GLOBAL_ENV_FILE"
+        local saved_msg
+        saved_msg="$(t "cli.locale.set.global.saved" "Global locale saved to: {path}")"
+        echo "$(interp "$saved_msg" "path" "$GLOBAL_ENV_FILE")"
+      fi
+      ;;
+    *)
+      local msg
+      msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+      echo "❌ $(interp "$msg" "arg" "$action")"
+      usage
+      exit 1
+      ;;
+  esac
 }
 
 CONFIG_PARSER=""
@@ -156,9 +972,9 @@ PY
     return 0
   fi
 
-  echo "❌ No hay parser YAML disponible"
-  echo "   Opción 1: python3 -m pip install pyyaml"
-  echo "   Opción 2: instalar Ruby con stdlib YAML"
+  echo "❌ $(t "cli.error.no_yaml_parser" "No YAML parser available")"
+  echo "   $(t "cli.error.no_yaml_parser.option1" "Option 1: python3 -m pip install pyyaml")"
+  echo "   $(t "cli.error.no_yaml_parser.option2" "Option 2: install Ruby with stdlib YAML")"
   exit 1
 }
 
@@ -166,19 +982,21 @@ run_doctor() {
   local config_path="${1:-}"
   local preflight_script="$ROOT_DIR/scripts/preflight.sh"
   if [[ ! -x "$preflight_script" ]]; then
-    echo "❌ No se encontró preflight ejecutable: $preflight_script"
+    local msg
+    msg="$(t "cli.error.preflight_not_found" "Executable preflight script not found: {path}")"
+    echo "❌ $(interp "$msg" "path" "$preflight_script")"
     exit 1
   fi
   if [[ -n "$config_path" ]]; then
-    /bin/bash "$preflight_script" -c "$config_path"
+    PANDOC_PDF_LANG="$CLI_LANG" /bin/bash "$preflight_script" -c "$config_path"
   else
-    /bin/bash "$preflight_script"
+    PANDOC_PDF_LANG="$CLI_LANG" /bin/bash "$preflight_script"
   fi
 }
 
 validate_config_file() {
   local config_path="$1"
-  python3 "$ROOT_DIR/scripts/validate-config.py" "$config_path" "$ROOT_DIR/schemas/pdf-config.schema.json"
+  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/validate-config.py" "$config_path" "$ROOT_DIR/schemas/pdf-config.schema.json"
 }
 
 run_render() {
@@ -186,11 +1004,11 @@ run_render() {
   ensure_config_parser
 
   if [[ "${CONFIG_PARSER}" == "python" ]]; then
-    python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR"
+    PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR"
     return 0
   fi
 
-  ruby "$ROOT_DIR/scripts/render-native.rb" "$config_path" "$ROOT_DIR"
+  PANDOC_PDF_LANG="$CLI_LANG" ruby "$ROOT_DIR/scripts/render-native.rb" "$config_path" "$ROOT_DIR"
 }
 
 main() {
@@ -214,13 +1032,21 @@ main() {
             shift
             ;;
           *)
-            echo "❌ Argumento no reconocido: $1"
+            local msg
+            msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+            echo "❌ $(interp "$msg" "arg" "$1")"
             usage
             exit 1
             ;;
         esac
       done
       show_info "$output_format"
+      ;;
+    locale)
+      run_locale "$@"
+      ;;
+    update)
+      run_update "$@"
       ;;
     doctor)
       local config=""
@@ -231,7 +1057,9 @@ main() {
             shift 2
             ;;
           *)
-            echo "❌ Argumento no reconocido: $1"
+            local msg
+            msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+            echo "❌ $(interp "$msg" "arg" "$1")"
             usage
             exit 1
             ;;
@@ -248,7 +1076,9 @@ main() {
             shift 2
             ;;
           *)
-            echo "❌ Argumento no reconocido: $1"
+            local msg
+            msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+            echo "❌ $(interp "$msg" "arg" "$1")"
             usage
             exit 1
             ;;
@@ -256,7 +1086,7 @@ main() {
       done
 
       if [[ -z "$config" ]]; then
-        echo "❌ Debes indicar -c <pdf.config.yaml>"
+        echo "❌ $(t "cli.error.config_required" "You must provide -c <pdf.config.yaml>")"
         exit 1
       fi
       validate_config_file "$config"
@@ -270,7 +1100,9 @@ main() {
             shift 2
             ;;
           *)
-            echo "❌ Argumento no reconocido: $1"
+            local msg
+            msg="$(t "cli.error.unknown_arg" "Unknown argument: {arg}")"
+            echo "❌ $(interp "$msg" "arg" "$1")"
             usage
             exit 1
             ;;
@@ -278,7 +1110,7 @@ main() {
       done
 
       if [[ -z "$config" ]]; then
-        echo "❌ Debes indicar -c <pdf.config.yaml>"
+        echo "❌ $(t "cli.error.config_required" "You must provide -c <pdf.config.yaml>")"
         exit 1
       fi
 
@@ -289,7 +1121,9 @@ main() {
       usage
       ;;
     *)
-      echo "❌ Comando desconocido: ${command}"
+      local msg
+      msg="$(t "cli.error.unknown_command" "Unknown command: {command}")"
+      echo "❌ $(interp "$msg" "command" "${command}")"
       usage
       exit 1
       ;;

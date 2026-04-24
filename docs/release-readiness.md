@@ -2,7 +2,7 @@
 
 Checklist de referencia para decidir si el toolkit está listo para publicar una versión.
 
-## Estado actual (pre-1.0.0)
+## Estado actual (post-1.0.0)
 
 ## Decisiones de gobierno aprobadas
 
