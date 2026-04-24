@@ -2,7 +2,7 @@
 
 Checklist de referencia para decidir si el toolkit está listo para publicar una versión.
 
-## Estado actual (post-1.1.0)
+## Estado actual (post-1.1.2)
 
 ## Decisiones de gobierno aprobadas
 
@@ -32,8 +32,10 @@ Resultado: **cumplido para corte 1.0.0**.
 
 Política operativa actual:
 
-- En `push` a `main/master`: se suben SARIF (Semgrep + Gitleaks) a GitHub Security.
-- En `pull_request`: se ejecutan escaneos y umbrales, pero no se sube SARIF para evitar fallos por permisos restringidos del token de integración.
+- El upload SARIF está controlado por variable de repositorio: `ENABLE_SARIF_UPLOAD`.
+- Si `ENABLE_SARIF_UPLOAD=true`, en `push` a `main/master` se suben SARIF (Semgrep + Gitleaks) a GitHub Security.
+- En `pull_request` se ejecutan escaneos y umbrales, sin upload SARIF.
+- Si Code Scanning no está habilitado, dejar `ENABLE_SARIF_UPLOAD` desactivado evita fallos del workflow.
 
 ### Updater (`pandoc-pdf update`) — estado operacional
 

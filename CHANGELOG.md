@@ -16,6 +16,22 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ---
 
+## [1.1.2] - released
+
+### Fixed
+
+- Workflow `Security` estabilizado para repos con Code Scanning deshabilitado:
+  - upload SARIF condicionado por variable de repositorio `ENABLE_SARIF_UPLOAD == true`.
+  - se mantienen siempre los escaneos y la política de umbrales en CI.
+
+### Changed
+
+- Política operativa de seguridad actualizada para feature-flag de SARIF:
+  - por defecto, CI valida seguridad sin depender de Code Scanning.
+  - cuando se habilite Code Scanning, activar `ENABLE_SARIF_UPLOAD=true` para publicar SARIF en `push` a `main/master`.
+
+---
+
 ## [1.1.1] - released
 
 ### Fixed
