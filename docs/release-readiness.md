@@ -30,6 +30,11 @@ Resultado: **cumplido para corte 1.0.0**.
 - [x] Publicar reportes SARIF en GitHub Security para SAST/secrets.
 - [x] Definir política de umbrales de severidad y fallo en CI de seguridad.
 
+Política operativa actual:
+
+- En `push` a `main/master`: se suben SARIF (Semgrep + Gitleaks) a GitHub Security.
+- En `pull_request`: se ejecutan escaneos y umbrales, pero no se sube SARIF para evitar fallos por permisos restringidos del token de integración.
+
 ### Updater (`pandoc-pdf update`) — estado operacional
 
 - [x] Descarga de artefacto con verificación SHA256.

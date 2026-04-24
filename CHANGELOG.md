@@ -16,6 +16,22 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ---
 
+## [1.1.1] - released
+
+### Fixed
+
+- Workflow `Security` ajustado para evitar fallos de permisos en PR (`Resource not accessible by integration`):
+  - SARIF se publica sólo en `push` a `main/master`.
+  - En `pull_request` se mantienen escaneos y umbrales, sin upload SARIF.
+- Permisos del workflow endurecidos/afinados para upload en ramas protegidas (`actions: read`, `security-events: write`).
+- Acción de upload SARIF actualizada a `github/codeql-action/upload-sarif@v4`.
+
+### Changed
+
+- Documentación de release-readiness actualizada con la política operativa de seguridad por evento (`push` vs `pull_request`).
+
+---
+
 ## [1.1.0] - released
 
 ### Added
