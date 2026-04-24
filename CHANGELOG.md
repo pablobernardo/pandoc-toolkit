@@ -9,18 +9,16 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ## [Unreleased]
 
-### Planned (v1.1.0)
-
-- Evaluar publicación de hallazgos de seguridad en formato SARIF.
-- Definir umbrales de severidad y política de fallo para SAST/secrets en CI.
-- Completar hardening del updater (`pandoc-pdf update`) con rollback robusto y mejoras de observabilidad.
-
 ### Maintenance
 
 - Consolidar revisión periódica de dependencias fijadas y documentar validación por actualización.
 - Documentar guía técnica de i18n para facilitar alta de nuevos idiomas y validación de seguridad.
 
-### Added (Unreleased)
+---
+
+## [1.1.0] - released
+
+### Added
 
 - i18n del CLI y scripts de runtime con catálogos por clave en `en`, `es`, `pt` y `gl`.
 - Comando `pandoc-pdf locale` simplificado a `show`, `set <lang>` y `set --project <lang>`.
@@ -35,6 +33,8 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 - Instalación gestionada del updater en directorio versionado (`~/.local/share/pandoc-pdf/versions/<tag>`) con puntero `current`.
 - Bloqueo explícito de instalación con `update` cuando el comando se invoca como `pandoc-pdf-dev`.
 - Workflow automático de release (`.github/workflows/release.yml`) para publicar artefactos y `checksums.txt` en tags `v*`.
+- Publicación de resultados de seguridad en SARIF para Semgrep y Gitleaks en GitHub Security.
+- Política de umbrales de severidad para CI de seguridad mediante `scripts/enforce-security-thresholds.py`.
 - Scripts de distribución:
   - `scripts/package-release.sh` (genera tarballs + checksums)
   - `scripts/install.sh` (instalación estable desde latest release sin clonar repo)
@@ -43,18 +43,20 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
   - `tests/l2-local.sh` (semi-real)
   - `tests/l3-local.sh` (full runtime con Mermaid)
 
-### Changed (Unreleased)
+### Changed
 
 - CI L2/L3 ahora reutiliza los runners locales (`tests/l2-local.sh`, `tests/l3-local.sh`) para evitar drift entre ejecución local y GitHub Actions.
+- Workflow de seguridad actualizado para subir SARIF y aplicar umbrales de severidad explícitos.
 - Documentación sincronizada con el estado real del toolkit (comando `locale`, locales activos, estado operativo y guía i18n).
 
-### Fixed (Unreleased)
+### Fixed
 
 - Eliminados acoples i18n residuales:
   - mensajes hardcodeados en `scripts/check-i18n.py` y `scripts/prepare-emojis.py`
   - etiquetas hardcodeadas de `locale show` en `bin/pandoc-pdf`
   - cobertura incompleta de claves `bootstrap.*` en catálogos.
 - Homogeneizado texto operativo en raíz (`Makefile`) para evitar mensajes legacy fuera de la estrategia i18n actual.
+- Hardening del updater con validación post-instalación por versión esperada, rollback robusto y logging operativo opcional (`PANDOC_PDF_UPDATE_LOG_FILE`, `PANDOC_PDF_UPDATE_VERBOSE`).
 
 ---
 

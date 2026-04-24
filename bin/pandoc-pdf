@@ -479,6 +479,24 @@ resolve_managed_home() {
   printf '%s\n' "${PANDOC_PDF_UPDATE_HOME:-${HOME}/.local/share/pandoc-pdf}"
 }
 
+update_log_event() {
+  local level="$1"
+  local message="$2"
+  local ts
+  ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+  if [[ -n "${PANDOC_PDF_UPDATE_LOG_FILE:-}" ]]; then
+    local log_dir
+    log_dir="$(dirname "$PANDOC_PDF_UPDATE_LOG_FILE")"
+    mkdir -p "$log_dir" 2>/dev/null || true
+    printf '%s [%s] %s\n' "$ts" "$level" "$message" >> "$PANDOC_PDF_UPDATE_LOG_FILE" 2>/dev/null || true
+  fi
+
+  if [[ "${PANDOC_PDF_UPDATE_VERBOSE:-0}" == "1" ]]; then
+    printf 'ℹ️  [%s] %s\n' "$level" "$message" >&2
+  fi
+}
+
 run_update() {
   local check_only=false
   local explicit_tag=""
@@ -659,22 +677,28 @@ run_update() {
   extract_dir="${tmpdir}/extract"
   mkdir -p "$extract_dir"
 
+  update_log_event "INFO" "update start: tag=${release_tag}, artifact=${artifact_name}, install_dir=${install_dir}, managed_home=${managed_home}"
+
   if ! download_file "$artifact_url" "$artifact_path"; then
+    update_log_event "ERROR" "download failed: artifact=${artifact_url}"
     rm -rf "$tmpdir"
     exit 1
   fi
   if ! download_file "$checksums_url" "$checksums_path"; then
+    update_log_event "ERROR" "download failed: checksums=${checksums_url}"
     rm -rf "$tmpdir"
     exit 1
   fi
 
   if ! verify_checksum "$artifact_path" "$checksums_path"; then
+    update_log_event "ERROR" "checksum verification failed: artifact=${artifact_name}"
     rm -rf "$tmpdir"
     exit 1
   fi
 
   if ! tar -xzf "$artifact_path" -C "$extract_dir"; then
     echo "❌ $(t "cli.update.error.extract" "could not extract downloaded artifact")"
+    update_log_event "ERROR" "artifact extraction failed: ${artifact_path}"
     rm -rf "$tmpdir"
     exit 1
   fi
@@ -685,6 +709,7 @@ run_update() {
   fi
   if [[ ! -x "$new_bin" ]]; then
     echo "❌ $(t "cli.update.error.invalid_artifact" "downloaded artifact does not contain an executable pandoc-pdf")"
+    update_log_event "ERROR" "artifact validation failed: no executable pandoc-pdf"
     rm -rf "$tmpdir"
     exit 1
   fi
@@ -711,16 +736,38 @@ run_update() {
       y|Y|yes|YES) ;;
       *)
         echo "$(t "cli.update.cancelled" "Update cancelled")"
+        update_log_event "INFO" "update cancelled by user"
         rm -rf "$tmpdir"
         exit 1
         ;;
     esac
   fi
 
-  local previous_current=""
-  local previous_target=""
-  [[ -L "$current_link" ]] && previous_current="$(readlink "$current_link" || true)"
-  [[ -L "$target_bin" ]] && previous_target="$(readlink "$target_bin" || true)"
+  local previous_current_kind="none"
+  local previous_current_value=""
+  local previous_current_backup=""
+  if [[ -L "$current_link" ]]; then
+    previous_current_kind="symlink"
+    previous_current_value="$(readlink "$current_link" || true)"
+  elif [[ -e "$current_link" ]]; then
+    previous_current_kind="path"
+    previous_current_backup="${tmpdir}/rollback-current"
+    cp -R "$current_link" "$previous_current_backup"
+  fi
+
+  local previous_target_kind="none"
+  local previous_target_value=""
+  local previous_target_backup=""
+  if [[ -L "$target_bin" ]]; then
+    previous_target_kind="symlink"
+    previous_target_value="$(readlink "$target_bin" || true)"
+  elif [[ -e "$target_bin" ]]; then
+    previous_target_kind="path"
+    previous_target_backup="${tmpdir}/rollback-target"
+    cp -R "$target_bin" "$previous_target_backup"
+  fi
+
+  update_log_event "INFO" "captured rollback state: current=${previous_current_kind}, target=${previous_target_kind}"
 
   local failed=true
   rm -rf "$version_dir"
@@ -728,21 +775,56 @@ run_update() {
     && cp -R "$install_root/." "$version_dir/" \
     && ln -sfn "$version_dir" "$current_link" \
     && ln -sfn "$current_link/bin/pandoc-pdf" "$target_bin"; then
+    local version_output
     local installed_version
-    installed_version="$($target_bin --version 2>/dev/null | awk '{print $2}')"
-    echo "$(interp "$(t "cli.update.installed" "Updated to version {version}")" "version" "${installed_version:-${release_tag#v}}")"
-    failed=false
+    version_output="$($target_bin --version 2>/dev/null || true)"
+    installed_version="$(printf '%s\n' "$version_output" | awk 'NR==1 {print $2}')"
+
+    if parse_semver "$installed_version" >/dev/null 2>&1 && [[ "$installed_version" == "${release_tag#v}" ]]; then
+      echo "$(interp "$(t "cli.update.installed" "Updated to version {version}")" "version" "${installed_version}")"
+      update_log_event "INFO" "update complete: installed_version=${installed_version}"
+      failed=false
+    else
+      update_log_event "ERROR" "post-install version validation failed: expected=${release_tag#v}, actual=${installed_version:-unknown}, raw='${version_output}'"
+    fi
   fi
 
   if [[ "$failed" == true ]]; then
-    if [[ -n "$previous_current" ]]; then
-      ln -sfn "$previous_current" "$current_link" || true
-    fi
-    if [[ -n "$previous_target" ]]; then
-      ln -sfn "$previous_target" "$target_bin" || true
-    fi
+    update_log_event "WARN" "installation failed; starting rollback"
+
+    case "$previous_current_kind" in
+      symlink)
+        if [[ -n "$previous_current_value" ]]; then
+          ln -sfn "$previous_current_value" "$current_link" || true
+        fi
+        ;;
+      path)
+        rm -rf "$current_link" || true
+        cp -R "$previous_current_backup" "$current_link" || true
+        ;;
+      none)
+        rm -rf "$current_link" || true
+        ;;
+    esac
+
+    case "$previous_target_kind" in
+      symlink)
+        if [[ -n "$previous_target_value" ]]; then
+          ln -sfn "$previous_target_value" "$target_bin" || true
+        fi
+        ;;
+      path)
+        rm -rf "$target_bin" || true
+        cp -R "$previous_target_backup" "$target_bin" || true
+        ;;
+      none)
+        rm -rf "$target_bin" || true
+        ;;
+    esac
+
     rm -rf "$version_dir"
     rm -rf "$tmpdir"
+    update_log_event "WARN" "rollback completed"
     echo "❌ $(t "cli.update.error.install_failed" "update installation failed")"
     exit 1
   fi

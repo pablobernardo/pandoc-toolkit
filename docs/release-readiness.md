@@ -2,7 +2,7 @@
 
 Checklist de referencia para decidir si el toolkit está listo para publicar una versión.
 
-## Estado actual (post-1.0.0)
+## Estado actual (post-1.1.0)
 
 ## Decisiones de gobierno aprobadas
 
@@ -27,6 +27,16 @@ Resultado: **cumplido para corte 1.0.0**.
 - [x] Fijar versiones de dependencias críticas en bootstrap/CI (por ejemplo `@mermaid-js/mermaid-cli`).
 - [x] Añadir automatización de actualizaciones (`dependabot.yml`).
 - [x] Añadir escaneo básico de secretos/SAST en CI.
+- [x] Publicar reportes SARIF en GitHub Security para SAST/secrets.
+- [x] Definir política de umbrales de severidad y fallo en CI de seguridad.
+
+### Updater (`pandoc-pdf update`) — estado operacional
+
+- [x] Descarga de artefacto con verificación SHA256.
+- [x] Instalación gestionada por versión con puntero `current`.
+- [x] Validación post-instalación de versión esperada.
+- [x] Rollback robusto al estado anterior cuando falla validación final.
+- [x] Logging operacional opcional (`PANDOC_PDF_UPDATE_LOG_FILE`, `PANDOC_PDF_UPDATE_VERBOSE`).
 
 ### Integración L3 (seguimiento)
 

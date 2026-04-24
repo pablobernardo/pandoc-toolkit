@@ -282,6 +282,9 @@ run_update_check_tests() {
   local tmpbin
   tmpbin="$(mktemp -d)"
 
+  local current_version
+  current_version="$("$CLI" --version | awk '{print $2}')"
+
   cat >"${tmpbin}/curl" <<'EOF'
 #!/bin/bash
 set -euo pipefail
@@ -303,16 +306,16 @@ EOF
   out="$(mktemp)"
 
   set +e
-  TMP_UPDATE_TAG=v1.0.1 PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
+  TMP_UPDATE_TAG=v9.9.9 PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
   local code=$?
   set -e
   assert_exit_code "0" "$code" "update --check succeeds when release metadata is available"
   assert_contains "$out" "Current version: [0-9]+\.[0-9]+\.[0-9]+" "update --check prints current version"
-  assert_contains "$out" "Latest version: 1\.0\.1" "update --check prints latest version"
-  assert_contains "$out" "Update available: [0-9]+\.[0-9]+\.[0-9]+ -> 1\.0\.1" "update --check reports available update"
+  assert_contains "$out" "Latest version: 9\.9\.9" "update --check prints latest version"
+  assert_contains "$out" "Update available: [0-9]+\.[0-9]+\.[0-9]+ -> 9\.9\.9" "update --check reports available update"
 
   set +e
-  TMP_UPDATE_TAG=v1.0.0 PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
+  TMP_UPDATE_TAG="v${current_version}" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "update --check succeeds when already up to date"
@@ -503,6 +506,150 @@ run_update_dev_command_blocked_test() {
   assert_contains "$out" "update is disabled for pandoc-pdf-dev" "update reports dev invocation policy"
 
   rm -rf "$sandbox"
+  rm -f "$out"
+}
+
+run_update_rollback_on_validation_failure_test() {
+  local sandbox
+  sandbox="$(mktemp -d)"
+  local tmpbin
+  tmpbin="$(mktemp -d)"
+
+  local os arch artifact_name
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  arch="$(uname -m | tr '[:upper:]' '[:lower:]')"
+  case "$os" in
+    darwin) os="darwin" ;;
+    linux) os="linux" ;;
+    *) os="linux" ;;
+  esac
+  case "$arch" in
+    x86_64|amd64) arch="amd64" ;;
+    arm64|aarch64) arch="arm64" ;;
+    *) arch="amd64" ;;
+  esac
+  artifact_name="pandoc-pdf_${os}_${arch}.tar.gz"
+
+  local payload_dir
+  payload_dir="${sandbox}/payload"
+  mkdir -p "$payload_dir"
+  cat >"${payload_dir}/pandoc-pdf" <<'EOF'
+#!/bin/bash
+echo "pandoc-pdf invalid"
+EOF
+  chmod +x "${payload_dir}/pandoc-pdf"
+
+  local artifact_path
+  artifact_path="${sandbox}/${artifact_name}"
+  tar -czf "$artifact_path" -C "$payload_dir" pandoc-pdf
+
+  local checksums_path
+  checksums_path="${sandbox}/checksums.txt"
+  local sha
+  sha="$(python3 - <<'PY' "$artifact_path"
+import hashlib
+import sys
+path = sys.argv[1]
+h = hashlib.sha256()
+with open(path, 'rb') as f:
+    for chunk in iter(lambda: f.read(1024 * 1024), b''):
+        h.update(chunk)
+print(h.hexdigest())
+PY
+)"
+  printf '%s  %s\n' "$sha" "$artifact_name" >"$checksums_path"
+
+  local release_json
+  release_json="${sandbox}/release.json"
+  cat >"$release_json" <<EOF
+{"tag_name":"v9.9.9","assets":[{"name":"${artifact_name}","browser_download_url":"https://downloads.invalid/${artifact_name}"},{"name":"checksums.txt","browser_download_url":"https://downloads.invalid/checksums.txt"}]}
+EOF
+
+  cat >"${tmpbin}/curl" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+url=""
+out=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o|--output)
+      out="$2"
+      shift 2
+      ;;
+    -H|--header)
+      shift 2
+      ;;
+    -f|-s|-S|-L|--fail|--silent|--show-error|--location)
+      shift
+      ;;
+    *)
+      url="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ "$url" == *"/releases/tags/"* ]]; then
+  cat "$TMP_UPDATE_RELEASE_JSON"
+  exit 0
+fi
+
+if [[ "$url" == "https://downloads.invalid/${TMP_UPDATE_ARTIFACT}" ]]; then
+  cp "$TMP_UPDATE_ARTIFACT_PATH" "$out"
+  exit 0
+fi
+
+if [[ "$url" == "https://downloads.invalid/checksums.txt" ]]; then
+  cp "$TMP_UPDATE_CHECKSUMS_PATH" "$out"
+  exit 0
+fi
+
+exit 1
+EOF
+  chmod +x "${tmpbin}/curl"
+
+  local managed_root install_dir
+  managed_root="${sandbox}/managed"
+  install_dir="${sandbox}/bin"
+  mkdir -p "${managed_root}/versions/v1.0.0/bin" "$install_dir"
+
+  cat >"${managed_root}/versions/v1.0.0/bin/pandoc-pdf" <<'EOF'
+#!/bin/bash
+echo "pandoc-pdf 1.0.0"
+EOF
+  chmod +x "${managed_root}/versions/v1.0.0/bin/pandoc-pdf"
+
+  ln -sfn "${managed_root}/versions/v1.0.0" "${managed_root}/current"
+  ln -sfn "${managed_root}/current/bin/pandoc-pdf" "${install_dir}/pandoc-pdf"
+
+  local out
+  out="$(mktemp)"
+
+  set +e
+  TMP_UPDATE_RELEASE_JSON="$release_json" TMP_UPDATE_ARTIFACT="$artifact_name" TMP_UPDATE_ARTIFACT_PATH="$artifact_path" TMP_UPDATE_CHECKSUMS_PATH="$checksums_path" PANDOC_PDF_UPDATE_HOME="$managed_root" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --yes --install-dir "$install_dir" >"$out" 2>&1
+  local code=$?
+  set -e
+
+  assert_exit_code "1" "$code" "update rolls back when post-install version validation fails"
+  assert_contains "$out" "update installation failed" "update reports install failure after rollback"
+
+  local after_version
+  after_version="$("${install_dir}/pandoc-pdf")"
+  if [[ "$after_version" == "pandoc-pdf 1.0.0" ]]; then
+    pass "rollback restores previously installed binary"
+  else
+    fail "rollback should restore previous binary"
+  fi
+
+  local current_target
+  current_target="$(readlink "${managed_root}/current" || true)"
+  if [[ "$current_target" == "${managed_root}/versions/v1.0.0" ]]; then
+    pass "rollback restores current pointer"
+  else
+    fail "rollback should restore current pointer"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
   rm -f "$out"
 }
 
@@ -1271,6 +1418,7 @@ main() {
   run_update_check_tests
   run_update_install_tests
   run_update_dev_command_blocked_test
+  run_update_rollback_on_validation_failure_test
   run_install_local_dev_link_test
   run_doctor_success_with_mocked_path
   run_doctor_failure_missing_cmd

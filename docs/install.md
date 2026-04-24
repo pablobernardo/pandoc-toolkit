@@ -59,10 +59,10 @@ Clonado el repo, querés instalarlo en el mismo layout que usa `install-release`
 
 ```bash
 make install-local          # instala al layout gestionado (versions/<tag> + current + bin)
-make install-local-dev      # instala al layout gestionado + symlink pandoc-pdf-dev -> repo
+make install-local-dev      # instala al layout gestionado + symlink pandoc-pdf-dev -> bin/pandoc-pdf del repo
 ```
 
-Esto copia el contenido del repo a `~/.local/share/pandoc-pdf/versions/<VERSION>` y crea los symlinks correspondientes. Usando `install-local-dev`, además queda disponible `pandoc-pdf-dev` que apunta directamente al repo.
+Esto copia el contenido del repo a `~/.local/share/pandoc-pdf/versions/<VERSION>` y crea los symlinks correspondientes. Usando `install-local-dev`, además queda disponible `pandoc-pdf-dev` que apunta al entrypoint de desarrollo `bin/pandoc-pdf` del repo.
 
 ## 3) Dependencias del sistema
 
@@ -103,7 +103,7 @@ ln -sf "$(pwd)/bin/pandoc-pdf" "$HOME/.local/bin/pandoc-pdf"
 Para desarrollo activo, crear también el symlink de desarrollo que evita colisiones con la instalación estable:
 
 ```bash
-ln -sfn "$(pwd)" ~/.local/bin/pandoc-pdf-dev
+ln -sfn "$(pwd)/bin/pandoc-pdf" ~/.local/bin/pandoc-pdf-dev
 ```
 
 Agregar PATH (si no está):

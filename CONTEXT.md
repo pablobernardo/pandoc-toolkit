@@ -7,8 +7,8 @@
 - Estado general: **CLI estable con render nativo por defecto**.
 - Entry point activo: `bin/pandoc-pdf`.
 - Comandos activos: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c`.
-- Estado de suite local verificado: **PASS=135 FAIL=0** (`tests/run.sh`).
-- Versión actual del toolkit (`VERSION`): **1.0.0**.
+- Estado de suite local verificado: **PASS=143 FAIL=0** (`tests/run.sh`).
+- Versión actual del toolkit (`VERSION`): **1.1.0**.
 
 ## Convención activa de i18n (persistente)
 
@@ -56,27 +56,16 @@
 - ✅ `CHANGELOG.md` reorganizado para claridad de release (1.0.0 vs Unreleased).
 - ✅ Workflow de release automático disponible (`.github/workflows/release.yml`) para tags `v*`.
 
-## Gap principal (post 1.0)
+## Gap principal (post 1.1)
 
-Consolidar roadmap de v1.1.0 en dos frentes principales: hardening de reportes de seguridad y updater desde releases.
+Sin bloqueantes técnicos abiertos para el contrato Linux/macOS del toolkit.
 
-## Roadmap pendiente real (post 1.0)
+## Roadmap pendiente real (post 1.1)
 
-1. **Hardening de seguridad en plataforma de releases**
-   - evaluar publicación SARIF en GitHub
-   - definir umbrales de severidad para SAST/secrets
-2. **Actualización del CLI**
-   - ✅ `update --check` implementado
-   - ✅ `update` y `update --to` implementados con descarga + checksum + instalación
-   - ✅ soporte de token para repos privados (`PANDOC_PDF_UPDATE_TOKEN` / `GH_TOKEN`)
-   - ✅ instalación gestionada por versiones (`~/.local/share/pandoc-pdf/versions/<tag>` + `current`)
-   - ✅ bloqueo de instalación cuando se invoca como `pandoc-pdf-dev`
-   - ✅ instalador inicial sin clonado (`scripts/install.sh`) basado en latest release
-   - ⏳ pendiente: hardening final de rollback/observabilidad
-3. **Internacionalización del CLI**
-   - ✅ implementada con catálogos por clave y fallback
-   - ✅ locales actuales: `en`, `es`, `pt`, `gl`
-   - ✅ tests de paridad de claves/placeholders activos
+1. **Soporte Windows (futuro)**
+   - diseñar extensión de updater/instalación sin romper contrato CLI actual.
+2. **Hardening de supply chain (iteración siguiente)**
+   - evaluar firma criptográfica de artefactos (Sigstore/GPG).
 
 ## Riesgos activos
 
@@ -86,11 +75,11 @@ Consolidar roadmap de v1.1.0 en dos frentes principales: hardening de reportes d
 ## Decisiones tomadas
 
 1. **Release 1.0.0 primero**, sin bloquear por updater.
-2. `pandoc-pdf update` se mueve a **v1.1.0**.
-3. SARIF/umbrales de severidad avanzados también quedan para **v1.1.0**.
+2. `pandoc-pdf update` se entregó en **v1.1.0** con rollback + observabilidad.
+3. Seguridad CI en **v1.1.0**: SARIF + umbrales explícitos para SAST/secrets.
 
 ## Próximo hito recomendado
 
-### M2 — Inicio v1.1.0
-1. Completar diseño operacional del updater y artefactos de release.
-2. Cerrar política de severidad y reporting de seguridad en CI.
+### M3 — Preparación multi-plataforma
+1. Diseñar estrategia de soporte Windows en updater/install.
+2. Evaluar firma de artefactos para reforzar supply chain.

@@ -44,8 +44,6 @@ El estado cambiante (fase actual, decisiones recientes, tareas abiertas) vive en
 - `i18n/locales/`
 
 ## Planned Additions (target)
-- Hardening de rollback y observabilidad del updater (rollback robusto, logs de operación).
-- Evaluación de publicación SARIF y definición de umbrales de severidad para SAST/secrets en CI.
 - Soporte Windows (futuro, sin romper contrato CLI actual).
 
 ## Config Contract (`pdf.config.yaml`)
