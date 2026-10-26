@@ -1,112 +1,114 @@
 # Config Contract Alignment (S1)
 
-Rama `feature/config-contract-alignment`. Cierra la divergencia entre `schemas/pdf-config.schema.json` y el runtime, más los quick wins aprobados. Sin cambio breaking de contrato de config.
+Commit SHAs below are from the feature branches; each pull request was squash-merged, so the landed record is in `CHANGELOG.md`.
+
+Branch `feature/config-contract-alignment`. Closes the divergence between `schemas/pdf-config.schema.json` and the runtime, plus the approved quick wins. No breaking config-contract change. Landed in PR #11, squash `9cb7211`.
 
 ## Specs
 
-**S1 — Petición original (verbatim)**
-> revisa este repo a ver que propones para mejorarlo optimizarlo o simplificarlo
+**S1 — Original request (translated from Spanish)**
+> review this repo and tell me what you propose to improve, optimize or simplify it
 
-**S2 — Pregunta de distribución (verbatim)**
-> una vez finalizado todos esos cambios tendremos un ejecutable como ahora independiente? o recomiendas compilar algo en go u otro lenguaje para tenerlo?
+**S2 — Distribution question (translated from Spanish)**
+> once all those changes are finished, will we have an independent executable like now? or do you recommend compiling something in Go or another language to have it?
 
-**S3 — Decisión de distribución (verbatim)**
-> windows no es prioritario pero me gustaria dejar una puerta abierta para implementarlo con go si lo recomiendas y nos aporta valor
+**S3 — Distribution decision (translated from Spanish)**
+> windows is not a priority but I would like to leave a door open to implement it in Go if you recommend it and it adds value
 
-**S4 — Autorización de arranque (verbatim)**
-> me parece bien
+**S4 — Start authorization (translated from Spanish)**
+> sounds good to me
 
-**S5 — Alcance aceptado de S1 (verbatim de la propuesta aprobada)**
-> **S1** | **P1** (contrato vs runtime: 5 campos inertes) + quick wins (`--team`, emoji duplicados, `.env`, pycache en release) | Arregla la mentira del contrato. Sin riesgo alto, con bump menor + nota de migración.
+**S5 — Accepted scope of S1 (translated from the approved proposal)**
+> **S1** | **P1** (contract vs runtime: 5 inert fields) + quick wins (`--team`, duplicated emoji, `.env`, pycache in the release) | Fixes the contract lie. No high risk, with a minor bump + migration note.
 
-**S6 — `input.order` debe ordenar los capítulos**
-`natural` (valor declarado en defaults/examples/fixtures) compara los tramos numéricos como números: `chapter-2.md` antes que `chapter-10.md`. `alphabetical` conserva el orden lexicográfico actual. Cualquier otro valor falla con mensaje localizado que enumera los valores admitidos. Solo aplica cuando `input.explicit_files` está vacío.
+**S6 — `input.order` must sort the chapters**
+`natural` (the value declared in defaults/examples/fixtures) compares the numeric segments as numbers: `chapter-2.md` before `chapter-10.md`. `alphabetical` keeps the current lexicographic order. Any other value fails with a localized message listing the accepted values. Only applies when `input.explicit_files` is empty.
 
-**S7 — `output.keep_merged_markdown` debe controlar el `.md` fusionado**
-`true` (default) lo conserva (comportamiento actual). `false` lo elimina tras un render de pandoc exitoso; si pandoc falla, el `.md` se conserva para diagnóstico.
+**S7 — `output.keep_merged_markdown` must control the merged `.md`**
+`true` (default) keeps it (current behavior). `false` removes it after a successful pandoc render; if pandoc fails, the `.md` is kept for diagnosis.
 
-**S8 — `document.*` debe llegar a la plantilla**
-Con `pandoc.metadata_file` vacío, los campos no vacíos `title`, `subtitle`, `publisher`, `author`, `date`, `rights` se pasan a pandoc como variables de plantilla (`-V campo=valor`). Con `metadata_file` informado, no se pasan (el fichero de metadatos manda), tal como declara `docs/architecture.md` §2 regla 4. `document.title` sigue fijando el nombre de fichero de salida.
+**S8 — `document.*` must reach the template**
+With `pandoc.metadata_file` empty, the non-empty fields `title`, `subtitle`, `publisher`, `author`, `date`, `rights` are passed to pandoc as template variables (`-V field=value`). With `metadata_file` set, they are not passed (the metadata file wins), as `docs/architecture.md` §2 rule 4 declares. `document.title` still sets the output file name.
 
-**S9 — `filters.emoji.include_ballot_icons` debe controlar los dingbats**
-`false` deja los caracteres `☐` (2610), `☑` (2611) y `☒` (2612) sin sustituir por imagen. `true` (default) mantiene la sustitución actual.
+**S9 — `filters.emoji.include_ballot_icons` must control the dingbats**
+`false` leaves the characters `☐` (2610), `☑` (2611) and `☒` (2612) unreplaced by image. `true` (default) keeps the current substitution.
 
-**S10 — `runtime.strict` debe controlar la severidad del preflight**
-`true` (default) falla con exit 1 si falta un comando requerido o el motor TeX. `false` los reporta como advertencias y sale con exit 0.
+**S10 — `runtime.strict` must control preflight severity**
+`true` (default) fails with exit 1 if a required command or the TeX engine is missing. `false` reports them as warnings and exits with 0.
 
-**S11 — Quick wins aprobados**
-- El mensaje de falta de locale no debe mencionar `--team` (la opción real es `--project`).
-- Los SVG `filters/emoji/emoji_u{2610,2611,2612}.svg` son copias byte-idénticas de `filters/emoji/{2610,2611,2612}.svg` y no se referencian: se eliminan.
-- `scripts/package-release.sh` no debe incluir `scripts/__pycache__` en el artefacto ni volver a empaquetar 4 veces el mismo árbol.
-- `--resource-path` debe unirse con el separador de la plataforma, no con `':'` hardcodeado.
+**S11 — Approved quick wins**
+- The missing-locale message must not mention `--team` (the real option is `--project`).
+- The SVGs `filters/emoji/emoji_u{2610,2611,2612}.svg` are byte-identical copies of `filters/emoji/{2610,2611,2612}.svg` and are not referenced: they are removed.
+- `scripts/package-release.sh` must not include `scripts/__pycache__` in the artifact nor repackage the same tree 4 times.
+- `--resource-path` must be joined with the platform separator, not a hardcoded `':'`.
 
-**S12 — Documentación y versión**
-`docs/usage.md`, `docs/migration.md`, `CHANGELOG.md`, `CONTEXT.md` y `VERSION` reflejan la nueva semántica. Bump menor de toolkit (comportamiento añadido, sin configs inválidas).
+**S12 — Documentation and version**
+`docs/usage.md`, `docs/migration.md`, `CHANGELOG.md`, `CONTEXT.md` and `VERSION` reflect the new semantics. Minor toolkit bump (added behavior, no invalid configs).
 
-**S13 — El filtro de emojis no debe alterar texto sin emojis (hallazgo de verificación L2)**
-`filters/emoji.lua` envolvía en `pandoc.Span` todo `Str`, partiendo además cada palabra en un `Str` por carácter. Efecto: cualquier encabezado pasaba a ser "con formato" y pandoc emitía `\\texorpdfstring`, que exige `hyperref` en la plantilla; con plantillas mínimas el render fallaba con `! Undefined control sequence`. Ya fallaba en `master` (L2 exit 43, verificado en worktree de `master`). El filtro debe devolver `nil` cuando no hubo sustitución real.
+**S13 — The emoji filter must not alter text without emojis (L2 verification finding)**
+`filters/emoji.lua` wrapped every `Str` in a `pandoc.Span`, additionally splitting each word into one `Str` per character. Effect: any heading became "formatted" and pandoc emitted `\\texorpdfstring`, which requires `hyperref` in the template; with minimal templates the render failed with `! Undefined control sequence`. It already failed on `master` (L2 exit 43, verified in a `master` worktree). The filter must return `nil` when there was no real substitution.
 
-**Fuera de alcance de S1 (aprobado en el plan)**
-- P2 (retirar renderer Ruby), P3 (unificar i18n en bash), P5 (validador de schema), P7 (partir la suite bash).
-- Plan JSON `--dry-run --json` y P4 (defaults vs validación) → S2/S3.
+**Out of scope of S1 (approved in the plan)**
+- P2 (retire the Ruby renderer), P3 (unify i18n in bash), P5 (schema validator), P7 (split the bash suite).
+- Plan JSON `--dry-run --json` and P4 (defaults vs validation) → S2/S3.
 
 ## Tasks
 
-| ID | S# | Tarea | Ruta | Commit | Estado |
+| ID | S# | Task | Path | Commit | Status |
 | --- | --- | --- | --- | --- | --- |
-| T1 | S6-S10 | Tests RED de los cinco comportamientos (python y ruby) | inline | ae9cb3b | done |
-| T2 | S6-S10 | Implementación en `render-native.py`, `render-native.rb`, `filters/emoji.lua`, `scripts/preflight.py` + claves i18n en 4 locales | inline | 75f6dc9 | done |
-| T3 | S11 | Quick wins: `--team`, SVG duplicados, `package-release.sh`, `os.pathsep` | inline | bfb5d8f | done |
+| T1 | S6-S10 | RED tests for the five behaviors (python and ruby) | inline | #11 `9cb7211` | done |
+| T2 | S6-S10 | Implementation in `render-native.py`, `render-native.rb`, `filters/emoji.lua`, `scripts/preflight.py` + i18n keys in 4 locales | inline | #11 `9cb7211` | done |
+| T3 | S11 | Quick wins: `--team`, duplicated SVGs, `package-release.sh`, `os.pathsep` | inline | #11 `9cb7211` | done |
 | T4 | S12 | Docs, CHANGELOG, CONTEXT, VERSION 1.2.0 | inline | docs slice | done |
-| T5 | S6-S12 | Suite L1 verde + L2 real + differential python/ruby | inline | pendiente |
-| T6 | S13 | Filtro emoji: no reescribir encabezados planos + plantillas de integración con `graphicx`/`hyperref` | inline | pendiente | pendiente |
+| T5 | S6-S12 | L1 suite green + real L2 + python/ruby differential | inline | pending | pending |
+| T6 | S13 | Emoji filter: do not rewrite plain headings + integration templates with `graphicx`/`hyperref` | inline | pending | pending |
 
 ## Log
 
-**L1 — Petición inicial (verbatim)**
-> revisa este repo a ver que propones para mejorarlo optimizarlo o simplificarlo
+**L1 — Initial request (translated from Spanish)**
+> review this repo and tell me what you propose to improve, optimize or simplify it
 
-**L2 — Contexto de distribución (verbatim)**
-> una vez finalizado todos esos cambios tendremos un ejecutable como ahora independiente? o recomiendas compilar algo en go u otro lenguaje para tenerlo?
+**L2 — Distribution context (translated from Spanish)**
+> once all those changes are finished, will we have an independent executable like now? or do you recommend compiling something in Go or another language to have it?
 
-**L3 — Decisión de distribución (verbatim)**
-> windows no es prioritario pero me gustaria dejar una puerta abierta para implementarlo con go si lo recomiendas y nos aporta valor
+**L3 — Distribution decision (translated from Spanish)**
+> windows is not a priority but I would like to leave a door open to implement it in Go if you recommend it and it adds value
 
-**L4 — Autorización (verbatim)**
-> me parece bien
+**L4 — Authorization (translated from Spanish)**
+> sounds good to me
 
-**L5 — Evidencia base (medida antes de tocar código)**
+**L5 — Baseline evidence (measured before touching code)**
 - `bash tests/run.sh` → PASS=145 FAIL=0.
-- `VERSION` = 1.1.3; `CONTEXT.md` declaraba 1.1.0 y PASS 143/113 (deriva).
-- Artefacto real: 4 tarballs de 53K idénticos, 0 binarios; incluye `scripts/__pycache__/*.pyc` (verificado con `tar -tzf`).
-- `python3` local sin PyYAML ⇒ el camino activo en esta máquina es el renderer Ruby. Ambos renderers deben permanecer sincronizados hasta S3.
-- La plantilla `templates/default.tex` usa `$subtitle$`, `$author$`, `$publisher$`, `$date$`, `$rights$` en la portada: hoy se renderizan vacíos porque el runtime nunca los pasa.
+- `VERSION` = 1.1.3; `CONTEXT.md` declared 1.1.0 and PASS 143/113 (drift).
+- Real artifact: 4 identical 53K tarballs, 0 binaries; it includes `scripts/__pycache__/*.pyc` (verified with `tar -tzf`).
+- Local `python3` without PyYAML ⇒ the active path on this machine is the Ruby renderer. Both renderers must stay synchronized until S3.
+- The template `templates/default.tex` uses `$subtitle$`, `$author$`, `$publisher$`, `$date$`, `$rights$` on the cover page: today they render empty because the runtime never passes them.
 
-**L6 — Decisión de implementación (desvío consciente de la recomendación inicial)**
-La propuesta inicial sugería retirar `filters.emoji.include_ballot_icons` y `runtime.strict` del schema. Se decide **implementarlos** en su lugar porque:
-- retirar propiedades con `additionalProperties: false` invalida configs de consumidores (breaking, item 3 de alto riesgo);
-- ambas implementaciones cuestan pocas líneas y eliminan la mentira del contrato sin romper nada.
-Resultado: S1 no rompe ninguna config existente y solo requiere bump menor.
+**L6 — Implementation decision (conscious deviation from the initial recommendation)**
+The initial proposal suggested removing `filters.emoji.include_ballot_icons` and `runtime.strict` from the schema. The decision is to **implement** them instead because:
+- removing properties with `additionalProperties: false` invalidates consumer configs (breaking, high-risk item 3);
+- both implementations cost a few lines and remove the contract lie without breaking anything.
+Result: S1 breaks no existing config and only requires a minor bump.
 
-**L7 — Decisión de no borrar `.env`**
-`/Users/pablo/code/pablobernardo/pandoc-toolkit/.env` contiene `PANDOC_PDF_UPDATE_TOKEN` y está ignorado por git. No se elimina (destructivo, contiene un secreto del usuario). Se documenta la incoherencia para que la decisión sea del mantenedor.
+**L7 — Decision not to delete `.env`**
+`/Users/pablo/code/pablobernardo/pandoc-toolkit/.env` contains `PANDOC_PDF_UPDATE_TOKEN` and is gitignored. It is not deleted (destructive, contains a user secret). The inconsistency is documented so the decision belongs to the maintainer.
 
-**L8 — Cierre de slices (medido en `git show --stat` de cada commit)**
-- `75f6dc9` (implementación) ≈ 295 líneas autoradas: 256 inserciones + 39 borrados sobre 10 ficheros.
-- `bfb5d8f` (higiene de release) ≈ 24 líneas: 11 inserciones + 13 borrados sobre 4 ficheros.
-- `ae9cb3b` (tests) ≈ 570 líneas: 558 inserciones sobre 3 ficheros (2 fixtures nuevas + `tests/run.sh`).
-- `bash tests/run.sh` → **PASS=188 FAIL=0** tras el slice de tests (base medida en L5: PASS=145).
-- `python3 scripts/check-i18n.py` verde con las nuevas claves `doctor.warn.*`, `render.error.order_invalid` y `cli.locale.error.missing_target` en los 4 locales.
-- Nota de proceso: T1 (tests) se materializó en el commit `ae9cb3b`, posterior a la implementación `75f6dc9`; se conservó en commit propio porque `tests/run.sh` es un monolito compartido (ver slice pendiente de partirlo).
+**L8 — Slice closure (measured with `git show --stat` of each feature-branch commit, all landed in #11 `9cb7211`)**
+- Implementation slice ≈ 295 authored lines: 256 insertions + 39 deletions across 10 files.
+- Release-hygiene slice ≈ 24 lines: 11 insertions + 13 deletions across 4 files.
+- Tests slice ≈ 570 lines: 558 insertions across 3 files (2 new fixtures + `tests/run.sh`).
+- `bash tests/run.sh` → **PASS=188 FAIL=0** after the tests slice (baseline measured in L5: PASS=145).
+- `python3 scripts/check-i18n.py` green with the new keys `doctor.warn.*`, `render.error.order_invalid` and `cli.locale.error.missing_target` in the 4 locales.
+- Process note: T1 (tests) materialized in its own feature-branch commit, after the implementation commit; it was kept in a separate commit because `tests/run.sh` is a shared monolith (see the pending slice to split it).
 
-**L9 — Hallazgo en verificación L2: el filtro de emojis rompía plantillas mínimas (pre-existente)**
-L2 fallaba en `master` con exit 43 y `! Undefined control sequence \texorpdfstring`. Verificado en un worktree limpio de `master`, así que no era regresión de este slice.
-Causa raíz: `function Str(el) return pandoc.Span(...) end` en `filters/emoji.lua` envolvía cada `Str` en un `Span` (y `string_to_inlines` generaba un `Str` por carácter). Pandoc emite `\texorpdfstring` para encabezados con formato, y esa macro la define `hyperref`. Plantilla mínima sin `hyperref` ⇒ render roto.
-Fix: el filtro solo envuelve cuando hubo sustitución real; las plantillas de `tests/integration/*/templates/default.tex` cargan `graphicx` y `hyperref` (una plantilla realista debe cargarlos).
+**L9 — Finding in L2 verification: the emoji filter broke minimal templates (pre-existing)**
+L2 failed on `master` with exit 43 and `! Undefined control sequence \texorpdfstring`. Verified in a clean `master` worktree, so it was not a regression of this slice.
+Root cause: `function Str(el) return pandoc.Span(...) end` in `filters/emoji.lua` wrapped every `Str` in a `Span` (and `string_to_inlines` generated one `Str` per character). Pandoc emits `\texorpdfstring` for formatted headings, and that macro is defined by `hyperref`. A minimal template without `hyperref` ⇒ broken render.
+Fix: the filter only wraps when there was a real substitution; the templates in `tests/integration/*/templates/default.tex` load `graphicx` and `hyperref` (a realistic template must load them).
 
-**L10 — Evidencia de verificación final**
+**L10 — Final verification evidence**
 - `bash tests/run.sh` → **PASS=191 FAIL=0**.
-- `bash tests/l2-local.sh` → **exit 0**, `✅ L2 local integration passed` (pandoc + pdflatex reales, PDF y `.md` generados, `-V title=` aplicado, filtros emoji+mermaid activos).
-- `bash tests/l3-local.sh` → **no ejecutable en esta máquina**: `❌ Chromium executable not found. Set PUPPETEER_EXECUTABLE_PATH.` No se reintenta.
-- `python3 scripts/check-i18n.py` → 4 locales, 151 claves.
-- Differential master↔rama: L2 ejecutado en worktree de `master` (fmt: exit 43, mismo `\texorpdfstring`) y en la rama (exit 0) ⇒ la mejora es verificable y la regresión no existe.
+- `bash tests/l2-local.sh` → **exit 0**, `✅ L2 local integration passed` (real pandoc + pdflatex, PDF and `.md` generated, `-V title=` applied, emoji+mermaid filters active).
+- `bash tests/l3-local.sh` → **not runnable on this machine**: `❌ Chromium executable not found. Set PUPPETEER_EXECUTABLE_PATH.` Not retried.
+- `python3 scripts/check-i18n.py` → 4 locales, 151 keys.
+- Differential master↔branch: L2 executed in a `master` worktree (fmt: exit 43, same `\texorpdfstring`) and on the branch (exit 0) ⇒ the improvement is verifiable and the regression does not exist.
