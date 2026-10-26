@@ -55,6 +55,7 @@ after the 1.1.3 release and is **not published**.
 
 ### Fixed
 
+- A dropped Mermaid diagram no longer hides behind a successful render. When `mmdc` is installed but cannot launch a browser, `filters/mermaid.lua` leaves the diagram as a code block and records it; `render` now reports how many diagrams were lost and exits non-zero, and `doctor` renders a test diagram beforehand and prints the fix. `filters.mermaid.enabled: false` remains the explicit way to drop diagrams.
 - `validate-config` silently ignored any JSON Schema keyword outside its own
   subset (`enum`, `pattern`, `$ref`…). It now implements `enum` and a test fails
   if the schema starts using an unsupported keyword.

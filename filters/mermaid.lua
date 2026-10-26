@@ -48,7 +48,15 @@ local function simple_hash(s)
         local cmd = string.format('mmdc -i "%s" -o "%s" -b "%s" -q', infile, outfile, mermaid_background)
         local ok = os.execute(cmd)
         if not ok then
-            io.stderr:write("[mermaid.lua] ERROR: mmdc failed. Diagram left as code block.\n")
+            -- Record the failure so the renderer cannot report success while a
+            -- diagram silently became a code block.
+            local failed = io.open(output_dir .. "/_failed.txt", "a")
+            if failed then
+                failed:write(string.format("%s\n", h))
+                failed:close()
+            end
+            io.stderr:write("[mermaid.lua] ERROR: mmdc failed; diagram " .. h .. " left as a code block.\n")
+            io.stderr:write("[mermaid.lua] Check `pandoc-pdf doctor`: it renders a test diagram and reports the fix.\n")
             return nil
         end
     else

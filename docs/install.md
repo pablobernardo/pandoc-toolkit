@@ -81,6 +81,26 @@ Quick reference for the Mermaid CLI:
 npm i -g @mermaid-js/mermaid-cli
 ```
 
+`mermaid-cli` renders through Puppeteer, which needs a Chromium it can find. Recent versions do **not** download it with the package, so a fresh install fails with `Could not find chrome-headless-shell`.
+
+Pick **one** of these two ways. They are alternatives, not two steps:
+
+| Way | How | When |
+| --- | --- | --- |
+| Let Puppeteer manage its own browser | `npx puppeteer@<same version as mermaid-cli> browsers install chrome-headless-shell` | No Chrome installed, or you want isolation from the desktop browser |
+| Reuse a browser you already have | `export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"` | Chrome or Chromium is already installed |
+
+`npx puppeteer browsers install` without the version pin works too, but pinning it to the Puppeteer version bundled with your `mermaid-cli` guarantees the browser revision it expects.
+
+Rules that avoid the usual breakage:
+
+- **Do not** point `PUPPETEER_EXECUTABLE_PATH` inside `~/.cache/puppeteer`. That path encodes platform and browser revision, and the variable takes precedence over Puppeteer's own resolution, so a pinned cache path breaks after an upgrade even when the right browser is present.
+- **Do not hardcode** either path in a script that runs on several machines. Export it in the shell profile, or in the CI job, where it belongs.
+- Install `mermaid-cli` **one** way. Homebrew and npm can both provide `mmdc`; whichever comes first in `PATH` wins, and mixing them is how a working setup becomes "no browser" after an upgrade.
+- After upgrading `mermaid-cli`, its Puppeteer may expect a different browser revision. Repeat the browser install if `pandoc-pdf doctor` complains.
+
+`pandoc-pdf doctor` verifies this by rendering a test diagram, so the failure surfaces before a long render.
+
 Option A (recommended) — install PyYAML:
 
 ```bash

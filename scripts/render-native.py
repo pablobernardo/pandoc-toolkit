@@ -368,6 +368,10 @@ def execute_plan(plan: dict) -> int:
     env = os.environ.copy()
     env.update(plan["env"])
 
+    mermaid_failures = Path(side_effects["mermaid"]["dir"]) / "_failed.txt"
+    if mermaid_failures.exists():
+        mermaid_failures.unlink(missing_ok=True)
+
     print(f"✅ {t('render.mode.native', 'Native mode enabled')}")
     print(f"📄 {t('render.output.markdown', 'Merged markdown: {path}', path=md_out)}")
     print(f"🖨️  {t('render.output.pdf', 'Output PDF: {path}', path=pdf_out)}")
@@ -376,6 +380,30 @@ def execute_plan(plan: dict) -> int:
     result = subprocess.run(plan["pandoc"]["argv"], env=env)
     if result.returncode == 0 and not side_effects["keep_merged_markdown"]:
         md_out.unlink(missing_ok=True)
+
+    failed = []
+    if mermaid_failures.exists():
+        failed = [line for line in mermaid_failures.read_text(encoding="utf-8").splitlines() if line.strip()]
+        mermaid_failures.unlink(missing_ok=True)
+
+    if result.returncode == 0 and failed:
+        printed = ", ".join(failed[:10])
+        print(
+            t(
+                "render.error.mermaid_failed",
+                "❌ {count} Mermaid diagram(s) could not be rendered and would print as code: {diagrams}",
+                count=len(failed),
+                diagrams=printed,
+            )
+        )
+        print(
+            t(
+                "render.error.mermaid_failed.hint",
+                "   Run `pandoc-pdf doctor` to diagnose, or set filters.mermaid.enabled: false to drop the diagrams on purpose.",
+            )
+        )
+        return 1
+
     return result.returncode
 
 

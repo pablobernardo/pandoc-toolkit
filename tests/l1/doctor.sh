@@ -190,3 +190,46 @@ EOF
   rm -rf "$tmpbin" "$tmpbin_no_tex"
   rm -f "$out"
 }
+
+run_doctor_mermaid_smoke_test() {
+  local tmpbin out code
+  tmpbin="$(mktemp -d)"
+  out="$(mktemp)"
+
+  cat >"${tmpbin}/pandoc" <<'STUB'
+#!/bin/bash
+exit 0
+STUB
+  cat >"${tmpbin}/xelatex" <<'STUB'
+#!/bin/bash
+exit 0
+STUB
+  cat >"${tmpbin}/mmdc" <<'STUB'
+#!/bin/bash
+echo "Error: Could not find chrome-headless-shell" >&2
+exit 1
+STUB
+  cat >"${tmpbin}/python3" <<STUB
+#!/bin/bash
+exec "${REAL_PYTHON3}" "\$@"
+STUB
+  chmod +x "${tmpbin}/pandoc" "${tmpbin}/xelatex" "${tmpbin}/mmdc" "${tmpbin}/python3"
+
+  set +e
+  PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-mermaid.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "doctor fails when mmdc cannot render a diagram"
+  assert_contains "$out" "Mermaid diagrams cannot be rendered" "doctor names the mermaid failure"
+  assert_contains "$out" "PUPPETEER_EXECUTABLE_PATH" "doctor gives the Chrome remediation"
+
+  set +e
+  PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-mermaid-warn.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "runtime.strict=false keeps doctor green on a mermaid failure"
+  assert_contains "$out" "PUPPETEER_EXECUTABLE_PATH" "the warning still shows the remediation"
+
+  rm -rf "$tmpbin"
+  rm -f "$out"
+}
