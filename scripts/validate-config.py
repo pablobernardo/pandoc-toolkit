@@ -204,6 +204,18 @@ def validate_runtime_paths(data: dict[str, Any], cfg_path: Path) -> None:
                 )
             )
 
+    metadata_raw = str(pandoc_cfg.get("metadata_file", "")).strip()
+    if metadata_raw:
+        metadata_path = resolve_from_base(base_dir_path, metadata_raw)
+        if not metadata_path.exists() or not metadata_path.is_file():
+            fail(
+                t(
+                    "validate.error.invalid_metadata_file",
+                    "Invalid path in 'pandoc.metadata_file': file does not exist ({path})",
+                    path=metadata_path,
+                )
+            )
+
     extra_filters = filters_cfg.get("extra_lua_filters") or []
     if isinstance(extra_filters, list):
         for idx, raw in enumerate(extra_filters):

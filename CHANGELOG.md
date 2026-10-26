@@ -9,6 +9,10 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ## [Unreleased]
 
+### Fixed
+
+- `validate-config` rechaza un `pandoc.metadata_file` que no existe. Antes el renderer lo omitía en silencio, así que una ruta mal escrita producía un PDF sin los metadatos declarados y sin ningún aviso.
+
 ### Maintenance
 
 - Consolidar revisión periódica de dependencias fijadas y documentar validación por actualización.
