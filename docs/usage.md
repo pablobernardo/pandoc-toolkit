@@ -159,7 +159,9 @@ Validar configuración:
 pandoc-pdf validate-config -c pdf.config.yaml
 ```
 
-`validate-config` aplica validación estricta del contrato (required, tipos y campos no permitidos), alineada con `schemas/pdf-config.schema.json`, y validaciones funcionales de rutas críticas (`input.chapters_dir`, `pandoc.template`, `pandoc.metadata_file` cuando se informa, `filters.extra_lua_filters`).
+`validate-config` aplica validación estricta del contrato (required, tipos y campos no permitidos), alineada con `schemas/pdf-config.schema.json`, y validaciones funcionales de rutas críticas (`input.chapters_dir`, `pandoc.template`, `pandoc.metadata_file` cuando se informa, `filters.extra_lua_filters`). `input.order` se valida además contra su `enum`: un valor distinto de `natural` o `alphabetical` se rechaza aquí, antes de llegar al render.
+
+El validador implementa un subconjunto explícito de JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`). Un test falla si el schema empieza a usar cualquier otra keyword, para que nunca se ignore en silencio.
 
 `pandoc.template` es opcional: si no se informa, el render usa `templates/default.tex`.
 

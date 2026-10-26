@@ -120,6 +120,7 @@
   ,"validate.error.ruby_json_parse": "Could not parse JSON converted from Ruby: {error}"
   ,"validate.error.root_type": "Root must be of type {type}"
   ,"validate.error.field_type": "'{label}' must be of type {type}"
+  ,"validate.error.not_in_enum": "'{label}' must be one of: {allowed} (got '{value}')"
   ,"validate.error.object_type": "'{label}' must be of type object"
   ,"validate.error.missing_required": "In '{label}' required fields are missing: {fields}"
   ,"validate.error.extra_fields": "In '{label}' there are disallowed fields: {fields}"

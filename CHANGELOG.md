@@ -11,6 +11,8 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ### Fixed
 
+- `validate-config` ignoraba en silencio cualquier keyword de JSON Schema fuera de su subconjunto (`enum`, `pattern`, `$ref`…). Ahora implementa `enum` y un test falla si el schema usa una keyword no soportada.
+- `input.order` se valida contra su `enum` (`natural`, `alphabetical`) en `validate-config`, no solo en el renderer: un valor no admitido se rechaza con mensaje que nombra el campo, los valores permitidos y el recibido.
 - `validate-config` rechaza un `pandoc.metadata_file` que no existe. Antes el renderer lo omitía en silencio, así que una ruta mal escrita producía un PDF sin los metadatos declarados y sin ningún aviso.
 
 ### Changed

@@ -2242,6 +2242,72 @@ run_shared_i18n_runtime_test() {
   rm -f "$out"
 }
 
+run_schema_keyword_support_test() {
+  if [[ -z "${REAL_PYTHON3}" ]]; then
+    echo "SKIP schema keyword support (python3 not available)"
+    return 0
+  fi
+
+  local out
+  out="$(mktemp)"
+  if "${REAL_PYTHON3}" - "${ROOT_DIR}/schemas/pdf-config.schema.json" >"$out" 2>&1 <<'PY'
+import json
+import sys
+
+# Keywords validate-config.py actually implements, plus pure annotations.
+SUPPORTED = {
+    "type", "properties", "required", "additionalProperties",
+    "items", "minItems", "minLength", "minimum", "enum",
+}
+ANNOTATIONS = {"$schema", "$id", "title", "description", "default", "examples"}
+
+schema = json.load(open(sys.argv[1], encoding="utf-8"))
+used = set()
+
+
+def walk(node):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "properties":
+                for subschema in value.values():
+                    walk(subschema)
+                continue
+            used.add(key)
+            walk(value)
+    elif isinstance(node, list):
+        for item in node:
+            walk(item)
+
+
+walk(schema)
+unknown = sorted(used - SUPPORTED - ANNOTATIONS)
+if unknown:
+    print("unsupported JSON-Schema keywords: " + ", ".join(unknown))
+    raise SystemExit(1)
+PY
+  then
+    pass "the schema only uses keywords the validator implements"
+  else
+    fail "the schema uses keywords validate-config.py ignores: $(cat "$out")"
+  fi
+  rm -f "$out"
+}
+
+run_validate_order_enum_test() {
+  local out code
+  out="$(mktemp)"
+
+  set +e
+  "$CLI" validate-config -c "${FIXTURES_DIR}/invalid-order-value.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "validate-config rejects an input.order outside the enum"
+  assert_contains "$out" "input.order" "the enum error names the field"
+  assert_contains "$out" "alphabetical" "the enum error lists the allowed values"
+
+  rm -f "$out"
+}
+
 main() {
   echo "== Running pandoc-pdf tests =="
   run_help_test
@@ -2267,6 +2333,8 @@ main() {
   run_bootstrap_linux_pkg_manager_detection_tests
   run_validate_config_tests
   run_validate_metadata_file_test
+  run_schema_keyword_support_test
+  run_validate_order_enum_test
   run_render_legacy_flag_rejected_test
   run_render_no_yaml_parser_hints_i18n_test
   run_render_native_test

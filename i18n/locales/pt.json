@@ -120,6 +120,7 @@
   "validate.error.ruby_json_parse": "Não foi possível parsear JSON convertido do Ruby: {error}",
   "validate.error.root_type": "A raiz deve ser do tipo {type}",
   "validate.error.field_type": "'{label}' deve ser do tipo {type}",
+  "validate.error.not_in_enum": "'{label}' deve ser um de: {allowed} (recebido '{value}')",
   "validate.error.object_type": "'{label}' deve ser do tipo object",
   "validate.error.missing_required": "Em '{label}' faltam campos obrigatórios: {fields}",
   "validate.error.extra_fields": "Em '{label}' há campos não permitidos: {fields}",
