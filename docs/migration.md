@@ -55,7 +55,7 @@ Cambios de comportamiento que puedes observar al actualizar:
 
 - **`document.*` ahora llega a la plantilla.** Con `pandoc.metadata_file` vacío, `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan a pandoc como variables `-V` y rellenan la portada. Si tu `templates/default.tex` (o tu template propio) esperaba esas variables vacías, la portada cambia: revisa el PDF resultante.
 - **`input.order` solo admite `natural` o `alphabetical`.** Antes cualquier valor se ignoraba; ahora un valor distinto falla en `render` con un mensaje que enumera los admitidos. Revisa el campo en tus configs.
-- **`runtime.strict: false` hace que `doctor` salga con exit 0** aunque falten dependencias: las sigue imprimiendo, pero como advertencias. Si tu CI dependía del exit code de `doctor` para detectar entornos incompletos, necesitas `runtime.strict: true` (que además es el default).
+- **`runtime.strict: false` hace que `doctor` salga con exit 0** aunque falten dependencias auxiliares: las sigue imprimiendo, pero como advertencias. El motor TeX es la excepción y falla siempre. Si tu CI dependía del exit code de `doctor` para detectar entornos incompletos, pon `runtime.strict: true` (que además es el default).
 - **`output.keep_merged_markdown: false` borra el Markdown fusionado** tras un render correcto. Si algún paso posterior de tu pipeline leía ese `.md`, ponlo en `true` (default) o consume el PDF.
 
 Quick wins incluidos en la misma versión:

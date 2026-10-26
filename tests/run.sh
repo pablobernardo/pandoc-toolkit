@@ -1850,7 +1850,27 @@ EOF
   assert_exit_code "0" "$code" "runtime.strict=false does not fail on missing required command"
   assert_contains "$out" "mycustomcmd" "runtime.strict=false still reports the missing command"
 
-  rm -rf "$tmpbin"
+  # Sin motor TeX no hay PDF: strict=false no puede perdonarlo.
+  local tmpbin_no_tex
+  tmpbin_no_tex="$(mktemp -d)"
+  cat >"${tmpbin_no_tex}/pandoc" <<'EOF'
+#!/bin/bash
+exit 0
+EOF
+  cat >"${tmpbin_no_tex}/python3" <<EOF
+#!/bin/bash
+exec "${REAL_PYTHON3}" "\$@"
+EOF
+  chmod +x "${tmpbin_no_tex}/pandoc" "${tmpbin_no_tex}/python3"
+
+  set +e
+  PANDOC_PDF_LANG=en PATH="$tmpbin_no_tex" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-strict-false.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "runtime.strict=false still fails when the TeX engine is missing"
+  assert_contains "$out" "xelatex" "the missing TeX engine is named"
+
+  rm -rf "$tmpbin" "$tmpbin_no_tex"
   rm -f "$out"
 }
 

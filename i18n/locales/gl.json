@@ -53,6 +53,7 @@
   "doctor.missing": "Doctor detectou dependencias que faltan:",
   "doctor.warn.missing": "Avisos de doctor: faltan dependencias (runtime.strict=false):",
   "doctor.warn.continue": "Continúase porque runtime.strict=false",
+  "doctor.error.tex_required": "Cómpre un motor TeX para xerar o PDF; runtime.strict=false non pode omitilo.",
   "validate.ok": "Config válida",
   "validate.error.config_not_found": "Config non atopada: {path}",
   "validate.error.schema_not_found": "Schema non atopado: {path}",

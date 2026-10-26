@@ -53,6 +53,7 @@
   "doctor.missing": "Doctor detected missing dependencies:",
   "doctor.warn.missing": "Doctor warnings: missing dependencies (runtime.strict=false):",
   "doctor.warn.continue": "Continuing because runtime.strict=false",
+  "doctor.error.tex_required": "A TeX engine is required to render a PDF; runtime.strict=false cannot waive it.",
   "validate.ok": "Config valid",
   "validate.error.config_not_found": "Config not found: {path}",
   "validate.error.schema_not_found": "Schema not found: {path}",

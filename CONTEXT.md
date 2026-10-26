@@ -120,6 +120,15 @@ Consecuencias operativas:
 
 Los 10 commits de la rama pasan `tests/run.sh` de forma independiente (verificado extrayendo cada árbol con `git archive` y ejecutando la suite): `75f6dc9`, `bfb5d8f`, `ae9cb3b`, `2b622ca`, `31bc09b`, `b4dab34`, `443e9ec`, `5a25fef`, `9b22148`, `e61657a`.
 
+## Decisiones de la revisión de 1.2.0
+
+| # | Decisión |
+| --- | --- |
+| A1 | Precedencia de metadatos: si `pandoc.metadata_file` está informado, manda el fichero y no se pasan variables `-V`; si está vacío, `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan como variables de plantilla. |
+| A2 | `runtime.strict: false` perdona dependencias auxiliares, nunca el motor TeX: sin motor no hay PDF, así que falla siempre. |
+| A3 | La forma del plan (`plan_version: 1`) se congela tal cual: `cwd: null` (heredado), `env` con las cuatro variables del toolkit y `prepare_argv[0]` como token neutro `python3`. Cualquier cambio de forma pide `plan_version: 2`. |
+| A4 | `defaults/default.yaml` retirado: `schemas/pdf-config.schema.json` es la única fuente de verdad del contrato. |
+
 ## Riesgos activos
 
 - Diferencias de entorno (TeX/Mermaid/Chromium) entre local y ejecución de integración completa.

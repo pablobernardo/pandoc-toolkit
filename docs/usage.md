@@ -65,7 +65,7 @@ Estos campos son obligatorios en `schemas/pdf-config.schema.json` y el runtime l
 `runtime.strict` — severidad del preflight:
 
 - `true` (default): `doctor` falla con exit 1 si falta un comando de `runtime.required_commands` o el motor TeX.
-- `false`: los reporta como advertencias y sale con exit 0.
+- `false`: los reporta como advertencias y sale con exit 0, **salvo el motor TeX**: sin él no hay PDF, así que su ausencia falla siempre aunque `strict` sea `false`.
 
 ## 3) Comandos del CLI
 
@@ -239,7 +239,7 @@ Secuencia sugerida:
 
 Si `runtime.strict: true` (default), cualquier dependencia faltante debe fallar el pipeline.
 
-Con `runtime.strict: false`, `doctor` degrada las dependencias faltantes a advertencias: las imprime igualmente y sale con exit 0. Úsalo solo en pipelines donde la dependencia se resuelve más adelante (por ejemplo una imagen que la instala en un paso posterior); el paso `render` fallará igualmente si la dependencia sigue faltando.
+Con `runtime.strict: false`, `doctor` degrada las dependencias faltantes a advertencias: las imprime igualmente y sale con exit 0. La única excepción es el motor TeX: su ausencia falla siempre, porque sin él el PDF no puede generarse. Úsalo solo en pipelines donde la dependencia auxiliar se resuelve más adelante (por ejemplo una imagen que la instala en un paso posterior).
 
 ## 8) Integración con OpenCode (agentes)
 

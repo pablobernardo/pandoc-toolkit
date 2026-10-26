@@ -234,6 +234,7 @@ def main() -> None:
                     preferred_engine = engine.strip()
 
     missing: list[str] = []
+    missing_engine: list[str] = []
     for cmd in required:
         if cmd in TEX_ENGINES:
             continue
@@ -247,14 +248,19 @@ def main() -> None:
     required_has_tex = any(cmd in TEX_ENGINES for cmd in required)
     if preferred_engine:
         if not command_exists(preferred_engine):
-            missing.append(preferred_engine)
+            missing_engine.append(preferred_engine)
     elif required_has_tex:
         found = any(command_exists(tex) for tex in TEX_ENGINES)
         if not found:
-            missing.append("xelatex|lualatex|pdflatex")
+            missing_engine.append("xelatex|lualatex|pdflatex")
 
+    # Without a TeX engine there is no PDF, so runtime.strict=false cannot waive it.
+    if missing_engine and not strict:
+        print(t("doctor.error.tex_required", "A TeX engine is required to render a PDF; runtime.strict=false cannot waive it."))
+
+    missing = missing + missing_engine
     if missing:
-        if not strict:
+        if not strict and not missing_engine:
             print(
                 f"⚠️  {t('doctor.warn.missing', 'Doctor warnings: missing dependencies (runtime.strict=false):')}"
             )
