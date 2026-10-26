@@ -33,6 +33,38 @@ Campos mínimos esperados:
 - `runtime`
 - `compat`
 
+### 2.1) Semántica de los campos declarativos
+
+Estos campos son obligatorios en `schemas/pdf-config.schema.json` y el runtime los aplica de verdad. Cuando faltan, el renderer y el preflight usan los valores por defecto indicados abajo (que coinciden con `examples/pdf.config.example.yaml`).
+
+`input.order` — orden de los capítulos:
+
+- `natural`: compara los tramos numéricos como números, así que `chapter-2.md` va antes que `chapter-10.md`.
+- `alphabetical`: orden lexicográfico por nombre de fichero.
+- Cualquier otro valor se rechaza en `render` con un mensaje localizado que enumera los valores admitidos (`natural`, `alphabetical`); no se ordena en silencio.
+- Solo aplica cuando `input.explicit_files` está vacío: una lista explícita se respeta tal cual.
+
+`output.keep_merged_markdown` — suerte del Markdown fusionado:
+
+- `true` (default): conserva el `.md` intermedio junto al PDF.
+- `false`: lo elimina tras un render de pandoc correcto. Si pandoc falla, el `.md` se conserva para diagnóstico.
+
+`document.*` — metadatos y portada:
+
+- Con `pandoc.metadata_file` vacío, los campos no vacíos `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan a pandoc como variables de plantilla (`-V campo=valor`) y rellenan la portada de `templates/default.tex`.
+- Con `pandoc.metadata_file` informado **no** se pasan: el fichero de metadatos manda (ver `docs/architecture.md` §2, regla 4 «Reglas del contrato»).
+- `document.title` sigue fijando el nombre del fichero de salida (`title-<suffix>`); `output.file_prefix` solo se usa como alternativa si `document.title` falta.
+
+`filters.emoji.include_ballot_icons` — casillas de tareas Markdown:
+
+- `true` (default): `☐` (U+2610), `☑` (U+2611) y `☒` (U+2612) se sustituyen por su imagen del set de emoji.
+- `false`: se dejan como caracteres, sin sustitución.
+
+`runtime.strict` — severidad del preflight:
+
+- `true` (default): `doctor` falla con exit 1 si falta un comando de `runtime.required_commands` o el motor TeX.
+- `false`: los reporta como advertencias y sale con exit 0.
+
 ## 3) Comandos del CLI
 
 Atajo opcional vía `make`:
@@ -169,7 +201,9 @@ Secuencia sugerida:
 2. `pandoc-pdf validate-config -c pdf.config.yaml`
 3. `pandoc-pdf render -c pdf.config.yaml`
 
-Si `runtime.strict: true`, cualquier dependencia faltante debe fallar el pipeline.
+Si `runtime.strict: true` (default), cualquier dependencia faltante debe fallar el pipeline.
+
+Con `runtime.strict: false`, `doctor` degrada las dependencias faltantes a advertencias: las imprime igualmente y sale con exit 0. Úsalo solo en pipelines donde la dependencia se resuelve más adelante (por ejemplo una imagen que la instala en un paso posterior); el paso `render` fallará igualmente si la dependencia sigue faltando.
 
 ## 8) Integración con OpenCode (agentes)
 
@@ -212,6 +246,15 @@ Cobertura actual de la suite:
 - rechazo explícito de flags legacy (`--legacy`)
 - integración avanzada de render (extra_lua_filters, resource_path, metadata opcional)
 - errores de render por `explicit_files` inexistentes
+- comportamiento del contrato (desde 1.2.0):
+  - `input.order` con valores `natural` y `alphabetical`, y rechazo de un valor no admitido indicando el campo y los valores soportados
+  - `output.keep_merged_markdown` en `false` (borra el `.md`) y en `true` (lo conserva), con PDF producido en ambos casos
+  - `document.*` llega a pandoc como variables `-V`, y un `pandoc.metadata_file` tiene prioridad sobre ellas
+  - `include_ballot_icons` conmuta `PANDOC_EMOJI_BALLOT_ICONS` entre `1` y `0`
+  - `runtime.strict` en `false` (advertencia, exit 0) y en `true` (fallo)
+- paridad Python/Ruby: ambos renderers construyen una invocación de pandoc byte-idéntica
+- artefacto de release: el paquete generado no contiene bytecode de Python (`__pycache__`, `.pyc`)
+- mensaje de locale sin destino: nombra `--project`, no `--team`
 
 Además, esta suite corre automáticamente en CI (GitHub Actions) para PR/push sobre matriz macOS/Linux como **L1**.
 

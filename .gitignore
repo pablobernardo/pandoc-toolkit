@@ -4,7 +4,9 @@
 # Artefactos de render locales (tests/ejemplos)
 examples/output/
 tests/integration/**/output/
-scripts/__pycache__
+__pycache__/
+**/__pycache__/
+*.pyc
 
 .env
 .zed/

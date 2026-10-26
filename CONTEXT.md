@@ -7,8 +7,8 @@
 - Estado general: **CLI estable con render nativo por defecto**.
 - Entry point activo: `bin/pandoc-pdf`.
 - Comandos activos: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c`.
-- Estado de suite local verificado: **PASS=143 FAIL=0** (`tests/run.sh`).
-- Versión actual del toolkit (`VERSION`): **1.1.0**.
+- Estado de suite local verificado: **PASS=188 FAIL=0** (`tests/run.sh`).
+- Versión actual del toolkit (`VERSION`): **1.2.0**.
 
 ## Convención activa de i18n (persistente)
 
@@ -44,7 +44,7 @@
 - ✅ Política publicada en `.github/SECURITY.md`.
 
 ### 4) Testing y CI
-- ✅ Suite local `tests/run.sh` en verde (PASS=113 FAIL=0).
+- ✅ Suite local `tests/run.sh` en verde (PASS=188 FAIL=0).
 - ✅ CI por niveles:
   - **L1** obligatorio en PR/push (macOS/Linux)
   - **L2** integración semi-real manual
@@ -55,6 +55,30 @@
 - ✅ `docs/release-readiness.md` y `docs/dependency-policy.md` activos.
 - ✅ `CHANGELOG.md` reorganizado para claridad de release (1.0.0 vs Unreleased).
 - ✅ Workflow de release automático disponible (`.github/workflows/release.yml`) para tags `v*`.
+
+## Migración a binario (Go) — decisión pendiente
+
+Estado: **no se migra ahora**. Windows no es un requisito actual y el consumo real del toolkit es Linux/macOS. La puerta queda abierta de forma explícita.
+
+Puerta abierta (lo que se construiría antes de decidir):
+
+1. `render --dry-run --json`: un artefacto de plan (orden de capítulos, variables de plantilla, filtros, entorno y línea de pandoc) que sea el contrato verificable del comportamiento.
+2. Una suite de conformidad sobre ese plan, ejecutable contra cualquier implementación (actual en bash/Python/Ruby y una futura en Go), para comparar salida sin leer código.
+
+Disparadores de migración (cualquiera de ellos):
+
+- (a) Windows pasa a ser un requisito real del toolkit.
+- (b) Un consumidor objetivo no puede tener `python3` + PyYAML en su entorno.
+- (c) Se necesitan artefactos firmados de fichero único para supply chain.
+- (d) Los defectos del updater en bash cuestan más que una reescritura.
+
+## Slices pendientes (post 1.2.0)
+
+1. **Plan JSON `--dry-run --json`** + decisión sobre `defaults/default.yaml` frente a validación de schema (hoy el baseline y el contrato no se contrastan entre sí).
+2. **Retiro del renderer Ruby**: mantener un solo runtime cuando el plan JSON y la conformidad estén verdes.
+3. **Unificación de i18n**: hoy hay catálogos consumidos desde bash y desde los renderers Python/Ruby.
+4. **Hardening del validador de schema**: cobertura más estricta que el `additionalProperties: false` actual.
+5. **Partir `tests/run.sh`**: es un monolito compartido por todas las áreas; conviene separarlo por dominio antes de seguir creciendo.
 
 ## Gap principal (post 1.1)
 
