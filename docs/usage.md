@@ -228,7 +228,10 @@ The plan is the verifiable contract of the render: it is what makes it possible 
 
 - `doctor` fails: install the missing dependencies before retrying.
 - `validate-config` fails: fix required fields / the YAML structure.
-- `render` fails with Mermaid: check that `mmdc` is on PATH and that the output location is writable.
+- `render` fails with Mermaid: `mmdc` is on PATH but cannot launch a browser. `mermaid-cli` needs a Chromium that Puppeteer can find, and its own download is separate from the npm package. `pandoc-pdf doctor` renders a test diagram and reports the exact fix:
+  - install the browser Puppeteer expects: `npx puppeteer browsers install chrome-headless-shell`;
+  - or point it at a browser you already have: `export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.
+  A dropped diagram is not ignored: the merged markdown keeps the code block, `render` reports which diagrams failed and exits non-zero. To drop diagrams on purpose, set `filters.mermaid.enabled: false`.
 
 ## 6.1) Configuration security
 

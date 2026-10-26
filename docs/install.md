@@ -81,6 +81,16 @@ Quick reference for the Mermaid CLI:
 npm i -g @mermaid-js/mermaid-cli
 ```
 
+`mermaid-cli` renders through Puppeteer, which needs a Chromium it can find. Recent versions do **not** download it with the npm package, so a fresh install fails with `Could not find chrome-headless-shell`. Install the browser or point Puppeteer at one you already have:
+
+```bash
+npx puppeteer browsers install chrome-headless-shell
+# or
+export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
+
+`pandoc-pdf doctor` verifies this by rendering a test diagram, so the failure surfaces before a long render.
+
 Option A (recommended) — install PyYAML:
 
 ```bash

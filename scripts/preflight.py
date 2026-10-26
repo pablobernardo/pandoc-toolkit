@@ -196,12 +196,46 @@ def parse_config_path(argv: list[str]) -> Path | None:
     fail(f"❌ {t('preflight.error.usage', 'Usage: preflight.py [-c <pdf.config.yaml>]')}")
 
 
+def mermaid_smoke_check() -> str | None:
+    """Render a two-node diagram. Returns an error string, or None when mmdc works."""
+    import shutil
+    import subprocess
+    import tempfile
+
+    mmdc = shutil.which("mmdc")
+    if mmdc is None:
+        return None
+
+    with tempfile.TemporaryDirectory() as tmp:
+        source = Path(tmp) / "smoke.mmd"
+        target = Path(tmp) / "smoke.png"
+        source.write_text("graph TD\n  A --> B\n", encoding="utf-8")
+        try:
+            proc = subprocess.run(
+                [mmdc, "-i", str(source), "-o", str(target), "-b", "transparent", "-q"],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        except Exception as e:
+            return str(e)
+
+        # mermaid-cli exits non-zero when it cannot render (measured: 1 when the
+        # Puppeteer browser is missing), so the exit code is the contract.
+        if proc.returncode == 0:
+            return None
+
+        detail = (proc.stderr or proc.stdout or "").strip().splitlines()
+        return detail[0] if detail else f"mmdc exited {proc.returncode}"
+
+
 def main() -> None:
     config_path = parse_config_path(sys.argv[1:])
 
     required = list(DEFAULT_REQUIRED)
     preferred_engine = None
     strict = True
+    mermaid_enabled = True
 
     if config_path:
         if not config_path.exists():
@@ -226,6 +260,12 @@ def main() -> None:
                 runtime_strict = runtime.get("strict")
                 if isinstance(runtime_strict, bool):
                     strict = runtime_strict
+
+            filters = cfg.get("filters")
+            if isinstance(filters, dict):
+                mermaid = filters.get("mermaid")
+                if isinstance(mermaid, dict) and mermaid.get("enabled") is False:
+                    mermaid_enabled = False
 
             pandoc = cfg.get("pandoc")
             if isinstance(pandoc, dict):
@@ -259,6 +299,19 @@ def main() -> None:
         print(t("doctor.error.tex_required", "A TeX engine is required to render a PDF; runtime.strict=false cannot waive it."))
 
     missing = missing + missing_engine
+    mermaid_error = None
+    if mermaid_enabled and "mmdc" in required and command_exists("mmdc"):
+        mermaid_error = mermaid_smoke_check()
+
+    if mermaid_error:
+        print(f"❌ {t('doctor.mermaid.failed', 'Mermaid diagrams cannot be rendered: mmdc is installed but could not produce an image')}")
+        print(f"   - {mermaid_error}")
+        print(t("doctor.mermaid.hint1", "   Fix A: install the Puppeteer browser: npx puppeteer browsers install chrome-headless-shell"))
+        print(t("doctor.mermaid.hint2", "   Fix B: point Puppeteer at an installed Chrome: export PUPPETEER_EXECUTABLE_PATH=/path/to/chrome"))
+        if strict:
+            raise SystemExit(1)
+        print(t("doctor.warn.continue", "Continuing because runtime.strict=false"))
+
     if missing:
         if not strict and not missing_engine:
             print(

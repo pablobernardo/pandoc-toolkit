@@ -58,6 +58,9 @@ main() {
   run_render_document_vars_test
   run_render_ballot_icons_test
   run_doctor_strict_semantics_test
+  run_doctor_mermaid_smoke_test
+  run_render_mermaid_failed_test
+  run_mermaid_filter_marks_failure_test
   run_locale_missing_target_message_test
   run_package_release_artifact_test
   run_emoji_filter_plain_heading_test
