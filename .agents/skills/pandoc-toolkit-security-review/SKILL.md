@@ -1,51 +1,53 @@
 ---
 name: pandoc-toolkit-security-review
 description: >
-  Skill para revisar riesgos de seguridad en cambios del toolkit pandoc-pdf,
-  centrada en entradas de configuración, ejecución de procesos y cadena de suministro.
-  Trigger: cuando se modifiquen scripts CLI/render/preflight/bootstrap, CI o contrato de configuración.
+  Skill for reviewing security risk in changes to the pandoc-pdf toolkit,
+  focused on configuration input, process execution and supply chain.
+  Trigger: when modifying CLI/render/preflight/bootstrap scripts, CI or the configuration contract.
 license: Apache-2.0
 metadata:
   author: pablobernardo
   version: "1.0"
 ---
 
-## Cuándo usar
+## When to use
 
-- Cambios en `scripts/preflight.py`, `scripts/validate-config.py`, `scripts/render-native.*`.
-- Cambios en `scripts/bootstrap.sh` o `.github/workflows/ci.yml`.
-- Cambios en campos de config que pueden ejecutar procesos (`runtime.required_commands`, `filters.extra_lua_filters`).
+- Changes in `scripts/preflight.py`, `scripts/validate-config.py`,
+  `scripts/render-native.py`.
+- Changes in `scripts/bootstrap.sh` or `.github/workflows/ci.yml`.
+- Changes in configuration fields that can execute processes
+  (`runtime.required_commands`, `filters.extra_lua_filters`).
 
-## Patrones críticos
+## Critical patterns
 
-1. **Evitar shell con interpolación de config**
-   - No usar `bash -c` con valores de `pdf.config.yaml`.
-   - Preferir `shutil.which`, `subprocess.run([...])` y validación de formato.
+1. **No shell with configuration interpolation**
+   - Do not use `bash -c` with values from `pdf.config.yaml`.
+   - Prefer `shutil.which`, `subprocess.run([...])` and format validation.
 
-2. **Carga YAML segura**
-   - En Ruby, usar `YAML.safe_load`.
-   - En Python, `yaml.safe_load`.
+2. **Safe YAML loading**
+   - In Ruby, use `YAML.safe_load`.
+   - In Python, use `yaml.safe_load`.
 
-3. **Validación explícita de entradas ejecutables**
-   - `runtime.required_commands`: patrón seguro de nombre.
-   - `extra_lua_filters`: rutas controladas y validadas.
+3. **Explicit validation of executable input**
+   - `runtime.required_commands`: safe name pattern.
+   - `filters.extra_lua_filters`: controlled and validated paths.
 
-4. **Supply chain controlada**
-   - Revisar paquetes instalados en bootstrap/CI.
-   - Documentar versiones y política de actualización.
+4. **Controlled supply chain**
+   - Review packages installed in bootstrap and CI.
+   - Pin versions and document the update policy.
 
-5. **Regresión obligatoria**
-   - Cada fix de seguridad debe incluir test de regresión.
+5. **Mandatory regression**
+   - Every security fix must include a regression test.
 
-## Checklist de revisión
+## Review checklist
 
-- [ ] No hay `bash -c` con input de configuración sin sanitizar.
-- [ ] No hay `YAML.load_file` en rutas de entrada no confiables.
-- [ ] Se validan rutas/comandos antes de ejecutar.
-- [ ] Se añaden tests que fallen si reaparece el bug.
-- [ ] Se actualiza `SECURITY.md` si cambia el modelo de riesgo.
+- [ ] No `bash -c` with unsanitised configuration input.
+- [ ] No `YAML.load_file` on untrusted input paths.
+- [ ] Paths and commands are validated before execution.
+- [ ] Tests were added that fail if the bug reappears.
+- [ ] `SECURITY.md` is updated if the risk model changes.
 
-## Comandos
+## Commands
 
 ```bash
 tests/run.sh
@@ -53,8 +55,8 @@ pandoc-pdf doctor -c tests/fixtures/doctor-config-required-cmd.yaml
 pandoc-pdf validate-config -c tests/fixtures/valid.config.yaml
 ```
 
-## Recursos
+## Resources
 
-- Política de seguridad: `../../../.github/SECURITY.md`
-- Contrato de agentes: `../../../AGENTS.md`
-- Guía de uso: `../../../docs/usage.md`
+- Security policy: `../../../.github/SECURITY.md`
+- Agent contract: `../../../AGENTS.md`
+- Usage guide: `../../../docs/usage.md`
