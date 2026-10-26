@@ -159,7 +159,7 @@ Validar configuración:
 pandoc-pdf validate-config -c pdf.config.yaml
 ```
 
-`validate-config` aplica validación estricta del contrato (required, tipos y campos no permitidos), alineada con `schemas/pdf-config.schema.json`, y validaciones funcionales de rutas críticas (`input.chapters_dir`, `pandoc.template`, `filters.extra_lua_filters`).
+`validate-config` aplica validación estricta del contrato (required, tipos y campos no permitidos), alineada con `schemas/pdf-config.schema.json`, y validaciones funcionales de rutas críticas (`input.chapters_dir`, `pandoc.template`, `pandoc.metadata_file` cuando se informa, `filters.extra_lua_filters`).
 
 `pandoc.template` es opcional: si no se informa, el render usa `templates/default.tex`.
 

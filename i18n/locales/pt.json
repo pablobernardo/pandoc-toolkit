@@ -133,6 +133,7 @@
   "validate.error.base_dir_required": "'project.base_dir' é obrigatório",
   "validate.error.invalid_chapters_dir": "Caminho inválido em 'input.chapters_dir': diretório não existe ({path})",
   "validate.error.invalid_template": "Caminho inválido em 'pandoc.template': arquivo não existe ({path})",
+  "validate.error.invalid_metadata_file": "Caminho inválido em 'pandoc.metadata_file': o arquivo não existe ({path})",
   "validate.error.invalid_extra_filter": "Caminho inválido em 'filters.extra_lua_filters[{idx}]': arquivo não existe ({path})",
   "validate.error.usage": "Uso: validate-config.py <config.yaml> <schema.json>",
   "validate.error.no_yaml_parser": "Nenhum parser YAML disponível (instale PyYAML ou Ruby)",

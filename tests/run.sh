@@ -1125,6 +1125,27 @@ run_validate_config_tests() {
   rm -f "$out_extra_filter_path"
 }
 
+run_validate_metadata_file_test() {
+  local out code
+  out="$(mktemp)"
+
+  if "$CLI" validate-config -c "${FIXTURES_DIR}/valid.config.yaml" >"$out" 2>&1; then
+    pass "validate-config accepts a config whose metadata_file exists"
+  else
+    fail "validate-config should accept valid.config.yaml ($(tail -2 "$out"))"
+  fi
+
+  set +e
+  "$CLI" validate-config -c "${FIXTURES_DIR}/invalid-missing-metadata-file.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "validate-config rejects a metadata_file that does not exist"
+  assert_contains "$out" "pandoc.metadata_file" "the error names the pandoc.metadata_file field"
+  assert_contains "$out" "nope-missing.yaml" "the error names the missing file"
+
+  rm -f "$out"
+}
+
 run_render_legacy_flag_rejected_test() {
   local out
   out="$(mktemp)"
@@ -2218,6 +2239,7 @@ main() {
   run_doctor_rejects_invalid_required_cmd
   run_bootstrap_linux_pkg_manager_detection_tests
   run_validate_config_tests
+  run_validate_metadata_file_test
   run_render_legacy_flag_rejected_test
   run_render_no_yaml_parser_hints_i18n_test
   run_render_native_test
