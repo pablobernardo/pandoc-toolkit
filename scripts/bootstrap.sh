@@ -21,6 +21,7 @@ NO_INSTALL=false
 SKIP_LINK=false
 ASSUME_YES=false
 
+# Keep in sync with .github/workflows/ci.yml and docs/dependency-policy.md.
 MERMAID_CLI_VERSION="${MERMAID_CLI_VERSION:-10.9.1}"
 PYYAML_VERSION="${PYYAML_VERSION:-6.0.2}"
 

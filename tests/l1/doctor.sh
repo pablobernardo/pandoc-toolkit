@@ -206,6 +206,10 @@ exit 0
 STUB
   cat >"${tmpbin}/mmdc" <<'STUB'
 #!/bin/bash
+if [[ "${1:-}" == "--version" ]]; then
+  echo "12.0.0"
+  exit 0
+fi
 echo "Error: Could not find chrome-headless-shell" >&2
 exit 1
 STUB
@@ -222,6 +226,7 @@ STUB
   assert_exit_code "1" "$code" "doctor fails when mmdc cannot render a diagram"
   assert_contains "$out" "Mermaid diagrams cannot be rendered" "doctor names the mermaid failure"
   assert_contains "$out" "PUPPETEER_EXECUTABLE_PATH" "doctor gives the Chrome remediation"
+  assert_contains "$out" "12.0.0" "doctor names the mermaid-cli version it found"
 
   set +e
   PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-mermaid-warn.config.yaml" >"$out" 2>&1
