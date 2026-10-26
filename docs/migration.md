@@ -65,6 +65,12 @@ Quick wins incluidos en la misma versión:
 - Los assets `filters/emoji/emoji_u*.svg` duplicados desaparecen; el renderer copia `2610/2611/2612.svg` en cada ejecución, así que no hay nada que ajustar en consumidores.
 - El artefacto de release ya no incluye `scripts/__pycache__`.
 
+### Baseline de configuración retirado
+
+`defaults/default.yaml` ya no existe: el schema es la única fuente de verdad y `render` no fusiona ningún fichero de defaults. Si validabas tu config, **no tienes que hacer nada** (las claves del baseline ya eran obligatorias). Si invocabas `scripts/render-native.*` directamente con configs parciales, declara las claves que esperabas heredar; en particular `pandoc.resource_path` ya no se rellena solo.
+
+`pandoc-pdf info` (y `info --json`) deja de mostrar `defaults_path` / `defaults_exists`.
+
 ### Filtro de emojis
 
 `filters/emoji.lua` deja de reescribir el texto sin emojis. Si tu plantilla mínima no cargaba `graphicx` y `hyperref`, añádelos: son necesarios para imágenes y para encabezados con formato. Antes del cambio, cualquier encabezado emitía `\\texorpdfstring` y el render fallaba aunque no hubiera emojis.

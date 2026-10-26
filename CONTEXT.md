@@ -7,7 +7,7 @@
 - Estado general: **CLI estable con render nativo por defecto**.
 - Entry point activo: `bin/pandoc-pdf`.
 - Comandos activos: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c`.
-- Estado de suite local verificado: **PASS=210 FAIL=0** (`tests/run.sh`).
+- Estado de suite local verificado: **PASS=207 FAIL=0** (`tests/run.sh`).
 - Versión actual del toolkit (`VERSION`): **1.2.0**.
 
 ## Convención activa de i18n (persistente)
@@ -44,7 +44,7 @@
 - ✅ Política publicada en `.github/SECURITY.md`.
 
 ### 4) Testing y CI
-- ✅ Suite local `tests/run.sh` en verde (PASS=210 FAIL=0).
+- ✅ Suite local `tests/run.sh` en verde (PASS=207 FAIL=0).
 - ✅ CI por niveles:
   - **L1** obligatorio en PR/push (macOS/Linux)
   - **L2** integración semi-real manual
@@ -76,9 +76,13 @@ Disparadores de migración (cualquiera de ellos):
 
 Implementado en 1.2.0: `pandoc-pdf render -c <config> --dry-run [--json]` calcula un plan puro (sin escribir nada) con capítulos, dianas, `argv` de pandoc y entorno. `scripts/render-native.py` y `scripts/render-native.rb` se han partido en `build_plan` (puro), `execute_plan` (único punto con efectos) y `print_plan`; la paridad entre ambos se verifica byte a byte en la suite.
 
+## Contrato de configuración: una sola fuente
+
+`schemas/pdf-config.schema.json` es la única fuente de verdad. No hay fichero de defaults que fusionar: `render` valida el config del usuario y aplica solo los fallbacks históricos de código para claves ausentes. Decisión tomada en 1.2.0 (antes el baseline era inalcanzable por el camino validado).
+
 ## Slices pendientes (post 1.2.0)
 
-1. **Plan JSON `--dry-run --json`** + decisión sobre `defaults/default.yaml` frente a validación de schema (hoy el baseline y el contrato no se contrastan entre sí).
+1. ✅ Plan JSON `--dry-run --json` y decisión de defaults: `defaults/default.yaml` retirado, el schema es la única fuente de verdad.
 2. **Retiro del renderer Ruby**: mantener un solo runtime cuando el plan JSON y la conformidad estén verdes.
 3. **Unificación de i18n**: hoy hay catálogos consumidos desde bash y desde los renderers Python/Ruby.
 4. **Hardening del validador de schema**: cobertura más estricta que el `additionalProperties: false` actual.

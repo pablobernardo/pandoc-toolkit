@@ -19,7 +19,9 @@ Esta guía explica cómo consumir el toolkit desde cualquier repositorio.
 
 Cada repositorio consumidor define su `pdf.config.yaml`.
 
-El toolkit incluye un baseline en `defaults/default.yaml` que se fusiona en render con la configuración local (la configuración del proyecto tiene prioridad en caso de conflicto).
+No hay baseline oculto: el contrato es exactamente lo que valida `schemas/pdf-config.schema.json`. El toolkit no fusiona ningún fichero de defaults, así que todo lo que el render necesita está declarado en tu `pdf.config.yaml`. Usa `examples/pdf.config.example.yaml` como plantilla de arranque.
+
+Los únicos valores que el renderer aplica por sí mismo son fallbacks históricos de código para claves ausentes (motor `xelatex`, TOC activo, plantilla `templates/default.tex`); un config válido no depende de ellos porque el schema obliga a declarar las claves.
 
 Campos mínimos esperados:
 

@@ -41,6 +41,8 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ### Removed
 
+- `defaults/default.yaml`: el schema pasa a ser la única fuente de verdad. El archivo era inalcanzable por el camino validado (el schema ya exige esas claves) y solo lo ejercitaba un test que llamaba al renderer saltándose el CLI.
+- `defaults_path` / `defaults_exists` en `pandoc-pdf info` (texto y `--json`), porque el fichero ya no existe.
 - Assets `filters/emoji/emoji_u2610.svg`, `emoji_u2611.svg` y `emoji_u2612.svg`: copias byte-idénticas de `2610.svg`, `2611.svg` y `2612.svg` que no se referenciaban y se copiaban en cada ejecución del renderer.
 - El artefacto de release ya no incluye `scripts/__pycache__` ni ficheros `.pyc`.
 
