@@ -87,3 +87,45 @@ EOF
   rm -rf "$tmpbin"
   rm -f "$out"
 }
+
+run_bootstrap_mermaid_browser_warning_test() {
+  local tmpbin out code
+  tmpbin="$(mktemp -d)"
+  out="$(mktemp)"
+
+  for c in pandoc curl xelatex; do
+    cat >"${tmpbin}/${c}" <<'STUB'
+#!/bin/bash
+exit 0
+STUB
+    chmod +x "${tmpbin}/${c}"
+  done
+  cat >"${tmpbin}/mmdc" <<'STUB'
+#!/bin/bash
+echo "Error: Could not find chrome-headless-shell" >&2
+exit 1
+STUB
+  chmod +x "${tmpbin}/mmdc"
+  cat >"${tmpbin}/python3" <<STUB
+#!/bin/bash
+exec "${REAL_PYTHON3}" "\$@"
+STUB
+  chmod +x "${tmpbin}/python3"
+
+  set +e
+  PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" bash "${ROOT_DIR}/scripts/bootstrap.sh" --no-install --skip-link >"$out" 2>&1
+  code=$?
+  set -e
+
+  if [[ "$code" -ne 0 ]]; then
+    pass "bootstrap exits non-zero when Mermaid cannot render"
+  else
+    fail "bootstrap should exit non-zero when Mermaid cannot render"
+  fi
+  assert_contains "$out" "mermaid-cli is installed but has no browser" "bootstrap warns about the missing browser"
+  assert_contains "$out" "chrome-headless-shell" "the warning names the Puppeteer install"
+  assert_contains "$out" "PUPPETEER_EXECUTABLE_PATH" "the warning names the Chrome alternative"
+
+  rm -rf "$tmpbin"
+  rm -f "$out"
+}

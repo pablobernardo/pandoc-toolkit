@@ -246,6 +246,31 @@ run_doctor() {
   fi
 }
 
+verify_mermaid_browser() {
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    return 0
+  fi
+  has_cmd mmdc || return 0
+
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
+  printf 'graph TD\n  A --> B\n' >"${tmp_dir}/smoke.mmd"
+
+  if mmdc -i "${tmp_dir}/smoke.mmd" -o "${tmp_dir}/smoke.png" -b transparent -q >/dev/null 2>&1; then
+    rm -rf "$tmp_dir"
+    return 0
+  fi
+  rm -rf "$tmp_dir"
+
+  # mermaid-cli ships without a browser, so a fresh install can look complete
+  # and still be unable to render a single diagram. Say so, with both fixes.
+  echo "⚠️  $(t "bootstrap.mermaid.no_browser" "mermaid-cli is installed but has no browser to render with")"
+  echo "   $(t "bootstrap.mermaid.hint1" "Fix A: npx puppeteer browsers install chrome-headless-shell")"
+  echo "   $(t "bootstrap.mermaid.hint2" "Fix B: export PUPPETEER_EXECUTABLE_PATH=/path/to/chrome")"
+  echo "   $(t "bootstrap.mermaid.see_docs" "See docs/install.md: the two options are alternatives, do not hardcode the cache path")"
+  return 0
+}
+
 main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -311,6 +336,7 @@ main() {
   fi
 
   verify_dependencies
+  verify_mermaid_browser
   create_symlink
   run_doctor
 }
