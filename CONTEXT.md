@@ -23,7 +23,7 @@
 - ✅ `pandoc-pdf` operativo para humanos/CI/agentes.
 - ✅ `doctor` valida dependencias runtime vía `scripts/preflight.sh`.
 - ✅ `validate-config` valida contrato estricto (required + tipos + campos no permitidos).
-- ✅ `render` nativo desacoplado en `scripts/render-native.py` y `scripts/render-native.rb`.
+- ✅ `render` nativo con un único renderer en `scripts/render-native.py` (el duplicado en Ruby se retiró).
 - ✅ `bootstrap` simplifica onboarding (`make bootstrap*`, `scripts/bootstrap.sh`).
 
 ### 2) Configuración y rutas
@@ -74,7 +74,7 @@ Disparadores de migración (cualquiera de ellos):
 
 ## Plan de render (`--dry-run --json`)
 
-Implementado en 1.2.0: `pandoc-pdf render -c <config> --dry-run [--json]` calcula un plan puro (sin escribir nada) con capítulos, dianas, `argv` de pandoc y entorno. `scripts/render-native.py` y `scripts/render-native.rb` se han partido en `build_plan` (puro), `execute_plan` (único punto con efectos) y `print_plan`; la paridad entre ambos se verifica byte a byte en la suite.
+Implementado en 1.2.0: `pandoc-pdf render -c <config> --dry-run [--json]` calcula un plan puro (sin escribir nada) con capítulos, dianas, `argv` de pandoc y entorno. `scripts/render-native.py` está partido en `build_plan` (puro), `execute_plan` (único punto con efectos) y `print_plan`. Había un duplicado en Ruby que se retiró: el parseo YAML usa PyYAML si está y, si no, Ruby por subproceso.
 
 ## Contrato de configuración: una sola fuente
 

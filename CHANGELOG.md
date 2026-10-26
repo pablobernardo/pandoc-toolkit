@@ -9,6 +9,9 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ## [Unreleased]
 
+### Removed
+
+- `scripts/render-native.rb`: queda un único renderer, en Python. El duplicado costaba 398 líneas de lógica paralela y solo existía porque el CLI lo elegía cuando faltaba PyYAML; ahora el renderer parsea YAML con PyYAML si está o, si no, delegando en la stdlib de Ruby por subproceso (el mismo recurso que ya usaba `validate-config`). Afecta solo a quien invocara ese script directamente: ni el CLI, ni el contrato de config, ni el comportamiento por defecto cambian.
 ### Maintenance
 
 - Consolidar revisión periódica de dependencias fijadas y documentar validación por actualización.

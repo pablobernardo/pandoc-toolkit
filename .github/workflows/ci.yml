@@ -44,7 +44,6 @@ jobs:
           chmod +x tests/run.sh
           chmod +x scripts/validate-config.py
           chmod +x scripts/render-native.py
-          chmod +x scripts/render-native.rb
           chmod +x scripts/prepare-emojis.py
           chmod +x scripts/preflight.sh
           chmod +x scripts/preflight.py
@@ -71,7 +70,6 @@ jobs:
           chmod +x bin/pandoc-pdf
           chmod +x scripts/validate-config.py
           chmod +x scripts/render-native.py
-          chmod +x scripts/render-native.rb
           chmod +x scripts/prepare-emojis.py
           chmod +x scripts/preflight.sh
           chmod +x scripts/preflight.py
@@ -101,7 +99,6 @@ jobs:
           chmod +x bin/pandoc-pdf
           chmod +x scripts/validate-config.py
           chmod +x scripts/render-native.py
-          chmod +x scripts/render-native.rb
           chmod +x scripts/prepare-emojis.py
           chmod +x scripts/preflight.sh
           chmod +x scripts/preflight.py

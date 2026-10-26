@@ -1074,7 +1074,10 @@ show_info() {
   echo "template_path: ${template_path} (exists=${template_exists})"
 }
 
-ensure_config_parser() {
+# There is one renderer (Python). YAML can come from PyYAML or, when it is not
+# installed, from Ruby's stdlib through a subprocess; this only checks that at
+# least one of the two exists.
+ensure_yaml_parser_available() {
   if [[ -n "${CONFIG_PARSER}" ]]; then
     return 0
   fi
@@ -1121,14 +1124,8 @@ validate_config_file() {
 
 run_render() {
   local config_path="$1"
-  ensure_config_parser
-
-  if [[ "${CONFIG_PARSER}" == "python" ]]; then
-    PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR"
-    return 0
-  fi
-
-  PANDOC_PDF_LANG="$CLI_LANG" ruby "$ROOT_DIR/scripts/render-native.rb" "$config_path" "$ROOT_DIR"
+  ensure_yaml_parser_available
+  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR"
 }
 
 run_render_plan() {
@@ -1137,14 +1134,8 @@ run_render_plan() {
   local plan_flag="--plan"
   [[ "$plan_mode" == "json" ]] && plan_flag="--plan-json"
 
-  ensure_config_parser
-
-  if [[ "${CONFIG_PARSER}" == "python" ]]; then
-    PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
-    return 0
-  fi
-
-  PANDOC_PDF_LANG="$CLI_LANG" ruby "$ROOT_DIR/scripts/render-native.rb" "$config_path" "$ROOT_DIR" "$plan_flag"
+  ensure_yaml_parser_available
+  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
 }
 
 main() {

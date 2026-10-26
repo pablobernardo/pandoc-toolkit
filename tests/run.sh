@@ -1146,9 +1146,8 @@ run_render_no_yaml_parser_hints_i18n_test() {
   chmod +x "${sandbox}/bin/pandoc-pdf"
   cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
   cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
-  cp "${ROOT_DIR}/scripts/render-native.rb" "${sandbox}/scripts/render-native.rb"
   cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
-  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/render-native.rb" "${sandbox}/scripts/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
   cp "${ROOT_DIR}/i18n/locales/es.json" "${sandbox}/i18n/locales/es.json"
   cp "${ROOT_DIR}/i18n/locales/en.json" "${sandbox}/i18n/locales/en.json"
@@ -1236,9 +1235,8 @@ run_render_native_test() {
   chmod +x "${sandbox}/bin/pandoc-pdf"
   cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
   cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
-  cp "${ROOT_DIR}/scripts/render-native.rb" "${sandbox}/scripts/render-native.rb"
   cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
-  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/render-native.rb" "${sandbox}/scripts/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
   cp "${FIXTURES_DIR}/render.config.yaml" "${sandbox}/render.config.yaml"
 
@@ -1343,9 +1341,8 @@ run_render_native_advanced_paths_test() {
   chmod +x "${sandbox}/bin/pandoc-pdf"
   cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
   cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
-  cp "${ROOT_DIR}/scripts/render-native.rb" "${sandbox}/scripts/render-native.rb"
   cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
-  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/render-native.rb" "${sandbox}/scripts/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
   cp "${FIXTURES_DIR}/render-extra-filter.config.yaml" "${sandbox}/render-extra-filter.config.yaml"
 
@@ -1409,6 +1406,12 @@ EOF
 }
 
 run_no_hidden_defaults_test() {
+  if [[ -e "${ROOT_DIR}/scripts/render-native.rb" ]]; then
+    fail "the Ruby renderer must not come back: there is one renderer, in Python"
+  else
+    pass "there is a single renderer (no render-native.rb)"
+  fi
+
   if [[ -e "${ROOT_DIR}/defaults/default.yaml" ]]; then
     fail "the toolkit must not ship a config defaults baseline"
   else
@@ -1451,7 +1454,7 @@ pandoc:
 EOF
 
   if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/partial.config.yaml" "$sandbox" >"$out" 2>&1; then
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/partial.config.yaml" "$sandbox" >"$out" 2>&1; then
     pass "renderer accepts a config without the optional sections"
   else
     fail "renderer should accept a config without the optional sections ($(tail -2 "$out"))"
@@ -1472,9 +1475,8 @@ run_render_missing_explicit_file_test() {
   chmod +x "${sandbox}/bin/pandoc-pdf"
   cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
   cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
-  cp "${ROOT_DIR}/scripts/render-native.rb" "${sandbox}/scripts/render-native.rb"
   cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
-  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/render-native.rb" "${sandbox}/scripts/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
   cp "${FIXTURES_DIR}/render-missing-explicit.config.yaml" "${sandbox}/render-missing-explicit.config.yaml"
 
@@ -1874,52 +1876,6 @@ EOF
   rm -f "$out"
 }
 
-run_render_parity_python_ruby_test() {
-  if [[ -z "${REAL_PYTHON3}" ]] || ! command -v ruby >/dev/null 2>&1; then
-    echo "⏭  SKIP python/ruby renderer parity (needs python3 and ruby)"
-    return 0
-  fi
-
-  local sandbox tmpbin capture_path capture_rb out
-  sandbox="$(new_contract_sandbox)"
-  tmpbin="$(mktemp -d)"
-  write_pandoc_capture_mock "$tmpbin"
-  capture_path="$(mktemp)"
-  capture_rb="$(mktemp)"
-  out="$(mktemp)"
-
-  printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
-  printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
-  write_contract_config "${sandbox}/pdf.config.yaml" natural false "" false
-
-  if TMP_PANDOC_CAPTURE="$capture_path" PYTHONPATH="${FIXTURES_DIR}/yaml_shim" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/pdf.config.yaml" "$sandbox" >"$out" 2>&1; then
-    pass "python renderer runs"
-  else
-    fail "python renderer should run ($(tail -2 "$out"))"
-  fi
-
-  if TMP_PANDOC_CAPTURE="$capture_rb" PATH="${tmpbin}:$PATH" \
-    ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/pdf.config.yaml" "$sandbox" >"$out" 2>&1; then
-    pass "ruby renderer runs"
-  else
-    fail "ruby renderer should run ($(tail -2 "$out"))"
-  fi
-
-  # macOS: Path.resolve() (python) resolves /var -> /private/var; expand_path (ruby) does not.
-  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$capture_path"
-  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$capture_rb"
-  rm -f "${capture_path}.bak" "${capture_rb}.bak"
-
-  if diff -u "$capture_path" "$capture_rb" >"$out" 2>&1; then
-    pass "python and ruby renderers build the same pandoc invocation"
-  else
-    fail "python and ruby renderers diverge ($(head -10 "$out"))"
-  fi
-
-  rm -rf "$sandbox" "$tmpbin"
-  rm -f "$capture_path" "$capture_rb" "$out"
-}
 
 run_locale_missing_target_message_test() {
   local out code
@@ -2109,53 +2065,6 @@ run_render_dry_run_human_test() {
   rm -f "$capture" "$out"
 }
 
-run_render_plan_parity_test() {
-  if [[ -z "${REAL_PYTHON3}" ]] || ! command -v ruby >/dev/null 2>&1; then
-    echo "SKIP render plan parity (needs python3 and ruby)"
-    return 0
-  fi
-
-  local sandbox tmpbin capture plan_py plan_rb out
-  sandbox="$(new_contract_sandbox)"
-  tmpbin="$(mktemp -d)"
-  write_pandoc_capture_mock "$tmpbin"
-  capture="$(mktemp)"
-  plan_py="$(mktemp)"
-  plan_rb="$(mktemp)"
-  out="$(mktemp)"
-
-  printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
-  printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
-  write_contract_config "${sandbox}/pdf.config.yaml" natural false "metadata.yaml" false
-  printf 'title: Metadata Title\n' >"${sandbox}/work/metadata.yaml"
-
-  if TMP_PANDOC_CAPTURE="$capture" PYTHONPATH="${FIXTURES_DIR}/yaml_shim" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/pdf.config.yaml" "$sandbox" --plan-json >"$plan_py" 2>"$out"; then
-    pass "python renderer emits a plan"
-  else
-    fail "python renderer should emit a plan ($(tail -2 "$out"))"
-  fi
-
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/pdf.config.yaml" "$sandbox" --plan-json >"$plan_rb" 2>"$out"; then
-    pass "ruby renderer emits a plan"
-  else
-    fail "ruby renderer should emit a plan ($(tail -2 "$out"))"
-  fi
-
-  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$plan_py"
-  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$plan_rb"
-  rm -f "${plan_py}.bak" "${plan_rb}.bak"
-
-  if diff -u "$plan_py" "$plan_rb" >"$out" 2>&1; then
-    pass "python and ruby renderers produce the same plan"
-  else
-    fail "python and ruby renderers diverge in the plan ($(head -12 "$out"))"
-  fi
-
-  rm -rf "$sandbox" "$tmpbin"
-  rm -f "$capture" "$plan_py" "$plan_rb" "$out"
-}
 
 run_emoji_filter_contexts_test() {
   if ! command -v pandoc >/dev/null 2>&1; then
@@ -2320,7 +2229,6 @@ main() {
   run_render_document_vars_test
   run_render_ballot_icons_test
   run_doctor_strict_semantics_test
-  run_render_parity_python_ruby_test
   run_locale_missing_target_message_test
   run_package_release_artifact_test
   run_emoji_filter_plain_heading_test
@@ -2329,7 +2237,6 @@ main() {
   run_render_mermaid_dir_gate_test
   run_render_plan_json_test
   run_render_dry_run_human_test
-  run_render_plan_parity_test
 
   echo ""
   echo "Summary: PASS=${PASS} FAIL=${FAIL}"

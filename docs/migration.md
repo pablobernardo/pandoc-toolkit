@@ -75,6 +75,14 @@ Quick wins incluidos en la misma versión:
 
 `filters/emoji.lua` deja de reescribir el texto sin emojis. Si tu plantilla mínima no cargaba `graphicx` y `hyperref`, añádelos: son necesarios para imágenes y para encabezados con formato. Antes del cambio, cualquier encabezado emitía `\\texorpdfstring` y el render fallaba aunque no hubiera emojis.
 
+## Retirada del renderer Ruby (próxima versión)
+
+`scripts/render-native.rb` ya no existe. El único renderer es `scripts/render-native.py`, que `pandoc-pdf render` invoca siempre.
+
+- **No tienes que hacer nada** si usas el CLI (`pandoc-pdf render -c ...`).
+- Si invocabas el script directamente, cambia la llamada a `python3 scripts/render-native.py <config> <toolkit_root> [--plan|--plan-json]` y mantén un parser YAML disponible: PyYAML, o Ruby con YAML de la stdlib (el renderer lo usa como fallback).
+- El plan JSON (`--dry-run --json`) mantiene su forma: `plan_version` sigue en 1.
+
 ## Política de cambios breaking
 
 Si la migración requiere cambio breaking en CLI/contrato/defaults:

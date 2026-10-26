@@ -31,7 +31,6 @@ El estado cambiante (fase actual, decisiones recientes, tareas abiertas) vive en
 - `scripts/bootstrap.sh`
 - `scripts/validate-config.py`
 - `scripts/render-native.py`
-- `scripts/render-native.rb`
 - `scripts/prepare-emojis.py`
 - `scripts/preflight.sh`
 - `scripts/check-i18n.py`
