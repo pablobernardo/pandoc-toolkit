@@ -1,56 +1,84 @@
-# Release Readiness — Seguridad
+# Release Readiness — Security
 
-Checklist de referencia para decidir si el toolkit está listo para publicar una versión.
+Reference checklist for deciding whether the toolkit is ready to publish a
+version.
 
-## Estado actual (post-1.1.2)
+## Current state (unreleased 1.2.0)
 
-## Decisiones de gobierno aprobadas
+- `VERSION` is **1.2.0** and there is **no tag yet**: the release is
+  deliberately postponed by maintainer decision (creating the tag triggers
+  `release.yml`, whose CI path is not currently exercised).
+- Latest published tag: `v1.1.3`.
 
-- **Versionado dual**: `VERSION` (toolkit semver) + `pdf.config.yaml -> version` (contrato).
-- **`runtime.strict` por defecto**: `true`.
-- **Política de errores**: fail-fast por defecto y degradación controlada solo en rutas no críticas.
+## Changes since 1.1.2
 
-### Criterios mínimos de seguridad (bloqueantes)
+- The security workflow (`.github/workflows/security.yml`) now runs Semgrep
+  from a **pinned container image** (`semgrep/semgrep:1.86.0`) instead of
+  `pip install`: the pip path broke on every runner bump (Python 3.14 has no
+  pydantic-core wheel, and setuptools 81+ dropped the `pkg_resources` that
+  semgrep's opentelemetry dependency imports).
+- Gitleaks also runs from a pinned container image
+  (`ghcr.io/gitleaks/gitleaks:v8.24.2`).
+- CI workflows use pinned `actions/checkout@v7`, and SARIF uploads use
+  `github/codeql-action/upload-sarif@v4`.
 
-- [x] **Entrada de comandos saneada** en `runtime.required_commands`.
-- [x] **Sin shell con interpolación insegura** para detectar comandos.
-- [x] **Carga YAML segura** en rutas Ruby (`YAML.safe_load`).
-- [x] **Tests de regresión de seguridad** añadidos y en verde.
-- [x] **Política de seguridad publicada** (`.github/SECURITY.md`).
-- [x] **Modelo de confianza documentado** (uso de configs confiables).
+## Approved governance decisions
 
-Resultado: **cumplido para corte 1.0.0**.
+- **Dual versioning**: `VERSION` (toolkit semver) + `pdf.config.yaml -> version`
+  (contract).
+- **`runtime.strict` defaults** to `true`.
+- **Error policy**: fail-fast by default, controlled degradation only on
+  non-critical paths.
 
-### Hardening recomendado (no bloqueante)
+### Minimum security criteria (blocking)
 
-- [x] Definir `permissions: contents: read` en workflows de GitHub Actions.
-- [x] Fijar versiones de dependencias críticas en bootstrap/CI (por ejemplo `@mermaid-js/mermaid-cli`).
-- [x] Añadir automatización de actualizaciones (`dependabot.yml`).
-- [x] Añadir escaneo básico de secretos/SAST en CI.
-- [x] Publicar reportes SARIF en GitHub Security para SAST/secrets.
-- [x] Definir política de umbrales de severidad y fallo en CI de seguridad.
+- [x] **Command input sanitised** in `runtime.required_commands`.
+- [x] **No shell with unsafe interpolation** for command detection.
+- [x] **Safe YAML loading** in Ruby paths (`YAML.safe_load`).
+- [x] **Security regression tests** added and green.
+- [x] **Security policy published** (`.github/SECURITY.md`).
+- [x] **Trust model documented** (trusted configs only).
 
-Política operativa actual:
+Result: **fulfilled for the 1.0.0 cut-off** (historical record; see also the
+1.2.0 changes above).
 
-- El upload SARIF está controlado por variable de repositorio: `ENABLE_SARIF_UPLOAD`.
-- Si `ENABLE_SARIF_UPLOAD=true`, en `push` a `main/master` se suben SARIF (Semgrep + Gitleaks) a GitHub Security.
-- En `pull_request` se ejecutan escaneos y umbrales, sin upload SARIF.
-- Si Code Scanning no está habilitado, dejar `ENABLE_SARIF_UPLOAD` desactivado evita fallos del workflow.
+### Recommended hardening (non-blocking)
 
-### Updater (`pandoc-pdf update`) — estado operacional
+- [x] Define `permissions: contents: read` in GitHub Actions workflows.
+- [x] Pin versions of critical dependencies in bootstrap/CI (for example
+      `@mermaid-js/mermaid-cli`).
+- [x] Add update automation (`.github/dependabot.yml`).
+- [x] Add basic secret scanning/SAST in CI.
+- [x] Publish SARIF reports to GitHub Security for SAST/secrets.
+- [x] Define severity threshold and failure policy in the security CI
+      (`scripts/enforce-security-thresholds.py`; error and warning thresholds
+      set to 0 in `security.yml`).
 
-- [x] Descarga de artefacto con verificación SHA256.
-- [x] Instalación gestionada por versión con puntero `current`.
-- [x] Validación post-instalación de versión esperada.
-- [x] Rollback robusto al estado anterior cuando falla validación final.
-- [x] Logging operacional opcional (`PANDOC_PDF_UPDATE_LOG_FILE`, `PANDOC_PDF_UPDATE_VERBOSE`).
+Current operating policy:
 
-### Integración L3 (seguimiento)
+- SARIF upload is controlled by a repository variable: `ENABLE_SARIF_UPLOAD`.
+- If `ENABLE_SARIF_UPLOAD=true`, on `push` to `main`/`master` SARIF reports
+  (Semgrep + Gitleaks) are uploaded to GitHub Security.
+- On `pull_request`, scans and thresholds run without SARIF upload.
+- If Code Scanning is not enabled, leaving `ENABLE_SARIF_UPLOAD` disabled
+  avoids workflow failures.
 
-- [x] Fixture L3 con Mermaid real (`tests/integration/l3-mermaid-project/`).
-- [x] Validación en CI L3 de salida PNG de Mermaid.
+### Updater (`pandoc-pdf update`) — operational status
 
-## Criterio de decisión
+- [x] Artifact download with SHA256 verification.
+- [x] Version-managed installation with a `current` pointer.
+- [x] Post-installation validation of the expected version.
+- [x] Robust rollback to the previous state when final validation fails.
+- [x] Optional operational logging (`PANDOC_PDF_UPDATE_LOG_FILE`,
+      `PANDOC_PDF_UPDATE_VERBOSE`).
 
-- Si todos los criterios bloqueantes están en verde: se puede publicar versión inicial.
-- Si además se completan los no bloqueantes: release más robusta para adopción enterprise.
+### L3 integration (follow-up)
+
+- [x] L3 fixture with real Mermaid (`tests/integration/l3-mermaid-project/`).
+- [x] L3 CI validation of Mermaid PNG output.
+
+## Decision criteria
+
+- If all blocking criteria are green: an initial version can be published.
+- If the non-blocking ones are also completed: a more robust release for
+  enterprise adoption.

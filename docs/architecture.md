@@ -1,16 +1,26 @@
-# Arquitectura Propuesta — Generador PDF Multi-Repo (Pandoc)
+# Architecture — Multi-Repository PDF Generator (Pandoc)
 
-## 1) Problema a resolver
+This document describes the toolkit **as built**. The design it originated from
+was a proposal; since version 1.0.0 it is the implemented architecture, and
+this file keeps it up to date with the code.
 
-Hoy el pipeline de `.pandoc` funciona, pero está acoplado a convenciones locales (`chapters/`, `output/`, rutas fijas en filtros Lua). Eso complica reutilizarlo en otros repos y escalar mantenimiento.
+## 1) Problem solved
 
-Objetivo: movernos a un **toolkit global versionado** con configuración declarativa por repo, sin perder compatibilidad con el flujo actual.
+The original pipeline (a local `.pandoc/` directory) worked but was coupled to
+local conventions (`chapters/`, `output/`, fixed paths inside the Lua
+filters). That made it hard to reuse in other repositories and to maintain at
+scale.
 
----
+The solution, implemented and published since v1.0.0, is a **versioned global
+toolkit** with declarative configuration per consuming repository, with no
+local coupling.
 
-## 2) Contrato de configuración (por repositorio)
+## 2) Configuration contract (per repository)
 
-Archivo recomendado en cada repo consumidor: `pdf.config.yaml`
+Each consuming repository keeps a `pdf.config.yaml` file. The single source of
+truth for the contract is `schemas/pdf-config.schema.json`; there is no
+defaults baseline to merge. The example below mirrors
+`examples/pdf.config.example.yaml`:
 
 ```yaml
 version: 1
@@ -28,13 +38,13 @@ document:
   rights: "Internal Use"
 
 input:
-  chapters_dir: "docs"
+  chapters_dir: "chapters"
   glob: "*.md"
   order: natural
   explicit_files: []
 
 output:
-  dir: "build/pdf"
+  dir: "output"
   file_prefix: "report"
   suffix: "${date:YYYYMMDD}"
   keep_merged_markdown: true
@@ -45,20 +55,20 @@ pandoc:
   toc_depth: 2
   number_sections: true
   template: "templates/default.tex"
-  metadata_file: ""
+  metadata_file: "metadata.yaml"
   resource_path:
-    - "docs"
-    - "docs/media"
-    - "build/pdf/emoji"
+    - "chapters"
+    - "chapters/media"
+    - "output/emoji"
 
 filters:
   emoji:
     enabled: true
-    emoji_dir: "build/pdf/emoji"
+    emoji_dir: "output/emoji"
     include_ballot_icons: true
   mermaid:
     enabled: true
-    output_dir: "build/pdf/mermaid"
+    output_dir: "output/mermaid"
     background: transparent
   extra_lua_filters: []
 
@@ -74,100 +84,146 @@ compat:
   legacy_clearpage_between_h1: true
 ```
 
-### Reglas del contrato
+All nine sections (`version`, `project`, `document`, `input`, `output`,
+`pandoc`, `filters`, `runtime`, `compat`) are required by the schema.
 
-1. **`version` obligatorio** para evolución sin romper repos viejos.
-2. Paths se resuelven contra `project.base_dir`.
-3. Si `explicit_files` no está vacío, tiene prioridad sobre `glob`.
-4. Si `metadata_file` está vacío, usar metadatos de `document`.
-5. Filtros pueden deshabilitarse por documento.
+### Contract rules
 
-### Convención de ejemplos en este toolkit
+1. **`version` is mandatory**, so the contract can evolve without breaking
+   older repositories.
+2. Paths resolve against `project.base_dir` (which itself resolves relative to
+   the config file's directory).
+3. If `explicit_files` is not empty, it takes priority over `glob`.
+4. If `pandoc.metadata_file` is set and exists, it takes priority over the
+   `document.*` fields; otherwise `document.*` values are passed as pandoc
+   variables.
+5. Filters (`emoji`, `mermaid`) can be disabled per document via their
+   `enabled` flags.
 
-- Usar nombres neutrales (`sample-project`, `ACME Corp`).
-- Evitar rutas o nomenclatura específicas de un cliente/repositorio.
-- Mantener ejemplos reproducibles en cualquier estructura estándar.
+### Example conventions in this toolkit
 
----
+- Use neutral names (`sample-project`, `ACME Corp`).
+- Avoid client- or repository-specific paths and naming.
+- Keep examples reproducible on any standard structure.
 
-## 3) Estructura propuesta del toolkit global
+## 3) Toolkit structure (as built)
 
 ```text
 pandoc-toolkit/
   bin/
-    pandoc-pdf               # CLI principal
+    pandoc-pdf               # main CLI
   templates/
     default.tex
-    iso-light.tex
   filters/
     emoji.lua
+    emoji/
     mermaid.lua
   scripts/
-    prepare-emojis.py
+    bootstrap.sh
+    install.sh
+    install-local.sh
+    package-release.sh
     preflight.sh
+    preflight.py
+    validate-config.py
+    render-native.py         # the single renderer
+    prepare-emojis.py
+    i18n.sh
+    i18n_runtime.py
+    check-i18n.py
+    enforce-security-thresholds.py
   schemas/
     pdf-config.schema.json
+  i18n/
+    locales/                 # en.json, es.json, gl.json, pt.json
+    schema/
   examples/
     pdf.config.example.yaml
+    metadata.yaml
   docs/
-    migration.md
+    install.md
     usage.md
+    migration.md
+    ...
+  tests/
+    run.sh
+    l1/
+    integration/
 ```
 
-### Principios
+### Principles
 
-- **Core estable + config por repo**.
-- **Versionado semántico** del toolkit (`v0.x`, `v1.x`).
-- **Sin hardcode de rutas** dentro de filtros.
-- **Preflight explícito** de dependencias antes de renderizar.
+- **Stable core + config per repository.**
+- **Semantic versioning** of the toolkit (`v1.x`).
+- **No hardcoded paths** inside filters: every path arrives from the config,
+  resolved against `project.base_dir`.
+- **Explicit preflight** of dependencies before rendering (`doctor` /
+  `preflight`).
 
----
+## 4) Render pipeline
 
-## 4) Compatibilidad con este repo (plan de migración)
+There is exactly one renderer: `scripts/render-native.py`. YAML is read with
+PyYAML when available and otherwise through Ruby's stdlib in a subprocess.
 
-### Fase 1 — Endurecer local
+`pandoc-pdf render -c <config>` validates the config against the schema and
+renders. There is no `defaults/default.yaml` and no baseline merge: the schema
+is the only source of truth, and the renderer applies only its historical
+code-level fallbacks for absent keys.
 
-1. Parametrizar rutas en `emoji.lua` y `mermaid.lua` (leer desde metadata/vars Pandoc).
-2. Consolidar preparación de emojis en `prepare-emojis.py` y eliminar duplicados legacy.
-3. Completar preflight (`pandoc`, engine TeX, `python3`, `curl`, `mmdc`).
+`pandoc-pdf render -c <config> --dry-run [--json]` computes a pure plan
+(nothing is written or created) with `plan_version: 1`, containing the
+selected chapters, output targets, the exact pandoc `argv`, and the filter
+environment. `scripts/render-native.py` is split into `build_plan` (pure),
+`execute_plan` (the single point with side effects) and `print_plan`.
 
-### Fase 2 — Extraer toolkit
+## 5) Migration (executed plan)
 
-1. Mover scripts/filtros/template al repo `pandoc-toolkit`.
-2. Publicar versión `v0.1.0`.
-3. En cada repo consumidor, dejar wrapper mínimo que invoque toolkit con `pdf.config.yaml`.
+The original three-phase migration plan was executed:
 
-### Fase 3 — Escalar a otros repos
+1. **Harden locally** — routes in `emoji.lua` and `mermaid.lua` were
+   parameterised (read from metadata/vars), emoji preparation was consolidated
+   in `scripts/prepare-emojis.py`, and preflight was completed.
+2. **Extract the toolkit** — scripts, filters and templates moved to this
+   repository and published by tag (v1.0.0 onwards). Each consuming repository
+   keeps a `pdf.config.yaml` and invokes the toolkit through `bin/pandoc-pdf`.
+3. **Reuse across repositories** — the toolkit is consumed by tag/version;
+   per-repository customisation is limited to `pdf.config.yaml` plus an
+   optional template, and breaking changes are governed by the `version` of
+   the config contract (see `docs/migration.md`).
 
-1. Reusar toolkit por tag/version.
-2. Personalizar solo `pdf.config.yaml` + template opcional.
-3. Mantener changelog de breaking changes por `version` de config.
+## 6) Decision record
 
----
+### Option A — Global toolkit (CHOSEN AND IMPLEMENTED)
+- ✅ Better maintainability and scalability
+- ✅ Upgrades controlled by version
+- ⚠️ Required designing the config contract up front (done: see
+  `schemas/pdf-config.schema.json`)
 
-## 5) Tradeoffs (decisión recomendada)
+### Option B — Git submodule of `.pandoc` (rejected)
+- ✅ Fast to implement
+- ⚠️ Operational friction in teams
+- ⚠️ Less flexibility for fine-grained overrides
 
-### Opción A — Toolkit global (RECOMENDADA)
-- ✅ Mejor mantenibilidad y escalabilidad
-- ✅ Upgrade controlado por versión
-- ⚠️ Requiere diseñar contrato de config al inicio
+### Option C — Copy per repository (rejected)
+- ✅ Low initial cost
+- ❌ Guaranteed technical drift
+- ❌ High future maintenance cost
 
-### Opción B — Git submodule de `.pandoc`
-- ✅ Implementación rápida
-- ⚠️ Fricción operativa en equipos
-- ⚠️ Menor flexibilidad para overrides finos
+## 7) Production criteria — what must keep holding
 
-### Opción C — Copia por repo
-- ✅ Costo inicial bajo
-- ❌ Deriva técnica garantizada
-- ❌ Alto costo de mantenimiento futuro
+These were the "definition of done" criteria for 1.0.0. They now act as
+invariants that future changes must preserve:
 
----
-
-## 6) Criterios de listo para producción
-
-- [ ] Un solo entrypoint (`pandoc-pdf`).
-- [ ] Config validada contra schema.
-- [ ] Rutas 100% declarativas (sin hardcode).
-- [ ] Compatibilidad probada en al menos 2 repos con estructuras distintas.
-- [ ] Documentación de migración y fallback legacy.
+- [x] A single entry point (`bin/pandoc-pdf`).
+- [x] Config validated against the JSON schema (`pandoc-pdf validate-config`,
+      enforced by `render` before every run).
+- [x] 100% declarative paths (no hardcoded paths in scripts, filters or
+      templates).
+- [ ] Compatibility proven in at least two repositories with different
+      structures. The test suite covers three integration fixtures with
+      different structures (`tests/integration/minimal-project/`,
+      `tests/integration/enabled-filters-project/`,
+      `tests/integration/l3-mermaid-project/`), and this criterion is stated
+      in `AGENTS.md` as a delivery criterion, but adoption by external
+      consuming repositories cannot be verified from this repository alone.
+- [x] Migration and legacy fallback documented (`docs/migration.md`).
