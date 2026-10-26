@@ -105,6 +105,7 @@
   "preflight.error.no_yaml_parser": "Preflight con -c require PyYAML ou Ruby YAML dispoñibles",
   "preflight.error.invalid_required_command": "Nome de comando inválido en runtime.required_commands: {cmd}",
   "render.error.yaml_parse": "Non se puido parsear YAML: {error}",
+  "render.error.no_yaml_parser": "Non hai parser YAML dispoñible (instala PyYAML ou Ruby con YAML da stdlib)",
   "render.error.yaml_root_object": "A raíz de {path} debe ser un obxecto/map",
   "render.error.usage": "Uso: render-native.py <config.yaml> <toolkit_root>",
   "render.error.config_not_found": "Config non atopada: {path}",

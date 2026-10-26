@@ -4,13 +4,17 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import NoReturn
 
-import yaml
+try:
+    import yaml  # type: ignore
+except Exception:  # PyYAML is optional: Ruby's stdlib YAML is the fallback.
+    yaml = None
 
 try:
     from i18n_runtime import t
@@ -85,11 +89,51 @@ def resolve_suffix(raw_suffix: str | None) -> str:
     return raw_suffix.replace("${date:YYYYMMDD}", datetime.now().strftime("%Y%m%d"))
 
 
-def load_yaml_map(path: Path) -> dict:
+RUBY_YAML_SCRIPT = r"""
+require 'yaml'
+require 'json'
+path = ARGV[0]
+begin
+  data = YAML.safe_load(File.read(path), permitted_classes: [], aliases: false)
+  puts JSON.generate(data)
+rescue => e
+  STDERR.puts e.message
+  exit 2
+end
+"""
+
+
+def load_yaml_via_ruby(path: Path) -> dict | None:
+    """Parse YAML through Ruby's stdlib and return plain data. None when Ruby is unavailable."""
+    ruby_bin = shutil.which("ruby")
+    if ruby_bin is None:
+        return None
+
+    proc = subprocess.run(
+        [ruby_bin, "-e", RUBY_YAML_SCRIPT, str(path)],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode == 2:
+        die(t("render.error.yaml_parse", "Could not parse YAML: {error}", error=proc.stderr.strip() or "invalid YAML"))
+    if proc.returncode != 0:
+        return None
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        return json.loads(proc.stdout)
     except Exception as e:
         die(t("render.error.yaml_parse", "Could not parse YAML: {error}", error=e))
+
+
+def load_yaml_map(path: Path) -> dict:
+    if yaml is not None:
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except Exception as e:
+            die(t("render.error.yaml_parse", "Could not parse YAML: {error}", error=e))
+    else:
+        data = load_yaml_via_ruby(path)
+        if data is None:
+            die(t("render.error.no_yaml_parser", "No YAML parser available (install PyYAML or Ruby with stdlib YAML)"))
 
     if data is None:
         return {}
