@@ -73,23 +73,25 @@
 | D8 | Release postponed: 1.2.0 is on `master` with no tag. Creating the tag triggers `release.yml` with `action-gh-release@v3`, which its CI does not exercise. |
 | D9 | The repository is English, including this file and `odd/`; only `i18n/locales/es.json` is Spanish. |
 
-## Native review (RDD) — blocked by the provider
+## Native review (RDD) — a size threshold, not a broken provider
 
-State: **not available for this work**. Three attempts, always the same reviewer and the same limit:
+State: **usable, and it works on small candidates**. Four attempts with the same reviewer:
 
-| lineage | candidate | result |
-| --- | --- | --- |
-| `review-d3a0f85c95b06577` | branch up to `31bc09b` (1,088 lines) | fails on `review-resilience` |
-| `review-53a11f26c014de04` | plan+defaults slice (1,159 lines) | fails on `review-resilience` |
-| `review-2197251eaa9a4fbc` | `9b22148` alone (159 lines) | fails on `review-resilience` |
+| candidate | result |
+| --- | --- |
+| 1,088 lines (branch to `31bc09b`) | `review-resilience` returns an empty answer |
+| 1,159 lines (plan+defaults slice) | same |
+| 159 lines (`9b22148`) | same |
+| **62 lines (project locale file)** | **approved, 4/4 lenses, no blocking finding** |
 
-Cause: `reasoning-only stream guard: 420 s / 45.000 reasoning-character limit` in the model serving the resilience lens, with `prepared_reviewers: 0` and no mutation. The third attempt settles the diagnosis: a 159-line candidate fails identically, so it is the model, not the diff size. At `high` tier the provider requires all four lenses, so a subset cannot be salvaged.
+Cause: the model serving the resilience lens emits reasoning only until it hits the gateway guard (`420 s / 45.000 reasoning-character limit`) and then returns nothing. Whether it finishes depends on how much the candidate makes it think, so **above roughly a hundred lines it fails and below it works**.
 
-Operational consequences:
+Consequences:
 
-- No lineage is corrupt; all three stay in `reviewing`. They are **not** abandoned without an explicit maintainer decision (audited, destructive operation).
-- The effective review of this work is the **human review of the pull requests**.
-- Retrying requires a different reviewer model in the relay; per-commit candidates do not help.
+- Review small candidates (say, a commit or a focused change), never a whole branch. The plan artefact and its conformance idea remain the right long-term answer for large ones.
+- An approved review is not a substitute for tests, and a failed review is not a reason to skip them: the effective gate is still the suite plus human review of the pull request.
+- Retrying on a large candidate wastes about ten minutes and leaves a lineage to abandon.
+
 
 ## Binary migration (Go) — pending decision
 

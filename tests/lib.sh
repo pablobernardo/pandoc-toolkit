@@ -198,3 +198,19 @@ PY
     fail "$msg"
   fi
 }
+
+assert_file_exists() {
+  if [[ -f "$1" ]]; then
+    pass "$2"
+  else
+    fail "$2 (missing: $1)"
+  fi
+}
+
+assert_file_absent() {
+  if [[ -e "$1" ]]; then
+    fail "$2 (exists: $1)"
+  else
+    pass "$2"
+  fi
+}
