@@ -1992,6 +1992,29 @@ run_package_release_artifact_test() {
   rm -rf "$out_dir"
 }
 
+run_emoji_filter_plain_heading_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "⏭  SKIP emoji filter heading check (pandoc not available)"
+    return 0
+  fi
+
+  local md tex
+  md="$(mktemp)"
+  tex="$(mktemp)"
+  printf '# Plain Heading\n\nText with an emoji \xe2\x9c\x85 and plain words.\n' >"$md"
+
+  if pandoc "$md" -t latex --lua-filter="${ROOT_DIR}/filters/emoji.lua" >"$tex" 2>&1; then
+    pass "emoji filter produces latex output"
+  else
+    fail "emoji filter should produce latex output ($(tail -2 "$tex"))"
+  fi
+
+  assert_contains "$tex" '\\section\{Plain Heading\}' "emoji filter keeps a plain heading plain"
+  assert_not_contains "$tex" '\\texorpdfstring' "emoji filter does not format plain headings (needs hyperref otherwise)"
+
+  rm -f "$md" "$tex"
+}
+
 main() {
   echo "== Running pandoc-pdf tests =="
   run_help_test
@@ -2029,6 +2052,7 @@ main() {
   run_render_parity_python_ruby_test
   run_locale_missing_target_message_test
   run_package_release_artifact_test
+  run_emoji_filter_plain_heading_test
 
   echo ""
   echo "Summary: PASS=${PASS} FAIL=${FAIL}"

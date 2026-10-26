@@ -147,9 +147,24 @@ end
 function Code(el) return nil end
 function CodeBlock(el) return nil end
 
--- Reemplaza emojis dentro de palabras/strings
+-- Reemplaza emojis dentro de palabras/strings.
+-- Solo envuelve en Span cuando hubo sustitución real: envolver texto plano
+-- convierte cualquier encabezado en "con formato" y hace que pandoc emita
+-- \texorpdfstring, que exige hyperref en la plantilla (rompía plantillas
+-- mínimas sin hyperref).
 function Str(el)
-  return pandoc.Span(string_to_inlines(el.text))
+  local inlines = string_to_inlines(el.text)
+  local replaced = false
+  for _, inline in ipairs(inlines) do
+    if inline.t ~= "Str" then
+      replaced = true
+      break
+    end
+  end
+  if not replaced then
+    return nil
+  end
+  return pandoc.Span(inlines)
 end
 
 -- Procesar inline recursivamente (Links, Emph, Strong, etc.)
