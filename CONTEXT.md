@@ -99,9 +99,31 @@ Sin bloqueantes técnicos abiertos para el contrato Linux/macOS del toolkit.
 2. **Hardening de supply chain (iteración siguiente)**
    - evaluar firma criptográfica de artefactos (Sigstore/GPG).
 
+## Revisión nativa (RDD) — bloqueada por límite del proveedor
+
+Estado: **no disponible para esta rama**. Dos intentos, mismo revisor y mismo límite:
+
+| lineage | candidato | resultado |
+| --- | --- | --- |
+| `review-d3a0f85c95b06577` | rama hasta `31bc09b` (1.088 líneas) | falla en `review-resilience` |
+| `review-53a11f26c014de04` | slice plan+defaults (1.159 líneas) | falla en `review-resilience` |
+
+Motivo: `reasoning-only stream guard: 420 s / 45.000 reasoning-character limit` en el modelo que sirve la lente de resiliencia, con `prepared_reviewers: 0` y sin mutación. Con tier `high` el proveedor exige las cuatro lentes, así que no se puede rescatar un subconjunto.
+
+Consecuencias operativas:
+
+- Ningún lineage está corrupto; ambos quedan en estado `reviewing`. **No se abandonan** sin decisión explícita del mantenedor (operación auditada y destructiva).
+- La revisión efectiva de la rama es la **revisión humana del PR**.
+- Si se quiere reintentar: candidatos por commit (≈200-600 líneas) en lugar de la rama completa; el guard salta por volumen de diff, no por tipo de cambio.
+
+## Verificación por commit
+
+Los 10 commits de la rama pasan `tests/run.sh` de forma independiente (verificado extrayendo cada árbol con `git archive` y ejecutando la suite): `75f6dc9`, `bfb5d8f`, `ae9cb3b`, `2b622ca`, `31bc09b`, `b4dab34`, `443e9ec`, `5a25fef`, `9b22148`, `e61657a`.
+
 ## Riesgos activos
 
 - Diferencias de entorno (TeX/Mermaid/Chromium) entre local y ejecución de integración completa.
+- Revisión nativa (RDD) indisponible por límite del proveedor: la cobertura externa de esta rama depende de la revisión humana del PR.
 - Dependencia de publicación en GitHub para cerrar automatización de reportes/updates.
 
 ## Decisiones tomadas
