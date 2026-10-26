@@ -56,5 +56,5 @@ pandoc-pdf validate-config -c tests/fixtures/valid.config.yaml
 ## Recursos
 
 - Política de seguridad: `../../../.github/SECURITY.md`
-- Registro de skills: `../../skill-registry.md`
+- Contrato de agentes: `../../../AGENTS.md`
 - Guía de uso: `../../../docs/usage.md`

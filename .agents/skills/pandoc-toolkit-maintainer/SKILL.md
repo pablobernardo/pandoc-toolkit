@@ -12,7 +12,7 @@ metadata:
 
 ## Cuándo usar
 
-- Cuando un cambio afecta al contrato (`schemas/pdf-config.schema.json`, defaults o estructura de `pdf.config.yaml`).
+- Cuando un cambio afecta al contrato (`schemas/pdf-config.schema.json` o la estructura de `pdf.config.yaml`).
 - Cuando se modifica render, preflight o validación de configuración.
 - Cuando se tocan tests de integración, pipeline de CI o documentación de uso/migración.
 
@@ -51,7 +51,7 @@ metadata:
 | `scripts/render-native.*` | `tests/run.sh`, fixtures de render, `docs/usage.md` |
 | `scripts/preflight.*` o `validate-config.py` | tests de doctor/validate, `docs/usage.md` |
 | `.github/workflows/ci.yml` | `README.md`, `docs/usage.md` |
-| defaults o plantilla base | `examples/`, fixtures afectados, docs |
+| plantilla base (`templates/`) | `examples/`, fixtures afectados, docs |
 
 ## Comandos
 
@@ -63,7 +63,10 @@ tests/run.sh
 
 ## Recursos
 
-- **Normativa de agentes**: `../../skill-registry.md`
+El registry de skills (`.atl/skill-registry.md`) es estado local generado por gentle-ai, no versionado.
+
+- **Normativa de agentes**: `../../../AGENTS.md`
+- **Estado y decisiones**: `../../../CONTEXT.md`
 - **Arquitectura**: `../../../docs/architecture.md`
 - **Uso operativo**: `../../../docs/usage.md`
 - **Migración**: `../../../docs/migration.md`
