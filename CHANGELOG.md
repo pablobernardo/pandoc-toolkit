@@ -40,6 +40,7 @@ after the 1.1.3 release and is **not published**.
 
 ### Changed
 
+- `pandoc-pdf locale set --project <lang>` writes `.pandoc-pdf.env` in the directory it runs from, and the CLI finds it by walking up from the current directory. It used to write into the toolkit installation, so two consuming repositories shared one locale.
 - One shell i18n runtime (`scripts/i18n.sh`) shared by `bin/pandoc-pdf` and
   `scripts/bootstrap.sh`: locale resolution and `t` are no longer duplicated and
   translating a message spawns no process. Measured on the same machine,
