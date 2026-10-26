@@ -1,71 +1,116 @@
 # Changelog
 
-Todos los cambios relevantes de este toolkit se documentan en este archivo.
+All notable changes to this toolkit are documented in this file.
 
-Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
+The project follows semantic versioning and keeps two versioned contracts:
 
-- `VERSION` para la versión del toolkit
-- `pdf.config.yaml -> version` para el contrato de configuración
+- `VERSION` for the toolkit version
+- `pdf.config.yaml -> version` for the configuration contract
 
-## [Unreleased]
+## [Unreleased] — planned as 1.2.0
 
-### Fixed
-
-- `validate-config` ignoraba en silencio cualquier keyword de JSON Schema fuera de su subconjunto (`enum`, `pattern`, `$ref`…). Ahora implementa `enum` y un test falla si el schema usa una keyword no soportada.
-- `input.order` se valida contra su `enum` (`natural`, `alphabetical`) en `validate-config`, no solo en el renderer: un valor no admitido se rechaza con mensaje que nombra el campo, los valores permitidos y el recibido.
-- `validate-config` rechaza un `pandoc.metadata_file` que no existe. Antes el renderer lo omitía en silencio, así que una ruta mal escrita producía un PDF sin los metadatos declarados y sin ningún aviso.
-
-### Changed
-
-- Los dos entry points de bash comparten ahora un único runtime i18n (`scripts/i18n.sh`): la resolución de idioma y `t` ya no están duplicadas y traducir un mensaje no lanza un proceso. Medido en la misma máquina: `pandoc-pdf --help` pasa de 0,188 s a 0,080 s y de 5 procesos `python3` a 1. Además `bootstrap.sh` hereda el idioma configurado con `pandoc-pdf locale set`, que antes ignoraba.
-
-### Removed
-
-- `scripts/render-native.rb`: queda un único renderer, en Python. El duplicado costaba 398 líneas de lógica paralela y solo existía porque el CLI lo elegía cuando faltaba PyYAML; ahora el renderer parsea YAML con PyYAML si está o, si no, delegando en la stdlib de Ruby por subproceso (el mismo recurso que ya usaba `validate-config`). Afecta solo a quien invocara ese script directamente: ni el CLI, ni el contrato de config, ni el comportamiento por defecto cambian.
-
-### Maintenance
-
-- Consolidar revisión periódica de dependencias fijadas y documentar validación por actualización.
-- Documentar guía técnica de i18n para facilitar alta de nuevos idiomas y validación de seguridad.
-
----
-
-## [1.2.0] - released
+`VERSION` says `1.2.0` and no tag exists yet, so everything below was merged
+after the 1.1.3 release and is **not published**.
 
 ### Added
 
-- Los cinco campos del contrato que el schema declaraba obligatorios y el runtime no leía ahora tienen efecto real (mismo comportamiento en los renderers Python y Ruby):
-  - `input.order`: `natural` ordena los capítulos comparando los tramos numéricos como números (`chapter-2.md` antes que `chapter-10.md`); `alphabetical` conserva el orden lexicográfico.
-  - `output.keep_merged_markdown`: `false` elimina el `.md` fusionado tras un render de pandoc correcto; si pandoc falla, el `.md` se conserva para diagnóstico.
-  - `document.*`: con `pandoc.metadata_file` vacío, `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan a pandoc como variables de plantilla (`-V campo=valor`) y rellenan la portada de `templates/default.tex`.
-  - `filters.emoji.include_ballot_icons`: `false` deja las casillas de tareas Markdown (`☐`, `☑`, `☒`) como caracteres en lugar de sustituirlas por imagen.
-  - `runtime.strict`: `false` reporta las dependencias ausentes como advertencias y sale con exit 0, también en la ruta de parseo YAML mínimo usada cuando no hay PyYAML. El motor TeX queda fuera del perdón: sin él no hay PDF, así que su ausencia falla siempre.
-- `pandoc-pdf render -c <config> --dry-run` imprime el plan de render y no escribe nada; `--dry-run --json` lo emite como JSON (`plan_version: 1`) con capítulos en orden efectivo, dianas, `argv` de pandoc y entorno. El plan es puro: el ejecutor (`execute_plan`) es el único punto con efectos.
+- The five contract fields the schema already required and the runtime never
+  read now take effect:
+  - `input.order`: `natural` compares numeric runs as numbers (`chapter-2.md`
+    before `chapter-10.md`); `alphabetical` keeps lexicographic order. Any other
+    value is rejected.
+  - `output.keep_merged_markdown`: `false` deletes the merged `.md` after a
+    successful pandoc run and keeps it when pandoc fails, for diagnosis.
+  - `document.*`: with `pandoc.metadata_file` empty, `title`, `subtitle`,
+    `publisher`, `author`, `date` and `rights` reach pandoc as template
+    variables (`-V field=value`) and fill the cover page that
+    `templates/default.tex` already expected.
+  - `filters.emoji.include_ballot_icons`: `false` leaves Markdown task boxes
+    (`☐`, `☑`, `☒`) as characters instead of substituting images.
+  - `runtime.strict`: `false` reports missing dependencies as warnings and
+    exits 0, including on the minimal YAML path used when PyYAML is absent. The
+    TeX engine is never waived: without it there is no PDF, so its absence
+    always fails.
+- `pandoc-pdf render -c <config> --dry-run` prints the render plan and writes
+  nothing; `--dry-run --json` emits it as JSON (`plan_version: 1`) with the
+  chapters in effective order, the targets, the pandoc `argv` and the
+  environment. The plan is pure: `execute_plan` is the only place with side
+  effects, and the parity test pins both renderers to the same plan while more
+  than one exists.
 
 ### Changed
 
-- El mensaje de error por locale no indicado ya no sugiere `--team` (opción inexistente): ahora nombra la opción real, `pandoc-pdf locale set --project <lang>`.
-- `--resource-path` se une con el separador de la plataforma (`os.pathsep`) en lugar de `:` hardcodeado.
-- `scripts/package-release.sh` construye el árbol una sola vez y publica el mismo artefacto bajo los cuatro nombres de plataforma, en lugar de empaquetar cuatro veces.
+- One shell i18n runtime (`scripts/i18n.sh`) shared by `bin/pandoc-pdf` and
+  `scripts/bootstrap.sh`: locale resolution and `t` are no longer duplicated and
+  translating a message spawns no process. Measured on the same machine,
+  `pandoc-pdf --help` went from 0.188 s to 0.080 s and from five `python3`
+  processes to one. `bootstrap.sh` now also honours the language set with
+  `pandoc-pdf locale set`, which it used to ignore.
+- The locale error no longer suggests `--team`, an option that never existed: it
+  names the real one, `pandoc-pdf locale set --project <lang>`.
+- `--resource-path` is joined with the platform separator instead of a hardcoded
+  `:`.
+- `scripts/package-release.sh` builds the tree once and publishes the same
+  artifact under the four platform names instead of packing four times.
 
 ### Fixed
 
-- `filters/emoji.lua` ya no envuelve en `Span` el texto que no contiene emojis. Los encabezados planos dejan de emitir `\\texorpdfstring` (macro que define `hyperref`) y el filtro deja de romper plantillas mínimas. El defecto ya existía en 1.1.x: la integración L2 fallaba en `master`.
-- Un valor no admitido en `input.order` falla en `render` con mensaje localizado que enumera los valores soportados (`natural`, `alphabetical`), en lugar de ordenar silenciosamente por nombre.
+- `validate-config` silently ignored any JSON Schema keyword outside its own
+  subset (`enum`, `pattern`, `$ref`…). It now implements `enum` and a test fails
+  if the schema starts using an unsupported keyword.
+- `input.order` is validated against its `enum` in `validate-config`, not only in
+  the renderer: an unsupported value is rejected with a message naming the
+  field, the allowed values and the received one.
+- `validate-config` rejects a `pandoc.metadata_file` that does not exist. The
+  renderer used to skip it silently, so a typo produced a PDF without the
+  declared metadata and without any warning.
+- `filters/emoji.lua` no longer wraps text without emojis in a `Span`. Plain
+  headings stop emitting `\texorpdfstring` (a macro `hyperref` defines) and the
+  filter stops breaking minimal templates. The defect predates 1.2.0: the L2
+  integration job was already failing on `master` because of it.
 
 ### Removed
 
-- `defaults/default.yaml`: el schema pasa a ser la única fuente de verdad. El archivo era inalcanzable por el camino validado (el schema ya exige esas claves) y solo lo ejercitaba un test que llamaba al renderer saltándose el CLI.
-- `defaults_path` / `defaults_exists` en `pandoc-pdf info` (texto y `--json`), porque el fichero ya no existe.
-- Assets `filters/emoji/emoji_u2610.svg`, `emoji_u2611.svg` y `emoji_u2612.svg`: copias byte-idénticas de `2610.svg`, `2611.svg` y `2612.svg` que no se referenciaban y se copiaban en cada ejecución del renderer.
-- El artefacto de release ya no incluye `scripts/__pycache__` ni ficheros `.pyc`.
+- `scripts/render-native.rb`: a single renderer remains, in Python. The duplicate
+  cost 398 lines of parallel logic and existed only because the CLI picked it
+  when PyYAML was missing; the renderer now parses YAML with PyYAML when
+  available and otherwise delegates to Ruby's stdlib in a subprocess, the same
+  resource `validate-config` already used. It only affects callers that invoked
+  that script directly.
+- `defaults/default.yaml`: the schema is the single source of truth. The file was
+  unreachable through the validated path (the schema already required every key
+  it provided) and only a test that bypassed the CLI exercised it.
+- `defaults_path` / `defaults_exists` from `pandoc-pdf info` (text and `--json`),
+  since the file no longer exists.
+- The duplicate `filters/emoji/emoji_u{2610,2611,2612}.svg` assets, byte-identical
+  to `2610.svg`, `2611.svg` and `2612.svg`, unreferenced and copied into the
+  emoji directory on every run.
+- `scripts/__pycache__` and `.pyc` files from the release artifact.
 
 ### Tests
 
-- 43 nuevas aserciones en `tests/run.sh`: los cinco comportamientos del contrato (`input.order`, `output.keep_merged_markdown`, `document.*`, `include_ballot_icons`, `runtime.strict`), paridad de invocación pandoc entre los renderers Python y Ruby, y el artefacto de release sin bytecode.
-- Test guardado con pandoc real: el filtro de emojis no reescribe encabezados planos (`\\texorpdfstring` ausente).
-- Las plantillas de `tests/integration/*` cargan `graphicx` y `hyperref`, así que L2 vuelve a verificar un render real completo.
-- Nueva fixture `tests/fixtures/doctor-config-strict-false.yaml` y doble de test `tests/fixtures/yaml_shim/yaml.py` para ejercitar el renderer Python donde no hay PyYAML.
+- The L1 suite grew from 145 assertions to 228 and stopped being a single file:
+  2,365 lines became `tests/lib.sh` with the shared assertions and fixture
+  helpers plus one file per area under `tests/l1/`, with `tests/run.sh` (77 lines)
+  orchestrating. Each split step kept the same PASS count before and after.
+- New assertions pin every behaviour above: `input.order` (both values and the
+  rejected one), `output.keep_merged_markdown` on success and on pandoc failure,
+  `document.*` versus `pandoc.metadata_file`, `include_ballot_icons`,
+  `runtime.strict` with and without the TeX engine, `metadata_file` validation,
+  the schema keyword guard, the render plan and the emoji filter in headings,
+  paragraphs, table cells, captions and list items.
+- The two Python/Ruby parity tests were retired together with the duplicate
+  renderer and replaced by a structural pin: `render-native.rb` must not come
+  back.
+- `tests/integration/*` templates now load `graphicx` and `hyperref`, so L2
+  verifies a real render again instead of failing before pandoc could produce a
+  PDF.
+- Test-only YAML double (`tests/fixtures/yaml_shim/yaml.py`) so the Python
+  renderer can be exercised where PyYAML is absent.
+
+### Maintenance
+
+- Keep the pinned dependency review periodic and documented per update.
 
 ---
 
@@ -73,12 +118,18 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ### Fixed
 
-- `pandoc-pdf update` ahora descarga artefactos autenticados de releases privadas usando la API de assets de GitHub (`assets[].url`) cuando hay token (`PANDOC_PDF_UPDATE_TOKEN` / `GH_TOKEN`), evitando 404 en `browser_download_url`.
-- Añadido header `Accept: application/octet-stream` para descargas vía API de assets.
+- `pandoc-pdf update` downloads authenticated artifacts from private releases
+  through the GitHub asset API (`assets[].url`) when a token is present
+  (`PANDOC_PDF_UPDATE_TOKEN` / `GH_TOKEN`), avoiding the 404 on
+  `browser_download_url`.
+- Added the `Accept: application/octet-stream` header for downloads through the
+  asset API.
 
 ### Tests
 
-- Nueva regresión en `tests/run.sh` para validar instalación por `update` usando asset API en contexto autenticado (`run_update_install_private_api_asset_test`).
+- New regression in `tests/run.sh` covering installation through `update` with the
+  asset API in an authenticated context
+  (`run_update_install_private_api_asset_test`).
 
 ---
 
@@ -86,15 +137,17 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ### Fixed
 
-- Workflow `Security` estabilizado para repos con Code Scanning deshabilitado:
-  - upload SARIF condicionado por variable de repositorio `ENABLE_SARIF_UPLOAD == true`.
-  - se mantienen siempre los escaneos y la política de umbrales en CI.
+- `Security` workflow stabilised for repositories with Code Scanning disabled:
+  - SARIF upload is gated behind the repository variable
+    `ENABLE_SARIF_UPLOAD == true`.
+  - Scans and the CI threshold policy always run.
 
 ### Changed
 
-- Política operativa de seguridad actualizada para feature-flag de SARIF:
-  - por defecto, CI valida seguridad sin depender de Code Scanning.
-  - cuando se habilite Code Scanning, activar `ENABLE_SARIF_UPLOAD=true` para publicar SARIF en `push` a `main/master`.
+- Operational security policy updated for the SARIF feature flag:
+  - by default, CI validates security without depending on Code Scanning;
+  - once Code Scanning is enabled, set `ENABLE_SARIF_UPLOAD=true` to publish
+    SARIF on `push` to `main/master`.
 
 ---
 
@@ -102,15 +155,18 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ### Fixed
 
-- Workflow `Security` ajustado para evitar fallos de permisos en PR (`Resource not accessible by integration`):
-  - SARIF se publica sólo en `push` a `main/master`.
-  - En `pull_request` se mantienen escaneos y umbrales, sin upload SARIF.
-- Permisos del workflow endurecidos/afinados para upload en ramas protegidas (`actions: read`, `security-events: write`).
-- Acción de upload SARIF actualizada a `github/codeql-action/upload-sarif@v4`.
+- `Security` workflow adjusted to avoid permission failures on pull requests
+  (`Resource not accessible by integration`):
+  - SARIF is published only on `push` to `main/master`;
+  - on `pull_request`, scans and thresholds run without the SARIF upload.
+- Workflow permissions tightened for uploads on protected branches
+  (`actions: read`, `security-events: write`).
+- SARIF upload action updated to `github/codeql-action/upload-sarif@v4`.
 
 ### Changed
 
-- Documentación de release-readiness actualizada con la política operativa de seguridad por evento (`push` vs `pull_request`).
+- Release-readiness documentation updated with the per-event operational security
+  policy (`push` versus `pull_request`).
 
 ---
 
@@ -118,76 +174,89 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ### Added
 
-- i18n del CLI y scripts de runtime con catálogos por clave en `en`, `es`, `pt` y `gl`.
-- Comando `pandoc-pdf locale` simplificado a `show`, `set <lang>` y `set --project <lang>`.
-- Soporte de configuración global de idioma en `~/.config/pandoc-pdf/config.env`.
-- Validación de paridad de catálogos/placeholders (`scripts/check-i18n.py`) integrada en tests.
-- Nuevo comando `pandoc-pdf update --check` para comprobar última versión estable en GitHub Releases.
-- Nuevos comandos de actualización desde release:
+- CLI and runtime i18n with per-key catalogs in `en`, `es`, `pt` and `gl`.
+- `pandoc-pdf locale` simplified to `show`, `set <lang>` and `set --project <lang>`.
+- Global language configuration in `~/.config/pandoc-pdf/config.env`.
+- Catalog and placeholder parity validation (`scripts/check-i18n.py`) wired into
+  the tests.
+- `pandoc-pdf update --check` to look up the latest stable GitHub release.
+- Update commands from a release:
   - `pandoc-pdf update`
   - `pandoc-pdf update --to <tag>`
-  - soporte `--yes`, `--dry-run`, `--install-dir`
-- Soporte de autenticación para repositorios privados en updater mediante `PANDOC_PDF_UPDATE_TOKEN` o `GH_TOKEN`.
-- Instalación gestionada del updater en directorio versionado (`~/.local/share/pandoc-pdf/versions/<tag>`) con puntero `current`.
-- Bloqueo explícito de instalación con `update` cuando el comando se invoca como `pandoc-pdf-dev`.
-- Workflow automático de release (`.github/workflows/release.yml`) para publicar artefactos y `checksums.txt` en tags `v*`.
-- Publicación de resultados de seguridad en SARIF para Semgrep y Gitleaks en GitHub Security.
-- Política de umbrales de severidad para CI de seguridad mediante `scripts/enforce-security-thresholds.py`.
-- Scripts de distribución:
-  - `scripts/package-release.sh` (genera tarballs + checksums)
-  - `scripts/install.sh` (instalación estable desde latest release sin clonar repo)
-  - `scripts/install-local.sh` (instalación desde repo local al layout gestionado, con opción dev)
-- Runners locales de integración:
+  - `--yes`, `--dry-run` and `--install-dir` support.
+- Authentication for private repositories in the updater through
+  `PANDOC_PDF_UPDATE_TOKEN` or `GH_TOKEN`.
+- Managed updater installation in a versioned directory
+  (`~/.local/share/pandoc-pdf/versions/<tag>`) with a `current` pointer.
+- `update` explicitly blocked when the command runs as `pandoc-pdf-dev`.
+- Automatic release workflow (`.github/workflows/release.yml`) publishing
+  artifacts and `checksums.txt` on `v*` tags.
+- SARIF publication for Semgrep and Gitleaks in GitHub Security.
+- Severity threshold policy for the security CI through
+  `scripts/enforce-security-thresholds.py`.
+- Distribution scripts:
+  - `scripts/package-release.sh` (tarballs plus checksums)
+  - `scripts/install.sh` (stable install from the latest release without cloning)
+  - `scripts/install-local.sh` (install from the local repository into the
+    managed layout, with a dev option)
+- Local integration runners:
   - `tests/l2-local.sh` (semi-real)
-  - `tests/l3-local.sh` (full runtime con Mermaid)
+  - `tests/l3-local.sh` (full runtime with Mermaid)
 
 ### Changed
 
-- CI L2/L3 ahora reutiliza los runners locales (`tests/l2-local.sh`, `tests/l3-local.sh`) para evitar drift entre ejecución local y GitHub Actions.
-- Workflow de seguridad actualizado para subir SARIF y aplicar umbrales de severidad explícitos.
-- Documentación sincronizada con el estado real del toolkit (comando `locale`, locales activos, estado operativo y guía i18n).
+- L2/L3 CI reuses the local runners (`tests/l2-local.sh`, `tests/l3-local.sh`) to
+  avoid drift between local runs and GitHub Actions.
+- Security workflow updated to upload SARIF and apply explicit severity
+  thresholds.
+- Documentation synchronised with the real state of the toolkit (`locale`
+  command, active locales, operational state and i18n guide).
 
 ### Fixed
 
-- Eliminados acoples i18n residuales:
-  - mensajes hardcodeados en `scripts/check-i18n.py` y `scripts/prepare-emojis.py`
-  - etiquetas hardcodeadas de `locale show` en `bin/pandoc-pdf`
-  - cobertura incompleta de claves `bootstrap.*` en catálogos.
-- Homogeneizado texto operativo en raíz (`Makefile`) para evitar mensajes legacy fuera de la estrategia i18n actual.
-- Hardening del updater con validación post-instalación por versión esperada, rollback robusto y logging operativo opcional (`PANDOC_PDF_UPDATE_LOG_FILE`, `PANDOC_PDF_UPDATE_VERBOSE`).
+- Removed leftover i18n couplings:
+  - hardcoded messages in `scripts/check-i18n.py` and `scripts/prepare-emojis.py`;
+  - hardcoded `locale show` labels in `bin/pandoc-pdf`;
+  - incomplete `bootstrap.*` key coverage in the catalogs.
+- Operational text homogenised at the root (`Makefile`) to avoid legacy messages
+  outside the current i18n strategy.
+- Updater hardening with post-install version validation, robust rollback and
+  optional operational logging (`PANDOC_PDF_UPDATE_LOG_FILE`,
+  `PANDOC_PDF_UPDATE_VERBOSE`).
 
 ---
 
 ## [1.0.0] - released
 
-Primera versión estable pública del toolkit.
+First stable public release of the toolkit.
 
 ### Added
 
-- CLI estable `bin/pandoc-pdf` con comandos:
+- Stable CLI `bin/pandoc-pdf` with the commands:
   - `--version` / `version`
   - `info` / `info --json`
   - `doctor`
   - `validate-config -c <file>`
-  - `render -c <file>` (modo nativo por defecto)
-- `VERSION` como fuente canónica de versión del toolkit.
-- `scripts/preflight.sh` como chequeo runtime desacoplado.
-- Render nativo desacoplado en:
+  - `render -c <file>` (native mode by default)
+- `VERSION` as the canonical source of the toolkit version.
+- `scripts/preflight.sh` as a decoupled runtime check.
+- Native render decoupled into:
   - `scripts/render-native.py`
   - `scripts/render-native.rb`
-- Contrato de config versionado con:
+- Versioned configuration contract with:
   - `schemas/pdf-config.schema.json`
   - `examples/pdf.config.example.yaml`
   - `defaults/default.yaml`
   - `templates/default.tex`
-- Suite de tests `tests/run.sh` con fixtures de contrato/render/integración.
-- CI por niveles:
-  - L1 (rápido, PR/push)
+- `tests/run.sh` suite with contract, render and integration fixtures.
+- CI by levels:
+  - L1 (fast, PR/push)
   - L2 (semi-real, manual)
-  - L3 (integración completa, manual/programada)
-- Workflow de seguridad dedicado (`.github/workflows/security.yml`: Semgrep + Gitleaks).
+  - L3 (full integration, manual/scheduled)
+- Dedicated security workflow (`.github/workflows/security.yml`: Semgrep plus
+  Gitleaks).
 - Dependabot (`.github/dependabot.yml`).
-- Documentación operativa:
+- Operational documentation:
   - `README.md`
   - `docs/install.md`
   - `docs/usage.md`
@@ -195,28 +264,35 @@ Primera versión estable pública del toolkit.
   - `docs/architecture.md`
   - `docs/release-readiness.md`
   - `docs/dependency-policy.md`
-- Gobierno y seguridad:
+- Governance and security:
   - `LICENSE` (Apache-2.0)
   - `.github/CODEOWNERS`
   - `.github/SECURITY.md`
 
 ### Changed
 
-- `validate-config` pasó a validación estricta y schema-driven (required, tipos, `additionalProperties`).
-- `pandoc.template` pasó a opcional en schema.
-- `doctor` delega en `scripts/preflight.sh`.
-- `render` dejó fallback legacy y opera en modo nativo por defecto.
-- `bootstrap` mejorado con detección de gestores Linux (`apt-get`, `dnf`, `yum`, `pacman`, `zypper`, `apk`).
-- CI endurecido con permisos mínimos (`permissions: contents: read`).
-- Dependencias críticas fijadas en bootstrap/CI/security (`mermaid-cli`, `PyYAML`, `Semgrep`, `Gitleaks`).
-- Plantilla base movida de raíz a `templates/default.tex`.
-- Limpieza de scripts legacy y artefactos obsoletos.
+- `validate-config` moved to strict, schema-driven validation (required fields,
+  types, `additionalProperties`).
+- `pandoc.template` became optional in the schema.
+- `doctor` delegates to `scripts/preflight.sh`.
+- `render` dropped the legacy fallback and operates in native mode by default.
+- `bootstrap` improved with Linux package-manager detection (`apt-get`, `dnf`,
+  `yum`, `pacman`, `zypper`, `apk`).
+- CI hardened with minimal permissions (`permissions: contents: read`).
+- Critical dependencies pinned in bootstrap/CI/security (`mermaid-cli`, `PyYAML`,
+  `Semgrep`, `Gitleaks`).
+- Base template moved from the root to `templates/default.tex`.
+- Legacy scripts and obsolete artifacts removed.
 
 ### Fixed
 
-- Hardening de preflight contra inyección (sin `bash -c`; validación de `runtime.required_commands`).
-- Carga YAML segura en Ruby (`YAML.safe_load`) para validación, preflight y render nativo.
-- Tests robustecidos en PATH aislado y asserts (`grep --`).
-- Regresión corregida en fallback de template:
-  - si el usuario **no** informa `pandoc.template`, se usa el template por defecto del toolkit;
-  - si el usuario informa `pandoc.template`, se resuelve relativo a `project.base_dir`.
+- Preflight hardened against injection (no `bash -c`; validation of
+  `runtime.required_commands`).
+- Safe YAML loading in Ruby (`YAML.safe_load`) for validation, preflight and
+  native render.
+- Tests hardened in isolated `PATH` and assertions (`grep --`).
+- Template fallback regression fixed:
+  - when the user does **not** set `pandoc.template`, the toolkit default
+    template is used;
+  - when the user sets `pandoc.template`, it is resolved relative to
+    `project.base_dir`.
