@@ -99,7 +99,7 @@ Rules that avoid the usual breakage:
 - Install `mermaid-cli` **one** way. Homebrew and npm can both provide `mmdc`; whichever comes first in `PATH` wins, and mixing them is how a working setup becomes "no browser" after an upgrade.
 - After upgrading `mermaid-cli`, its Puppeteer may expect a different browser revision. Repeat the browser install if `pandoc-pdf doctor` complains.
 
-`pandoc-pdf doctor` verifies this by rendering a test diagram, so the failure surfaces before a long render.
+`pandoc-pdf doctor` verifies this by rendering a test diagram, so the failure surfaces before a long render. `make bootstrap` does the same check at the end of an install: if `mermaid-cli` is present but cannot render, it prints both fixes above. It never downloads a browser on its own, because a silent 200 MB download is not something an installer should decide for you.
 
 Option A (recommended) — install PyYAML:
 
