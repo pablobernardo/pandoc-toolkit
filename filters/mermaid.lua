@@ -56,7 +56,7 @@ local function simple_hash(s)
     end
 
     -- return pandoc.Para({ pandoc.Image({}, outfile) })
-    -- modificado para añadir espacio arriba y abajo de la imagen generada
+    -- modified to add space above and below the generated image
     local img = pandoc.Image({}, outfile)
 
     local top_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")

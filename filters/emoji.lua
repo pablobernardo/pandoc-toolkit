@@ -1,6 +1,6 @@
--- emoji.lua — reemplaza emojis por imágenes SVG sin tocar bloques de código
--- Busca SVGs en: filters/emoji/<hex>.svg  (ej: 2705.svg, 1f6ab.svg)
--- Si no existe el SVG específico, deja el carácter tal cual (o usa _missing.svg si está presente)
+-- emoji.lua — replaces emojis with SVG images without touching code blocks
+-- Looks up SVGs at: filters/emoji/<hex>.svg  (e.g. 2705.svg, 1f6ab.svg)
+-- If the specific SVG is missing, leave the character as is (or use _missing.svg when present)
 
 local utf8 = require 'utf8'
 
@@ -29,7 +29,7 @@ local function svg_for_hex(hex)
   local found = first_existing(candidates)
   if found then return found end
 
-  -- placeholder opcional
+  -- optional placeholder
   local placeholders = {}
   for _, dir in ipairs(emoji_dirs) do
     table.insert(placeholders, string.format("%s/_missing.svg", dir))
@@ -37,7 +37,7 @@ local function svg_for_hex(hex)
   return first_existing(placeholders)
 end
 
--- Normaliza codepoints: ignora VS-15/VS-16, ZWJ y combining keycap (U+20E3)
+-- Normalises codepoints: ignores VS-15/VS-16, ZWJ and combining keycap (U+20E3)
 local function normalize_cp(cp)
   if cp == 0xFE0F or cp == 0xFE0E or cp == 0x200D or cp == 0x20E3 then
     return nil
@@ -53,8 +53,8 @@ local function is_keycap_base(cp)
   return cp == 0x0023 or cp == 0x002A or (cp >= 0x0030 and cp <= 0x0039)
 end
 
--- Solo tratar como "emoji" los codepoints de los planos de Emoji
--- y un pequeño conjunto de dingbats usados como emoji (✅, ❌, ⛔).
+-- Only treat codepoints in the Emoji planes as emoji
+-- plus a small set of dingbats used as emoji (✅, ❌, ⛔).
 local ALLOWED_DINGBATS = {
   [0x2705] = true, -- ✅ WHITE HEAVY CHECK MARK
   [0x274C] = true, -- ❌ CROSS MARK
@@ -62,8 +62,8 @@ local ALLOWED_DINGBATS = {
   [0x26A0] = true, -- ⚠ WARNING)
 }
 
--- Casillas de las listas de tareas Markdown; se pueden desactivar con
--- filters.emoji.include_ballot_icons=false (el runtime exporta la variable).
+-- Markdown task-list boxes; they can be disabled with
+-- filters.emoji.include_ballot_icons=false (the runtime exports the variable).
 local BALLOT_DINGBATS = {
   [0x2610] = true, -- ☐ BALLOT BOX (Markdown - [ ])
   [0x2611] = true, -- ☑ BALLOT BOX WITH CHECK
@@ -73,13 +73,13 @@ local BALLOT_DINGBATS = {
 local ballot_icons = os.getenv("PANDOC_EMOJI_BALLOT_ICONS") ~= "0"
 
 local function is_emojiish(cp)
-  -- Planos principales de emoji
+  -- Main emoji planes
   if cp >= 0x1F000 and cp <= 0x1FAFF then return true end
-  -- Casillas de tareas Markdown (configurables)
+  -- Markdown task boxes (configurable)
   if BALLOT_DINGBATS[cp] then return ballot_icons end
-  -- Dingbats permitidos explícitamente
+  -- Explicitly allowed dingbats
   if ALLOWED_DINGBATS[cp] then return true end
-  -- Todo lo demás NO es emoji (esto excluye á, é, ñ, ¿, ¡, etc.)
+  -- Everything else is NOT emoji (this excludes á, é, ñ, ¿, ¡, and so on)
   return false
 end
 
@@ -133,7 +133,7 @@ local function string_to_inlines(text)
           table.insert(out, pandoc.Str(utf8.char(cp)))
         end
       else
-        -- No es emoji: dejar el carácter tal cual (preserva tildes, ¿, ¡, etc.)
+        -- Not emoji: leave the character as is (keeps accents, ¿, ¡, and so on)
         table.insert(out, pandoc.Str(utf8.char(cp)))
       end
     end
@@ -143,15 +143,15 @@ local function string_to_inlines(text)
   return out
 end
 
--- No transformar bloques de código
+-- Do not transform code blocks
 function Code(el) return nil end
 function CodeBlock(el) return nil end
 
--- Reemplaza emojis dentro de palabras/strings.
--- Solo envuelve en Span cuando hubo sustitución real: envolver texto plano
--- convierte cualquier encabezado en "con formato" y hace que pandoc emita
--- \texorpdfstring, que exige hyperref en la plantilla (rompía plantillas
--- mínimas sin hyperref).
+-- Replaces emojis inside words and strings.
+-- Wraps in a Span only when something was actually substituted: wrapping plain
+-- text makes any heading count as formatted and makes pandoc emit
+-- \texorpdfstring, which requires hyperref in the template (it broke minimal
+-- templates without hyperref).
 function Str(el)
   local inlines = string_to_inlines(el.text)
   local replaced = false
@@ -167,7 +167,7 @@ function Str(el)
   return pandoc.Span(inlines)
 end
 
--- Procesar inline recursivamente (Links, Emph, Strong, etc.)
+-- Walk inlines recursively (Links, Emph, Strong, and so on)
 local function map_inlines(inlines)
   local out = {}
   for _, x in ipairs(inlines) do
