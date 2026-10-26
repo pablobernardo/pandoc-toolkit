@@ -2136,6 +2136,93 @@ run_render_plan_parity_test() {
   rm -f "$capture" "$plan_py" "$plan_rb" "$out"
 }
 
+run_emoji_filter_contexts_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP emoji filter contexts (pandoc not available)"
+    return 0
+  fi
+
+  local dir md tex images remaining
+  dir="$(mktemp -d)"
+  md="$(mktemp)"
+  tex="$(mktemp)"
+
+  # A real glyph so the filter substitutes instead of falling back to the character.
+  cp "${ROOT_DIR}/filters/emoji/2610.svg" "${dir}/2705.svg"
+
+  cat >"$md" <<'EOF'
+# Heading
+
+Paragraph text.
+
+| Col |
+|-----|
+| cell |
+
+: Caption here
+
+- item
+EOF
+  # Write the emoji through printf so this test file stays ASCII-clean.
+  printf '# Heading \xe2\x9c\x85\n\nParagraph \xe2\x9c\x85 text.\n\n| Col |\n|-----|\n| \xe2\x9c\x85 cell |\n\n: Caption \xe2\x9c\x85 here\n\n- item \xe2\x9c\x85\n' >"$md"
+
+  if PANDOC_EMOJI_DIR="$dir" pandoc "$md" -t latex --lua-filter="${ROOT_DIR}/filters/emoji.lua" >"$tex" 2>&1; then
+    pass "emoji filter renders mixed contexts"
+  else
+    fail "emoji filter should render mixed contexts ($(tail -2 "$tex"))"
+  fi
+
+  images="$(grep -c "includesvg\|includegraphics" "$tex" || true)"
+  remaining="$(grep -c $'\xe2\x9c\x85' "$tex" || true)"
+  assert_exit_code "0" "$remaining" "emoji filter substitutes every emoji context (heading, paragraph, table cell, caption, list)"
+  if [[ "${images:-0}" -ge 5 ]]; then
+    pass "emoji filter emits an image per substituted emoji"
+  else
+    fail "emoji filter should emit at least 5 images, got ${images:-0}"
+  fi
+
+  rm -rf "$dir"
+  rm -f "$md" "$tex"
+}
+
+run_render_keep_merged_on_pandoc_failure_test() {
+  local sandbox tmpbin capture out merged code
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  mkdir -p "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  cat >"${tmpbin}/pandoc" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+echo "ARGS:$*" > "${TMP_PANDOC_CAPTURE}"
+echo "failing on purpose" >&2
+exit 7
+EOF
+  chmod +x "${tmpbin}/pandoc"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural false "" true
+  merged="${sandbox}/work/out/S1 Document-manual.md"
+
+  set +e
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+
+  assert_exit_code "7" "$code" "render propagates pandoc's exit code"
+  if [[ -f "$merged" ]]; then
+    pass "keep_merged_markdown=false preserves the markdown when pandoc fails"
+  else
+    fail "keep_merged_markdown=false must keep the markdown when pandoc fails (diagnosis)"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
 main() {
   echo "== Running pandoc-pdf tests =="
   run_help_test
@@ -2174,6 +2261,8 @@ main() {
   run_locale_missing_target_message_test
   run_package_release_artifact_test
   run_emoji_filter_plain_heading_test
+  run_emoji_filter_contexts_test
+  run_render_keep_merged_on_pandoc_failure_test
   run_render_plan_json_test
   run_render_dry_run_human_test
   run_render_plan_parity_test
