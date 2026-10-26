@@ -1,62 +1,62 @@
 # Render Plan JSON (S3-a)
 
-Rama `feature/config-contract-alignment` (misma rama de feature). Extrae el cálculo del render a un **plan puro** que se puede inspeccionar y comparar sin ejecutar pandoc.
+Branch `feature/config-contract-alignment` (same feature branch). Work landed in PR #11, squash `9cb7211`; the landed record is in `CHANGELOG.md`. Extracts the render calculation into a **pure plan** that can be inspected and compared without executing pandoc.
 
 ## Specs
 
-**P1 — Nuevo modo de `render` (aditivo)**
-`pandoc-pdf render -c <pdf.config.yaml> --dry-run` imprime el plan legible y **no escribe nada** en disco. `--dry-run --json` imprime el mismo plan como JSON en stdout. `--json` implica `--dry-run`. Sin flags, `render` se comporta exactamente como hasta ahora.
+**P1 — New `render` mode (additive)**
+`pandoc-pdf render -c <pdf.config.yaml> --dry-run` prints the readable plan and **writes nothing** to disk. `--dry-run --json` prints the same plan as JSON on stdout. `--json` implies `--dry-run`. Without flags, `render` behaves exactly as before.
 
-**P2 — El plan es puro**
-Calcular el plan no crea directorios, no escribe el markdown fusionado, no descarga emojis y no invoca pandoc. Se puede ejecutar en un repo limpio sin efectos observables (ni ficheros nuevos, ni modificaciones).
+**P2 — The plan is pure**
+Calculating the plan creates no directories, does not write the merged markdown, does not download emojis and does not invoke pandoc. It can run in a clean repo without observable effects (no new files, no modifications).
 
-**P3 — Contenido del plan (v1)**
-JSON con: `plan_version`, `toolkit` (`version`, `root`), `config` (`path`, `base_dir`), `chapters` (rutas absolutas en el orden efectivo, ya aplicado `input.order` o `explicit_files`), `pandoc.target` (markdown fusionado y PDF), `pandoc.argv`, `pandoc.cwd`, `env`, `side_effects` (`keep_merged_markdown`, `emoji` con su directorio, `mermaid` con su directorio y fondo, `emoji_prepare` con su argv o `null` si está deshabilitado).
+**P3 — Plan content (v1)**
+JSON with: `plan_version`, `toolkit` (`version`, `root`), `config` (`path`, `base_dir`), `chapters` (absolute paths in the effective order, with `input.order` or `explicit_files` already applied), `pandoc.target` (merged markdown and PDF), `pandoc.argv`, `pandoc.cwd`, `env`, `side_effects` (`keep_merged_markdown`, `emoji` with its directory, `mermaid` with its directory and background, `emoji_prepare` with its argv or `null` if disabled).
 
-**P4 — Paridad entre renderers**
-El plan JSON debe ser idéntico (normalizando el prefijo de ruta) entre `scripts/render-native.py` y `scripts/render-native.rb`, igual que ya se exige para la invocación de pandoc.
+**P4 — Parity between renderers**
+The plan JSON must be identical (normalizing the path prefix) between `scripts/render-native.py` and `scripts/render-native.rb`, just as already required for the pandoc invocation.
 
-**P5 — Sin cambio de comportamiento**
-La ejecución normal conserva bit a bit la invocación de pandoc y el entorno ya verificados: la suite existente (191 aserciones) debe seguir verde sin modificarlas, y el plan debe ser la única fuente de esa invocación (el ejecutor no decide nada).
+**P5 — No behavior change**
+Normal execution keeps the already-verified pandoc invocation and environment bit for bit: the existing suite (191 assertions) must stay green unmodified, and the plan must be the single source of that invocation (the executor decides nothing).
 
-**Fuera de alcance**
-- Retirar el renderer Ruby (P2 del análisis) y decidir defaults-vs-validación (P4 del análisis): siguen pendientes de decisión.
-- Suite de conformidad multi-lenguaje: se apoyará en este plan cuando exista un port.
+**Out of scope**
+- Retiring the Ruby renderer (P2 of the analysis) and deciding defaults-vs-validation (P4 of the analysis): they remain pending decision.
+- Multi-language conformance suite: it will build on this plan when a port exists.
 
 ## Tasks
 
-| ID | S# | Tarea | Ruta | Estado | Commit |
+| ID | S# | Task | Path | Status | Commit |
 | --- | --- | --- | --- | --- | --- |
-| T1 | P1-P5 | Tests: plan JSON válido, sin efectos, `--dry-run` legible, paridad py/ruby | inline | done | slice de tests |
-| T2 | P2-P3 | Refactor `build_plan` puro + `execute_plan` en `render-native.py` | inline | done | slice de implementación |
-| T3 | P4 | Espejo en `render-native.rb` | worker | done | slice de implementación |
-| T4 | P1 | Cableado de flags en `bin/pandoc-pdf` + i18n | inline | done | slice de implementación |
-| T5 | P1-P5 | Docs (`docs/usage.md`, CHANGELOG, CONTEXT) | inline | done | slice de docs |
+| T1 | P1-P5 | Tests: valid plan JSON, no effects, readable `--dry-run`, py/ruby parity | inline | done | tests slice |
+| T2 | P2-P3 | Pure `build_plan` refactor + `execute_plan` in `render-native.py` | inline | done | implementation slice |
+| T3 | P4 | Mirror in `render-native.rb` | worker | done | implementation slice |
+| T4 | P1 | Flag wiring in `bin/pandoc-pdf` + i18n | inline | done | implementation slice |
+| T5 | P1-P5 | Docs (`docs/usage.md`, CHANGELOG, CONTEXT) | inline | done | docs slice |
 
 ## Log
 
-**L1 — Continuación autorizada (verbatim)**
-> continua
+**L1 — Authorized continuation (translated from Spanish)**
+> continue
 
-**L2 — Contexto**
-Slice S3-a del plan aprobado en la conversación de revisión. No cambia contrato de config ni comportamiento por defecto: solo añade un modo de inspección. El plan es la pieza que el análisis identificó como "puerta abierta a Go" y como contrato verificable frente a un port futuro.
+**L2 — Context**
+Slice S3-a of the plan approved in the review conversation. It changes neither the config contract nor default behavior: it only adds an inspection mode. The plan is the piece the analysis identified as the "open door to Go" and as a verifiable contract against a future port.
 
-**L3 — Estado de partida (medido)**
+**L3 — Starting state (measured)**
 - `bash tests/run.sh` → PASS=191 FAIL=0.
 - `bash tests/l2-local.sh` → exit 0.
-- `bash tests/l3-local.sh` → no ejecutable en esta máquina (Chromium no encontrado).
-- Review nativo del slice anterior: bloqueado por proveedor (guard de razonamiento en `review-resilience`); lineage `review-d3a0f85c95b06577` en estado `reviewing`, sin veredicto. No se reintenta sin decisión del mantenedor.
+- `bash tests/l3-local.sh` → not runnable on this machine (Chromium not found).
+- Native review of the previous slice: blocked by provider (reasoning guard in `review-resilience`); lineage `review-d3a0f85c95b06577` in state `reviewing`, without verdict. Not retried without a maintainer decision.
 
-**L4 — Implementación y evidencias**
-- Python reescrito en tres piezas: `build_plan` (pura), `execute_plan` (único punto con efectos), `print_plan`. Ruby espejo vía worker, con paridad byte a byte.
-- Dos bloqueos reales encontrados y corregidos en la verificación:
-  1. `bin/pandoc-pdf` validaba el config escribiendo en stdout, así que `--dry-run --json` devolvía banner + JSON. Ahora el banner de validación va a stderr cuando se pide `--json`.
-  2. `prepare_argv[0]` divergía (`sys.executable` en Python vs `python3` en Ruby). Se fija el token neutro `python3` en el plan, que es el mismo comando con el que el CLI lanza el renderer.
-- Mensaje `render.error.usage` actualizado en los 4 locales con `[--plan|--plan-json]`.
-- Cambio de comportamiento colateral aceptado: con `filters.emoji.enabled: false` ya no se crea el directorio de emojis ni `_missing.svg` (el ejecutor obedece al plan). No afecta a ningún fixture ni a L2.
+**L4 — Implementation and evidence**
+- Python rewritten in three pieces: `build_plan` (pure), `execute_plan` (single point with effects), `print_plan`. Ruby mirrored via worker, with byte-for-byte parity.
+- Two real blockers found and fixed during verification:
+  1. `bin/pandoc-pdf` validated the config by writing to stdout, so `--dry-run --json` returned banner + JSON. Now the validation banner goes to stderr when `--json` is requested.
+  2. `prepare_argv[0]` diverged (`sys.executable` in Python vs `python3` in Ruby). The neutral token `python3` is fixed in the plan, which is the same command the CLI uses to launch the renderer.
+- Message `render.error.usage` updated in the 4 locales with `[--plan|--plan-json]`.
+- Accepted collateral behavior change: with `filters.emoji.enabled: false` the emoji directory and `_missing.svg` are no longer created (the executor obeys the plan). It affects no fixture nor L2.
 
-**L5 — Verificación final**
-- `bash tests/run.sh` → **PASS=210 FAIL=0** (base de este slice: 191).
-- `bash tests/l2-local.sh` → **exit 0**, `✅ L2 local integration passed` (render real tras el refactor).
-- `python3 scripts/check-i18n.py` → 4 locales, 153 claves.
-- Plan verificado como puro: `--dry-run` no invoca pandoc (captura del mock vacía) y no crea `work/out`.
+**L5 — Final verification**
+- `bash tests/run.sh` → **PASS=210 FAIL=0** (baseline of this slice: 191).
+- `bash tests/l2-local.sh` → **exit 0**, `✅ L2 local integration passed` (real render after the refactor).
+- `python3 scripts/check-i18n.py` → 4 locales, 153 keys.
+- Plan verified as pure: `--dry-run` does not invoke pandoc (empty mock capture) and does not create `work/out`.

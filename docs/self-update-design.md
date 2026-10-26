@@ -1,36 +1,36 @@
-# Diseño — Self-update desde GitHub Releases (Linux/macOS)
+# Design — Self-update from GitHub Releases (Linux/macOS)
 
-## 1) Objetivo
+## 1) Objective
 
-Incorporar una capacidad de actualización del CLI `pandoc-pdf` desde GitHub Releases con foco en:
+Add an update capability to the `pandoc-pdf` CLI from GitHub Releases, focused on:
 
-- experiencia simple para el usuario,
-- seguridad de cadena de suministro,
-- compatibilidad con instalaciones actuales del toolkit.
+- a simple user experience,
+- supply-chain security,
+- compatibility with current installations of the toolkit.
 
-Alcance inicial: **Linux + macOS**.
-
----
-
-## 2) Alcance y no alcance
-
-### En alcance (v1)
-
-- `update --check` para consultar si hay una versión nueva.
-- `update` para instalar la última versión estable.
-- `update --to <tag>` para instalar una versión específica.
-- Verificación de integridad por checksum SHA256.
-- Reemplazo seguro del binario con backup/rollback.
-
-### Fuera de alcance (v1)
-
-- Soporte Windows nativo.
-- Canales múltiples (`beta`, `rc`, `nightly`).
-- Firma criptográfica avanzada (Sigstore/GPG) en la primera iteración.
+Initial scope: **Linux + macOS**.
 
 ---
 
-## 3) Contrato CLI propuesto
+## 2) Scope and non-scope
+
+### In scope (v1)
+
+- `update --check` to query whether a new version exists.
+- `update` to install the latest stable version.
+- `update --to <tag>` to install a specific version.
+- Integrity verification via SHA256 checksum.
+- Safe replacement of the binary with backup/rollback.
+
+### Out of scope (v1)
+
+- Native Windows support.
+- Multiple channels (`beta`, `rc`, `nightly`).
+- Advanced cryptographic signing (Sigstore/GPG) in the first iteration.
+
+---
+
+## 3) Proposed CLI contract
 
 ```bash
 pandoc-pdf update --check
@@ -38,134 +38,134 @@ pandoc-pdf update
 pandoc-pdf update --to vX.Y.Z
 ```
 
-Flags recomendados:
+Recommended flags:
 
-- `--yes`: modo no interactivo (sin confirmaciones).
-- `--dry-run`: muestra acciones sin modificar sistema.
-- `--install-dir <path>`: sobreescribe el destino de instalación.
+- `--yes`: non-interactive mode (no confirmations).
+- `--dry-run`: shows actions without modifying the system.
+- `--install-dir <path>`: overrides the installation destination.
 
 ### Exit codes
 
-- `0`: operación exitosa.
-- `1`: error operativo (red, parseo release, permisos, checksum, plataforma no soportada).
+- `0`: successful operation.
+- `1`: operational error (network, release parsing, permissions, checksum, unsupported platform).
 
 ---
 
-## 4) Modelo de artefactos en release
+## 4) Artifact model in a release
 
-Cada tag `vX.Y.Z` debe publicar:
+Each tag `vX.Y.Z` must publish:
 
 - `pandoc-pdf_darwin_amd64.tar.gz`
 - `pandoc-pdf_darwin_arm64.tar.gz`
 - `pandoc-pdf_linux_amd64.tar.gz`
-- (opcional v1.1) `pandoc-pdf_linux_arm64.tar.gz`
-- `checksums.txt` (SHA256 de todos los artefactos)
+- (optional v1.1) `pandoc-pdf_linux_arm64.tar.gz`
+- `checksums.txt` (SHA256 of all artifacts)
 
-Contenido esperado dentro de cada tarball:
+Expected content inside each tarball:
 
-- ejecutable `pandoc-pdf`
-- `VERSION` (opcional, si el ejecutable ya expone versión embebida)
+- executable `pandoc-pdf`
+- `VERSION` (optional, if the executable already exposes an embedded version)
 
 ---
 
-## 5) Flujo funcional
+## 5) Functional flow
 
 ### 5.1 `update --check`
 
-1. Leer versión local (`pandoc-pdf --version`).
-2. Consultar release estable más reciente en GitHub.
-3. Comparar semver local vs remota.
-4. Informar estado (al día / update disponible).
+1. Read the local version (`pandoc-pdf --version`).
+2. Query the most recent stable release on GitHub.
+3. Compare local semver vs remote.
+4. Report the status (up to date / update available).
 
 ### 5.2 `update` / `update --to`
 
-1. Resolver versión destino (`latest` o tag explícita).
-2. Detectar `OS` y `ARCH`.
-3. Seleccionar artefacto correspondiente.
-4. Descargar artefacto + `checksums.txt` a directorio temporal.
-5. Verificar SHA256 del artefacto.
-6. Extraer y validar que `pandoc-pdf` sea ejecutable.
-7. Ejecutar verificación rápida del artefacto (`--version`).
-8. Crear backup del ejecutable actual.
-9. Reemplazar en forma atómica.
-10. Verificar versión post-instalación.
-11. Si falla cualquier validación final: rollback desde backup.
+1. Resolve the target version (`latest` or explicit tag).
+2. Detect `OS` and `ARCH`.
+3. Select the corresponding artifact.
+4. Download the artifact + `checksums.txt` to a temporary directory.
+5. Verify the SHA256 of the artifact.
+6. Extract and validate that `pandoc-pdf` is executable.
+7. Run a quick verification of the artifact (`--version`).
+8. Create a backup of the current binary.
+9. Replace atomically.
+10. Verify the version after installation.
+11. If any final validation fails: roll back from the backup.
 
 ---
 
-## 6) Reglas de seguridad mínimas
+## 6) Minimum security rules
 
-1. **No instalar si falta `checksums.txt`.**
-2. **No instalar si checksum no coincide.**
-3. **No ejecutar scripts remotos** durante update.
-4. **No hacer downgrade implícito** (solo con `--to` explícito).
-5. **No usar canales prerelease** en v1.
-
----
-
-## 7) Compatibilidad de instalación
-
-Orden recomendado para destino de instalación:
-
-1. `--install-dir` explícito (si se informa).
-2. Directorio del ejecutable actual (si es escribible).
-3. fallback sugerido: `~/.local/bin`.
-
-Si no hay permisos de escritura, el comando debe fallar con instrucción accionable clara.
+1. **Do not install if `checksums.txt` is missing.**
+2. **Do not install if the checksum does not match.**
+3. **Do not execute remote scripts** during the update.
+4. **No implicit downgrade** (only with an explicit `--to`).
+5. **Do not use prerelease channels** in v1.
 
 ---
 
-## 8) Estrategia de observabilidad/UX
+## 7) Installation compatibility
 
-- Mensajes claros por etapa: resolver release, descargar, verificar, instalar, validar.
-- En `--dry-run`, mostrar URL y rutas objetivo sin escribir disco.
-- En error, mostrar causa y próximo paso (reintentar, permisos, red, tag inexistente).
+Recommended order for the installation destination:
 
----
+1. Explicit `--install-dir` (if provided).
+2. Directory of the current executable (if writable).
+3. Suggested fallback: `~/.local/bin`.
 
-## 9) Plan de validación (tests)
-
-Casos mínimos:
-
-- `update --check` (sin update y con update disponible).
-- Plataforma no soportada.
-- `--to` con tag inexistente.
-- Checksum faltante o inválido.
-- Artefacto corrupto.
-- Permisos insuficientes en destino.
-- Rollback exitoso tras fallo post-instalación.
+If there are no write permissions, the command must fail with a clear, actionable instruction.
 
 ---
 
-## 10) Fases de implementación recomendadas
+## 8) Observability/UX strategy
 
-### Fase 1 — Descubrimiento seguro
-
-- Entregar `update --check`.
-- Definir contrato de artefactos de release.
-
-### Fase 2 — Instalación segura
-
-- Entregar `update` y `update --to`.
-- Activar checksum + backup + rollback.
-
-### Fase 3 — Hardening
-
-- Añadir mejoras de telemetría/logs.
-- Evaluar firma criptográfica de artefactos.
+- Clear messages per stage: resolving the release, downloading, verifying, installing, validating.
+- In `--dry-run`, show the URL and target paths without writing to disk.
+- On error, show the cause and the next step (retry, permissions, network, missing tag).
 
 ---
 
-## 11) Tradeoffs de la decisión Linux/macOS first
+## 9) Validation plan (tests)
 
-### Ventajas
+Minimum cases:
 
-- Menor complejidad inicial.
-- Entrega más rápida.
-- Alineado con soporte actual del toolkit.
+- `update --check` (without an update and with an update available).
+- Unsupported platform.
+- `--to` with a nonexistent tag.
+- Missing or invalid checksum.
+- Corrupt artifact.
+- Insufficient permissions at the destination.
+- Successful rollback after a post-installation failure.
 
-### Coste
+---
 
-- Windows queda para iteración posterior.
+## 10) Recommended implementation phases
 
-Decisión recomendada: **avanzar con Linux/macOS primero** y diseñar extensión a Windows sin romper contrato CLI.
+### Phase 1 — Safe discovery
+
+- Deliver `update --check`.
+- Define the release artifact contract.
+
+### Phase 2 — Safe installation
+
+- Deliver `update` and `update --to`.
+- Enable checksum + backup + rollback.
+
+### Phase 3 — Hardening
+
+- Add telemetry/log improvements.
+- Evaluate cryptographic signing of artifacts.
+
+---
+
+## 11) Tradeoffs of the Linux/macOS-first decision
+
+### Advantages
+
+- Lower initial complexity.
+- Faster delivery.
+- Aligned with the current support of the toolkit.
+
+### Cost
+
+- Windows is deferred to a later iteration.
+
+Recommended decision: **proceed with Linux/macOS first** and design the extension to Windows without breaking the CLI contract.

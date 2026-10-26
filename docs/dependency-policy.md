@@ -1,34 +1,34 @@
-# Política de dependencias
+# Dependency policy
 
-## Objetivo
+## Objective
 
-Reducir riesgo de cadena de suministro mediante versiones fijadas en runtime crítico y una cadencia de actualización explícita.
+Reduce supply-chain risk by pinning critical runtime versions and keeping an explicit update cadence.
 
-## Dependencias críticas fijadas
+## Pinned critical dependencies
 
 - `@mermaid-js/mermaid-cli@10.9.1`
-  - Uso: `scripts/bootstrap.sh`, workflow L3 en `.github/workflows/ci.yml`.
+  - Usage: `scripts/bootstrap.sh`, L3 workflow in `.github/workflows/ci.yml`.
 - `pyyaml==6.0.2`
-  - Uso: `scripts/bootstrap.sh` (instalación asistida cuando falta parser YAML).
-- `semgrep==1.86.0`
-  - Uso: `.github/workflows/security.yml`.
-- `gitleaks:v8.24.2`
-  - Uso: `.github/workflows/security.yml`.
+  - Usage: `scripts/bootstrap.sh` (assisted installation when the YAML parser is missing).
+- `semgrep/semgrep:1.86.0` container image
+  - Usage: `.github/workflows/security.yml` (pinned image instead of `pip install`, which breaks with modern setuptools).
+- `ghcr.io/gitleaks/gitleaks:v8.24.2` container image
+  - Usage: `.github/workflows/security.yml`.
 
-## Cadencia de actualización
+## Update cadence
 
-- Revisión **mensual** de dependencias críticas.
-- Revisión extraordinaria ante CVE o advisory relevante.
+- **Monthly** review of critical dependencies.
+- Extraordinary review on any relevant CVE or advisory.
 
-## Proceso de actualización
+## Update process
 
-1. Actualizar versión fijada en bootstrap/workflows.
-2. Ejecutar `tests/run.sh`.
-3. Ejecutar workflow de seguridad (`security.yml`).
-4. Actualizar `CHANGELOG.md` (Unreleased) y, si aplica, `docs/release-readiness.md`.
+1. Update the pinned version in bootstrap/workflows.
+2. Run `tests/run.sh`.
+3. Run the security workflow (`security.yml`).
+4. Update `CHANGELOG.md` (Unreleased) and, if applicable, `docs/release-readiness.md`.
 
-## Criterios de aceptación
+## Acceptance criteria
 
-- Sin regresiones funcionales (`tests/run.sh` en verde).
-- Escaneos de seguridad sin hallazgos críticos nuevos.
-- Documentación sincronizada.
+- No functional regressions (`tests/run.sh` green).
+- Security scans with no new critical findings.
+- Documentation synchronized.
