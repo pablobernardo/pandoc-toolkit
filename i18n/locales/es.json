@@ -61,6 +61,8 @@
   "render.output.markdown": "Markdown combinado: {path}",
   "render.output.pdf": "PDF de salida: {path}",
   "render.command.exec": "Ejecutando: {command}",
+  "render.plan.title": "Plan de render (dry run, no se escribe nada)",
+  "render.plan.command": "Comando: {command}",
   "render.warn.emoji_prepare": "No se pudieron preparar emojis automáticamente; continúo con fallback",
   "bootstrap.title": "Bootstrap de instalación — Pandoc PDF Toolkit",
   "bootstrap.usage": "Uso:",

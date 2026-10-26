@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -22,16 +23,25 @@ except Exception:
             return fallback
 
 
-def die(msg: str) -> NoReturn:
-    print(f"❌ {msg}")
-    raise SystemExit(1)
-
-
 ORDER_NATURAL = "natural"
 ORDER_ALPHABETICAL = "alphabetical"
 ORDER_CHOICES = (ORDER_NATURAL, ORDER_ALPHABETICAL)
 
 DOCUMENT_VAR_FIELDS = ("title", "subtitle", "publisher", "author", "date", "rights")
+
+PLAN_VERSION = 1
+
+MISSING_SVG = (
+    """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n"
+    "  <rect width=\"16\" height=\"16\" rx=\"2\" ry=\"2\" fill=\"#ddd\" stroke=\"#999\"/>\n"
+    "  <text x=\"8\" y=\"11\" font-size=\"10\" text-anchor=\"middle\" fill=\"#666\">?</text>\n"
+    "</svg>\n"""
+)
+
+
+def die(msg: str) -> NoReturn:
+    print(f"❌ {msg}")
+    raise SystemExit(1)
 
 
 def natural_key(path: Path) -> list[tuple[int, int, str]]:
@@ -99,17 +109,17 @@ def load_yaml_map(path: Path) -> dict:
     return data
 
 
-def main() -> None:
-    if len(sys.argv) < 3:
-        die(t("render.error.usage", "Usage: render-native.py <config.yaml> <toolkit_root>"))
+def toolkit_version(root_dir: Path) -> str:
+    version_file = root_dir / "VERSION"
+    try:
+        value = version_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+    return value
 
-    cfg_path = Path(sys.argv[1])
-    root_dir = Path(sys.argv[2])
 
-    if not cfg_path.exists():
-        die(t("render.error.config_not_found", "Config not found: {path}", path=cfg_path))
-
-    cfg_user = load_yaml_map(cfg_path)
+def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
+    """Compute the render plan. Pure: no writes, no directory creation, no subprocess."""
     cfg = cfg_user
 
     defaults_path = root_dir / "defaults/default.yaml"
@@ -141,12 +151,10 @@ def main() -> None:
         die(t("render.error.chapters_dir_missing", "input.chapters_dir does not exist: {path}", path=chapters_dir))
 
     selected_files = select_chapter_files(input_cfg, chapters_dir)
-
     if not selected_files:
         die(t("render.error.no_chapters", "No chapters found to render"))
 
     output_dir = base_dir_path / str(output.get("dir", "output"))
-    output_dir.mkdir(parents=True, exist_ok=True)
     filename_out = f"{title}-{suffix}"
     pdf_out = output_dir / f"{filename_out}.pdf"
     md_out = output_dir / f"{filename_out}.md"
@@ -155,23 +163,6 @@ def main() -> None:
 
     compat = cfg.get("compat", {})
     insert_clearpage = bool(compat.get("legacy_clearpage_between_h1", True))
-
-    parts = []
-    for i, file in enumerate(selected_files):
-        text = file.read_text(encoding="utf-8", errors="ignore")
-        if i > 0 and insert_clearpage:
-            first_nonempty = ""
-            for line in text.splitlines():
-                if line.strip():
-                    first_nonempty = line
-                    break
-            if first_nonempty.startswith("# "):
-                parts.append("\n\n\\clearpage\n\n")
-        parts.append("\n")
-        parts.append(text)
-        parts.append("\n\n")
-
-    md_out.write_text("".join(parts), encoding="utf-8")
 
     raw_user_pandoc = cfg_user.get("pandoc")
     user_pandoc_cfg = raw_user_pandoc if isinstance(raw_user_pandoc, dict) else {}
@@ -205,39 +196,27 @@ def main() -> None:
     emoji_cfg = filters.get("emoji", {})
     mermaid_cfg = filters.get("mermaid", {})
 
+    emoji_enabled = bool(emoji_cfg.get("enabled", True))
+    mermaid_enabled = bool(mermaid_cfg.get("enabled", True))
+
     emoji_dir = Path(str(emoji_cfg.get("emoji_dir", "output/emoji")))
     if not emoji_dir.is_absolute():
         emoji_dir = (base_dir_path / emoji_dir).resolve()
-    emoji_dir.mkdir(parents=True, exist_ok=True)
-
-    missing_svg = emoji_dir / "_missing.svg"
-    if not missing_svg.exists():
-        missing_svg.write_text(
-            """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n"
-            "  <rect width=\"16\" height=\"16\" rx=\"2\" ry=\"2\" fill=\"#ddd\" stroke=\"#999\"/>\n"
-            "  <text x=\"8\" y=\"11\" font-size=\"10\" text-anchor=\"middle\" fill=\"#666\">?</text>\n"
-            "</svg>\n""",
-            encoding="utf-8",
-        )
-
-    if bool(emoji_cfg.get("enabled", True)):
-        prepare_script = root_dir / "scripts/prepare-emojis.py"
-        if prepare_script.exists():
-            prep_cmd = [
-                sys.executable,
-                str(prepare_script),
-                str(md_out),
-                str(emoji_dir),
-                str(root_dir / "filters/emoji"),
-            ]
-            prep = subprocess.run(prep_cmd)
-            if prep.returncode != 0:
-                print(f"⚠️  {t('render.warn.emoji_prepare', 'Could not auto-prepare emojis; continuing with fallback')}")
 
     mermaid_output_dir = Path(str(mermaid_cfg.get("output_dir", "output/mermaid")))
     if not mermaid_output_dir.is_absolute():
         mermaid_output_dir = (base_dir_path / mermaid_output_dir).resolve()
-    mermaid_output_dir.mkdir(parents=True, exist_ok=True)
+
+    prepare_script = root_dir / "scripts/prepare-emojis.py"
+    prepare_argv = None
+    if emoji_enabled and prepare_script.exists():
+        prepare_argv = [
+            "python3",
+            str(prepare_script),
+            str(md_out),
+            str(emoji_dir),
+            str(root_dir / "filters/emoji"),
+        ]
 
     cmd = [
         "pandoc",
@@ -246,9 +225,9 @@ def main() -> None:
         f"--template={template_path}",
     ]
 
-    if bool(emoji_cfg.get("enabled", True)):
+    if emoji_enabled:
         cmd.append(f"--lua-filter={root_dir / 'filters/emoji.lua'}")
-    if bool(mermaid_cfg.get("enabled", True)):
+    if mermaid_enabled:
         cmd.append(f"--lua-filter={root_dir / 'filters/mermaid.lua'}")
 
     for extra in filters.get("extra_lua_filters", []):
@@ -276,21 +255,143 @@ def main() -> None:
                 cmd.extend(["-V", f"{field}={value}"])
     cmd.extend(["-o", str(pdf_out)])
 
+    return {
+        "plan_version": PLAN_VERSION,
+        "toolkit": {"version": toolkit_version(root_dir), "root": str(root_dir)},
+        "config": {"path": str(cfg_path), "base_dir": str(base_dir_path)},
+        "chapters": [str(p) for p in selected_files],
+        "pandoc": {
+            "target": {"markdown": str(md_out), "pdf": str(pdf_out)},
+            "argv": cmd,
+            "cwd": None,
+        },
+        "env": {
+            "PANDOC_EMOJI_DIR": str(emoji_dir),
+            "PANDOC_EMOJI_BALLOT_ICONS": "1" if bool(emoji_cfg.get("include_ballot_icons", True)) else "0",
+            "PANDOC_MERMAID_OUTPUT_DIR": str(mermaid_output_dir),
+            "PANDOC_MERMAID_BACKGROUND": str(mermaid_cfg.get("background", "transparent")),
+        },
+        "side_effects": {
+            "keep_merged_markdown": keep_merged_markdown,
+            "clearpage_between_h1": insert_clearpage,
+            "emoji": {
+                "enabled": emoji_enabled,
+                "dir": str(emoji_dir),
+                "missing_svg": str(emoji_dir / "_missing.svg"),
+                "prepare_argv": prepare_argv,
+            },
+            "mermaid": {
+                "enabled": mermaid_enabled,
+                "dir": str(mermaid_output_dir),
+                "background": str(mermaid_cfg.get("background", "transparent")),
+            },
+        },
+    }
+
+
+def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
+    parts = []
+    for index, raw_path in enumerate(chapters):
+        text = Path(raw_path).read_text(encoding="utf-8", errors="ignore")
+        if index > 0 and insert_clearpage:
+            first_nonempty = ""
+            for line in text.splitlines():
+                if line.strip():
+                    first_nonempty = line
+                    break
+            if first_nonempty.startswith("# "):
+                parts.append("\n\n\\clearpage\n\n")
+        parts.append("\n")
+        parts.append(text)
+        parts.append("\n\n")
+    return "".join(parts)
+
+
+def execute_plan(plan: dict) -> int:
+    """Materialise and run the plan. This is the only function with side effects."""
+    target = plan["pandoc"]["target"]
+    md_out = Path(target["markdown"])
+    pdf_out = Path(target["pdf"])
+    side_effects = plan["side_effects"]
+
+    md_out.parent.mkdir(parents=True, exist_ok=True)
+    md_out.write_text(
+        merged_markdown(plan["chapters"], bool(side_effects["clearpage_between_h1"])),
+        encoding="utf-8",
+    )
+
+    emoji = side_effects["emoji"]
+    if emoji["enabled"]:
+        emoji_dir = Path(emoji["dir"])
+        emoji_dir.mkdir(parents=True, exist_ok=True)
+        missing_svg = Path(emoji["missing_svg"])
+        if not missing_svg.exists():
+            missing_svg.write_text(MISSING_SVG, encoding="utf-8")
+
+        prepare_argv = emoji["prepare_argv"]
+        if prepare_argv:
+            prep = subprocess.run(prepare_argv)
+            if prep.returncode != 0:
+                print(f"⚠️  {t('render.warn.emoji_prepare', 'Could not auto-prepare emojis; continuing with fallback')}")
+
+    Path(side_effects["mermaid"]["dir"]).mkdir(parents=True, exist_ok=True)
+
     env = os.environ.copy()
-    env["PANDOC_EMOJI_DIR"] = str(emoji_dir)
-    env["PANDOC_EMOJI_BALLOT_ICONS"] = "1" if bool(emoji_cfg.get("include_ballot_icons", True)) else "0"
-    env["PANDOC_MERMAID_OUTPUT_DIR"] = str(mermaid_output_dir)
-    env["PANDOC_MERMAID_BACKGROUND"] = str(mermaid_cfg.get("background", "transparent"))
+    env.update(plan["env"])
 
     print(f"✅ {t('render.mode.native', 'Native mode enabled')}")
     print(f"📄 {t('render.output.markdown', 'Merged markdown: {path}', path=md_out)}")
     print(f"🖨️  {t('render.output.pdf', 'Output PDF: {path}', path=pdf_out)}")
-    print(f"▶ {t('render.command.exec', 'Running: {command}', command=' '.join(cmd))}")
+    print(f"▶ {t('render.command.exec', 'Running: {command}', command=' '.join(plan['pandoc']['argv']))}")
 
-    result = subprocess.run(cmd, env=env)
-    if result.returncode == 0 and not keep_merged_markdown:
+    result = subprocess.run(plan["pandoc"]["argv"], env=env)
+    if result.returncode == 0 and not side_effects["keep_merged_markdown"]:
         md_out.unlink(missing_ok=True)
-    raise SystemExit(result.returncode)
+    return result.returncode
+
+
+def print_plan(plan: dict) -> None:
+    target = plan["pandoc"]["target"]
+    print(t("render.plan.title", "Render plan (dry run, nothing written)"))
+    print(f"📄 {t('render.output.markdown', 'Merged markdown: {path}', path=target['markdown'])}")
+    print(f"🖨️  {t('render.output.pdf', 'Output PDF: {path}', path=target['pdf'])}")
+    print(
+        f"▶ {t('render.plan.command', 'Command: {command}', command=' '.join(plan['pandoc']['argv']))}"
+    )
+
+
+def main() -> None:
+    argv = sys.argv[1:]
+    plan_mode = None
+    positional: list[str] = []
+    for arg in argv:
+        if arg == "--plan-json":
+            plan_mode = "json"
+        elif arg == "--plan":
+            plan_mode = plan_mode or "human"
+        else:
+            positional.append(arg)
+
+    if len(positional) < 2:
+        die(t("render.error.usage", "Usage: render-native.py <config.yaml> <toolkit_root> [--plan|--plan-json]"))
+
+    cfg_path = Path(positional[0])
+    root_dir = Path(positional[1])
+
+    if not cfg_path.exists():
+        die(t("render.error.config_not_found", "Config not found: {path}", path=cfg_path))
+
+    cfg_user = load_yaml_map(cfg_path)
+    plan = build_plan(cfg_user, cfg_path, root_dir)
+
+    if plan_mode == "json":
+        print(json.dumps(plan, indent=2, ensure_ascii=False))
+        raise SystemExit(0)
+    if plan_mode == "human":
+        print_plan(plan)
+        raise SystemExit(0)
+
+    raise SystemExit(execute_plan(plan))
 
 
 if __name__ == "__main__":
