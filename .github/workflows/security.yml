@@ -24,11 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Pinned image instead of `pip install semgrep`: the pip path breaks on
+      # every runner bump (Python 3.14 has no pydantic-core wheel, and
+      # setuptools 81+ dropped the pkg_resources that semgrep's opentelemetry
+      # dependency imports). The container is immutable and matches how the
+      # Gitleaks step below already runs.
       - name: Run Semgrep (SAST)
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install semgrep==1.86.0
-          semgrep --config p/security-audit --sarif --output semgrep.sarif --quiet .
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "${PWD}:/src" \
+            semgrep/semgrep:1.86.0 \
+            semgrep --config p/security-audit --sarif --output=/src/semgrep.sarif --quiet /src
 
       - name: Run Gitleaks (secrets)
         run: |
