@@ -1,29 +1,29 @@
-# Uso — Pandoc PDF Toolkit
+# Usage — Pandoc PDF Toolkit
 
-Esta guía explica cómo consumir el toolkit desde cualquier repositorio.
+This guide explains how to consume the toolkit from any repository.
 
-> Antes de empezar: ver `docs/install.md` para dejar `pandoc-pdf` en PATH.
+> Before you start: see `docs/install.md` to get `pandoc-pdf` on your PATH.
 
-## 1) Requisitos mínimos
+## 1) Minimum requirements
 
 - `pandoc`
-- engine TeX compatible con tu plantilla (por ejemplo `xelatex`)
+- a TeX engine compatible with your template (for example `xelatex`)
 - `python3`
-- parser YAML disponible (`PyYAML` o Ruby YAML stdlib)
+- a YAML parser available (`PyYAML` or Ruby's stdlib YAML)
 - `curl`
-- `mmdc` (si usas filtro Mermaid)
+- `mmdc` (if you use the Mermaid filter)
 
-> Recomendación: ejecutar siempre `pandoc-pdf doctor` antes de `render`.
+> Recommendation: always run `pandoc-pdf doctor` before `render`.
 
-## 2) Contrato de configuración
+## 2) Configuration contract
 
-Cada repositorio consumidor define su `pdf.config.yaml`.
+Each consumer repository defines its own `pdf.config.yaml`.
 
-No hay baseline oculto: el contrato es exactamente lo que valida `schemas/pdf-config.schema.json`. El toolkit no fusiona ningún fichero de defaults, así que todo lo que el render necesita está declarado en tu `pdf.config.yaml`. Usa `examples/pdf.config.example.yaml` como plantilla de arranque.
+There is no hidden baseline: the contract is exactly what `schemas/pdf-config.schema.json` validates. The toolkit does not merge any defaults file, so everything the render needs is declared in your `pdf.config.yaml`. Use `examples/pdf.config.example.yaml` as a starting template.
 
-Los únicos valores que el renderer aplica por sí mismo son fallbacks históricos de código para claves ausentes (motor `xelatex`, TOC activo, plantilla `templates/default.tex`); un config válido no depende de ellos porque el schema obliga a declarar las claves.
+The only values the renderer applies on its own are historical in-code fallbacks for missing keys (engine `xelatex`, TOC enabled, template `templates/default.tex`); a valid config does not depend on them because the schema forces those keys to be declared.
 
-Campos mínimos esperados:
+Expected minimum fields:
 
 - `version`
 - `project`
@@ -35,41 +35,41 @@ Campos mínimos esperados:
 - `runtime`
 - `compat`
 
-### 2.1) Semántica de los campos declarativos
+### 2.1) Semantics of the declarative fields
 
-Estos campos son obligatorios en `schemas/pdf-config.schema.json` y el runtime los aplica de verdad. Cuando faltan, el renderer y el preflight usan los valores por defecto indicados abajo (que coinciden con `examples/pdf.config.example.yaml`).
+These fields are required in `schemas/pdf-config.schema.json` and the runtime actually applies them. When they are missing, the renderer and the preflight use the defaults listed below (which match `examples/pdf.config.example.yaml`).
 
-`input.order` — orden de los capítulos:
+`input.order` — chapter ordering:
 
-- `natural`: compara los tramos numéricos como números, así que `chapter-2.md` va antes que `chapter-10.md`.
-- `alphabetical`: orden lexicográfico por nombre de fichero.
-- Cualquier otro valor se rechaza en `render` con un mensaje localizado que enumera los valores admitidos (`natural`, `alphabetical`); no se ordena en silencio.
-- Solo aplica cuando `input.explicit_files` está vacío: una lista explícita se respeta tal cual.
+- `natural`: compares numeric runs as numbers, so `chapter-2.md` comes before `chapter-10.md`.
+- `alphabetical`: lexicographic order by file name.
+- Any other value is rejected in `render` with a localized message listing the accepted values (`natural`, `alphabetical`); it does not sort silently.
+- It only applies when `input.explicit_files` is empty: an explicit list is respected as-is.
 
-`output.keep_merged_markdown` — suerte del Markdown fusionado:
+`output.keep_merged_markdown` — fate of the merged Markdown:
 
-- `true` (default): conserva el `.md` intermedio junto al PDF.
-- `false`: lo elimina tras un render de pandoc correcto. Si pandoc falla, el `.md` se conserva para diagnóstico.
+- `true` (default): keeps the intermediate `.md` next to the PDF.
+- `false`: deletes it after a successful pandoc render. If pandoc fails, the `.md` is kept for diagnosis.
 
-`document.*` — metadatos y portada:
+`document.*` — metadata and cover page:
 
-- Con `pandoc.metadata_file` vacío, los campos no vacíos `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan a pandoc como variables de plantilla (`-V campo=valor`) y rellenan la portada de `templates/default.tex`.
-- Con `pandoc.metadata_file` informado **no** se pasan: el fichero de metadatos manda (ver `docs/architecture.md` §2, regla 4 «Reglas del contrato»).
-- `document.title` sigue fijando el nombre del fichero de salida (`title-<suffix>`); `output.file_prefix` solo se usa como alternativa si `document.title` falta.
+- With `pandoc.metadata_file` empty, the non-empty `title`, `subtitle`, `publisher`, `author`, `date` and `rights` fields are passed to pandoc as template variables (`-V field=value`) and fill the cover page of `templates/default.tex`.
+- With `pandoc.metadata_file` set, they are **not** passed: the metadata file takes precedence (see `docs/architecture.md` §2, rule 4 «Contract rules»).
+- `document.title` still determines the output file name (`title-<suffix>`); `output.file_prefix` is only used as a fallback when `document.title` is missing.
 
-`filters.emoji.include_ballot_icons` — casillas de tareas Markdown:
+`filters.emoji.include_ballot_icons` — Markdown task checkboxes:
 
-- `true` (default): `☐` (U+2610), `☑` (U+2611) y `☒` (U+2612) se sustituyen por su imagen del set de emoji.
-- `false`: se dejan como caracteres, sin sustitución.
+- `true` (default): `☐` (U+2610), `☑` (U+2611) and `☒` (U+2612) are replaced with their image from the emoji set.
+- `false`: they are left as characters, without replacement.
 
-`runtime.strict` — severidad del preflight:
+`runtime.strict` — preflight severity:
 
-- `true` (default): `doctor` falla con exit 1 si falta un comando de `runtime.required_commands` o el motor TeX.
-- `false`: los reporta como advertencias y sale con exit 0, **salvo el motor TeX**: sin él no hay PDF, así que su ausencia falla siempre aunque `strict` sea `false`.
+- `true` (default): `doctor` fails with exit 1 if a command from `runtime.required_commands` or the TeX engine is missing.
+- `false`: it reports them as warnings and exits with exit 0, **except the TeX engine**: without it there is no PDF, so its absence always fails even when `strict` is `false`.
 
-## 3) Comandos del CLI
+## 3) CLI commands
 
-Atajo opcional vía `make`:
+Optional `make` shortcuts:
 
 ```bash
 make doctor
@@ -79,20 +79,20 @@ make bootstrap-yes
 make bootstrap-ci
 ```
 
-Consultar versión del CLI:
+Check the CLI version:
 
 ```bash
 pandoc-pdf --version
 ```
 
-Consultar información de entorno del toolkit:
+Show toolkit environment information:
 
 ```bash
 pandoc-pdf info
 pandoc-pdf info --json
 ```
 
-Gestionar locale del CLI:
+Manage the CLI locale:
 
 ```bash
 pandoc-pdf locale show
@@ -102,13 +102,13 @@ pandoc-pdf locale set gl
 pandoc-pdf locale set --project es
 ```
 
-Locales actualmente soportados: `en`, `es`, `pt`, `gl`.
+Currently supported locales: `en`, `es`, `pt`, `gl`.
 
-`locale set <lang>` guarda el idioma global en `~/.config/pandoc-pdf/config.env` (o `XDG_CONFIG_HOME/pandoc-pdf/config.env`) para que aplique por defecto en ejecuciones futuras.
+`locale set <lang>` saves the global language in `~/.config/pandoc-pdf/config.env` (or `XDG_CONFIG_HOME/pandoc-pdf/config.env`) so it applies by default in future runs.
 
-`locale set --project <lang>` guarda el idioma en `.pandoc-pdf.env` del repositorio actual para ese proyecto.
+`locale set --project <lang>` saves the language in `.pandoc-pdf.env` inside the toolkit's root directory (the directory that contains `bin/pandoc-pdf`), for that installation.
 
-Comprobar si hay nueva versión estable del toolkit:
+Check whether there is a new stable version of the toolkit:
 
 ```bash
 pandoc-pdf update --check
@@ -116,84 +116,89 @@ pandoc-pdf update
 pandoc-pdf update --to v1.2.3
 ```
 
-`update --check` informa versión local, última versión estable y si hay actualización disponible.
+`update --check` reports the local version, the latest stable version and whether an update is available.
 
-`update` instala la última versión estable para la plataforma actual.
+`update` installs the latest stable version for the current platform.
 
-`update --to <tag>` instala una versión concreta (por ejemplo `v1.2.3`).
+`update --to <tag>` installs a specific version (for example `v1.2.3`).
 
-Instalación gestionada del updater:
+Layout managed by the updater:
 
-- Toolkit versionado en `~/.local/share/pandoc-pdf/versions/<tag>/`
-- Puntero activo en `~/.local/share/pandoc-pdf/current`
-- Entrypoint en `~/.local/bin/pandoc-pdf`
+- Toolkit versions under `~/.local/share/pandoc-pdf/versions/<tag>/`
+- Active pointer at `~/.local/share/pandoc-pdf/current`
+- Entrypoint at `~/.local/bin/pandoc-pdf`
 
-Notas:
+Notes:
 
-- `pandoc-pdf-dev` está reservado para desarrollo local y **no permite** instalación con `update`.
-- Puedes personalizar la raíz gestionada con `PANDOC_PDF_UPDATE_HOME`.
+- `pandoc-pdf-dev` is reserved for local development and **does not allow** installation with `update`.
+- You can customize the managed root with `PANDOC_PDF_UPDATE_HOME`.
 
-Flags útiles:
+Useful flags:
 
-- `--yes`: evita confirmación interactiva.
-- `--dry-run`: muestra el plan sin escribir en disco.
-- `--install-dir <path>`: define la ruta de instalación.
+- `--yes`: skips the interactive confirmation.
+- `--dry-run`: shows the plan without writing to disk.
+- `--install-dir <path>`: sets the installation path.
 
-Para repositorios privados en GitHub, exporta un token antes de ejecutar update:
+For private GitHub repositories, export a token before running update:
 
 ```bash
-export PANDOC_PDF_UPDATE_TOKEN=<tu_token>
-# o alternativamente
-export GH_TOKEN=<tu_token>
+export PANDOC_PDF_UPDATE_TOKEN=<your_token>
+# or alternatively
+export GH_TOKEN=<your_token>
 ```
 
-Validar entorno y dependencias:
+Validate the environment and dependencies:
 
 ```bash
 pandoc-pdf doctor
 ```
 
-Validar configuración:
+Validate the configuration:
 
 ```bash
 pandoc-pdf validate-config -c pdf.config.yaml
 ```
 
-`validate-config` aplica validación estricta del contrato (required, tipos y campos no permitidos), alineada con `schemas/pdf-config.schema.json`, y validaciones funcionales de rutas críticas (`input.chapters_dir`, `pandoc.template`, `pandoc.metadata_file` cuando se informa, `filters.extra_lua_filters`). `input.order` se valida además contra su `enum`: un valor distinto de `natural` o `alphabetical` se rechaza aquí, antes de llegar al render.
+`validate-config` applies strict contract validation (required, types and disallowed fields), aligned with `schemas/pdf-config.schema.json`, plus functional validation of critical paths (`input.chapters_dir`, `pandoc.template`, `pandoc.metadata_file` when set, `filters.extra_lua_filters`). `input.order` is additionally validated against its `enum`: a value other than `natural` or `alphabetical` is rejected here, before it reaches the render.
 
-El validador implementa un subconjunto explícito de JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`). Un test falla si el schema empieza a usar cualquier otra keyword, para que nunca se ignore en silencio.
+The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`). A test fails if the schema starts using any other keyword, so one can never be silently ignored.
 
-`pandoc.template` es opcional: si no se informa, el render usa `templates/default.tex`.
+`pandoc.template` is optional: if it is not set, the render uses `templates/default.tex`.
 
-Renderizar PDF:
+Render the PDF:
 
 ```bash
 pandoc-pdf render -c pdf.config.yaml
 ```
 
-Inspeccionar el plan de render sin ejecutar nada:
+Inspect the render plan without executing anything:
 
 ```bash
 pandoc-pdf render -c pdf.config.yaml --dry-run
 pandoc-pdf render -c pdf.config.yaml --dry-run --json
 ```
 
-`--dry-run` imprime el plan legible (capítulos en orden efectivo, markdown fusionado, PDF de salida y la invocación de pandoc) y **no escribe nada**: no crea directorios, no genera el markdown fusionado, no prepara emojis y no invoca pandoc.
+`--dry-run` prints the human-readable plan (chapters in effective order, merged markdown, output PDF and the pandoc invocation) and **writes nothing**: it creates no directories, generates no merged markdown, prepares no emojis and invokes no pandoc.
 
-`--dry-run --json` emite el mismo plan como JSON en stdout (el banner de validación va a stderr, así que stdout queda limpio) con esta forma:
+`--dry-run --json` emits the same plan as JSON on stdout (the validation banner goes to stderr, so stdout stays clean) with this shape:
 
 ```json
 {
   "plan_version": 1,
-  "toolkit": { "version": "1.2.0", "root": "/ruta/toolkit" },
-  "config": { "path": "/ruta/pdf.config.yaml", "base_dir": "/ruta/proyecto" },
-  "chapters": ["/ruta/proyecto/chapters/chapter-2.md"],
+  "toolkit": { "version": "1.2.0", "root": "/path/toolkit" },
+  "config": { "path": "/path/pdf.config.yaml", "base_dir": "/path/project" },
+  "chapters": ["/path/project/chapters/chapter-2.md"],
   "pandoc": {
     "target": { "markdown": "...", "pdf": "..." },
     "argv": ["pandoc", "..."],
     "cwd": null
   },
-  "env": { "PANDOC_EMOJI_DIR": "...", "PANDOC_EMOJI_BALLOT_ICONS": "1" },
+  "env": {
+    "PANDOC_EMOJI_DIR": "...",
+    "PANDOC_EMOJI_BALLOT_ICONS": "1",
+    "PANDOC_MERMAID_OUTPUT_DIR": "...",
+    "PANDOC_MERMAID_BACKGROUND": "transparent"
+  },
   "side_effects": {
     "keep_merged_markdown": true,
     "clearpage_between_h1": true,
@@ -203,118 +208,117 @@ pandoc-pdf render -c pdf.config.yaml --dry-run --json
 }
 ```
 
-El plan es el contrato verificable del render: es lo que permite comparar dos implementaciones (hoy la de Python y la de Ruby) sin leer código, y es la base de una futura suite de conformidad.
+The plan is the verifiable contract of the render: it is what makes it possible to compare render implementations without reading code, and it is the foundation for a future conformance suite.
 
-## 4) Flujo recomendado
+## 4) Recommended flow
 
-1. Preparar/actualizar `pdf.config.yaml`.
-2. Ejecutar `doctor` para verificar dependencias.
-3. Ejecutar `validate-config` para detectar errores de contrato.
-4. Ejecutar `render`.
-5. Ejecutar `update --check` de forma periódica para revisar nuevas versiones estables.
+1. Prepare/update `pdf.config.yaml`.
+2. Run `doctor` to check dependencies.
+3. Run `validate-config` to catch contract errors.
+4. Run `render`.
+5. Run `update --check` periodically to review new stable versions.
 
-## 5) Convenciones para repos consumidores
+## 5) Conventions for consumer repositories
 
-- Resolver rutas relativas a `project.base_dir`.
-- Evitar hardcodes en wrappers locales.
-- Mantener overrides de estilo en templates propios, no en el core.
+- Resolve relative paths against `project.base_dir`.
+- Avoid hardcodes in local wrappers.
+- Keep style overrides in your own templates, not in the core.
 
-## 6) Troubleshooting rápido
+## 6) Quick troubleshooting
 
-- Falla `doctor`: instalar dependencias faltantes antes de reintentar.
-- Falla `validate-config`: corregir campos obligatorios/estructura YAML.
-- Falla `render` con Mermaid: verificar `mmdc` en PATH y permisos de salida.
+- `doctor` fails: install the missing dependencies before retrying.
+- `validate-config` fails: fix required fields / the YAML structure.
+- `render` fails with Mermaid: check that `mmdc` is on PATH and that the output location is writable.
 
-## 6.1) Seguridad de configuración
+## 6.1) Configuration security
 
-- No ejecutes `render` ni `doctor -c` con `pdf.config.yaml` de origen no confiable.
-- Revisa especialmente `runtime.required_commands` y `filters.extra_lua_filters`.
-- Consulta la política de seguridad en `.github/SECURITY.md`.
+- Do not run `render` or `doctor -c` with a `pdf.config.yaml` from an untrusted source.
+- Pay special attention to `runtime.required_commands` and `filters.extra_lua_filters`.
+- See the security policy in `.github/SECURITY.md`.
 
-## 7) Integración en CI
+## 7) CI integration
 
-Secuencia sugerida:
+Suggested sequence:
 
 1. `pandoc-pdf doctor`
 2. `pandoc-pdf validate-config -c pdf.config.yaml`
 3. `pandoc-pdf render -c pdf.config.yaml`
 
-Si `runtime.strict: true` (default), cualquier dependencia faltante debe fallar el pipeline.
+If `runtime.strict: true` (default), any missing dependency must fail the pipeline.
 
-Con `runtime.strict: false`, `doctor` degrada las dependencias faltantes a advertencias: las imprime igualmente y sale con exit 0. La única excepción es el motor TeX: su ausencia falla siempre, porque sin él el PDF no puede generarse. Úsalo solo en pipelines donde la dependencia auxiliar se resuelve más adelante (por ejemplo una imagen que la instala en un paso posterior).
+With `runtime.strict: false`, `doctor` downgrades missing dependencies to warnings: it still prints them and exits with exit 0. The only exception is the TeX engine: its absence always fails, because without it the PDF cannot be generated. Use it only in pipelines where the auxiliary dependency is resolved later (for example an image that installs it in a subsequent step).
 
-## 8) Integración con OpenCode (agentes)
+## 8) OpenCode integration (agents)
 
-Para que los modelos lo usen de forma consistente:
+So that models use it consistently:
 
-1. Asegura que el proceso de OpenCode tenga `pandoc-pdf` en PATH.
-2. Define en instrucciones del repositorio que el entrypoint oficial es `pandoc-pdf`.
-3. Secuencia recomendada para agentes:
+1. Make sure the OpenCode process has `pandoc-pdf` on PATH.
+2. State in the repository instructions that the official entrypoint is `pandoc-pdf`.
+3. Recommended sequence for agents:
    - `pandoc-pdf doctor`
    - `pandoc-pdf validate-config -c pdf.config.yaml`
    - `pandoc-pdf render -c pdf.config.yaml`
-4. Para cambios estructurales del toolkit, usar la skill local:
-   - `.atl/skills/pandoc-toolkit-maintainer/SKILL.md`
+4. For structural toolkit changes, use the local skill:
+   - `.agents/skills/pandoc-toolkit-maintainer/SKILL.md`
 
-## 9) Tests del CLI
+## 9) CLI tests
 
-Suite actual de smoke/contract tests:
+Current smoke/contract test suite:
 
 ```bash
 tests/run.sh
 ```
 
-Runners locales de integración:
+Local integration runners:
 
 ```bash
 bash tests/l2-local.sh
 bash tests/l3-local.sh
 ```
 
-Notas:
-- `l2-local.sh` ejecuta integración semi-real (sin stack Mermaid completo).
-- `l3-local.sh` requiere `mmdc` y Chromium (`PUPPETEER_EXECUTABLE_PATH` si no autodetecta).
+Notes:
+- `l2-local.sh` runs semi-real integration (without the full Mermaid stack).
+- `l3-local.sh` requires `mmdc` and Chromium (`PUPPETEER_EXECUTABLE_PATH` if it is not auto-detected).
 
-Cobertura actual de la suite:
+Current suite coverage:
 
-- ayuda y manejo de comando desconocido
-- `doctor` en escenario OK y dependencia faltante
-- `validate-config` con caso válido e inválido
-- `render -c` en modo nativo (verifica salida/entorno)
-- rechazo explícito de flags legacy (`--legacy`)
-- integración avanzada de render (extra_lua_filters, resource_path, metadata opcional)
-- errores de render por `explicit_files` inexistentes
-- plan de render: JSON válido, sin efectos secundarios, `--dry-run` legible y paridad byte a byte entre los renderers Python y Ruby
-- filtro de emojis: encabezados planos no emiten `\\texorpdfstring`
-- comportamiento del contrato (desde 1.2.0):
-  - `input.order` con valores `natural` y `alphabetical`, y rechazo de un valor no admitido indicando el campo y los valores soportados
-  - `output.keep_merged_markdown` en `false` (borra el `.md`) y en `true` (lo conserva), con PDF producido en ambos casos
-  - `document.*` llega a pandoc como variables `-V`, y un `pandoc.metadata_file` tiene prioridad sobre ellas
-  - `include_ballot_icons` conmuta `PANDOC_EMOJI_BALLOT_ICONS` entre `1` y `0`
-  - `runtime.strict` en `false` (advertencia, exit 0) y en `true` (fallo)
-- paridad Python/Ruby: ambos renderers construyen una invocación de pandoc byte-idéntica
-- artefacto de release: el paquete generado no contiene bytecode de Python (`__pycache__`, `.pyc`)
-- mensaje de locale sin destino: nombra `--project`, no `--team`
+- help and unknown-command handling
+- `doctor` in an OK scenario and with a missing dependency
+- `validate-config` with a valid and an invalid case
+- `render -c` in native mode (checks output/environment)
+- explicit rejection of legacy flags (`--legacy`)
+- advanced render integration (extra_lua_filters, resource_path, optional metadata)
+- render errors for non-existent `explicit_files`
+- render plan: valid JSON, no side effects, readable `--dry-run`
+- emoji filter: plain headings do not emit `\\texorpdfstring`
+- contract behavior (since 1.2.0):
+  - `input.order` with `natural` and `alphabetical` values, and rejection of an unsupported value naming the field and the supported values
+  - `output.keep_merged_markdown` set to `false` (deletes the `.md`) and `true` (keeps it), with a PDF produced in both cases
+  - `document.*` reaches pandoc as `-V` variables, and a `pandoc.metadata_file` takes precedence over them
+  - `include_ballot_icons` toggles `PANDOC_EMOJI_BALLOT_ICONS` between `1` and `0`
+  - `runtime.strict` set to `false` (warning, exit 0) and `true` (failure)
+- release artifact: the generated package contains no Python bytecode (`__pycache__`, `.pyc`)
+- locale message with no destination: names `--project`, not `--team`
 
-Además, esta suite corre automáticamente en CI (GitHub Actions) para PR/push sobre matriz macOS/Linux como **L1**.
+In addition, this suite runs automatically in CI (GitHub Actions) for PR/push on a macOS/Linux matrix as **L1**.
 
-Niveles de CI:
+CI levels:
 
-- **L1 (rápido, obligatorio en PR/push):** `tests/run.sh`.
-- **L2 (semi-real, manual):** render real en Ubuntu sobre fixtures de integración.
-- **L3 (completo, manual o programado):** integración con stack ampliado (incluye Mermaid CLI).
-  - incluye fixture Mermaid real en `tests/integration/l3-mermaid-project/`.
+- **L1 (fast, mandatory on PR/push):** `tests/run.sh`.
+- **L2 (semi-real, manual):** real render on Ubuntu against integration fixtures.
+- **L3 (full, manual or scheduled):** integration with the extended stack (includes the Mermaid CLI).
+  - includes a real Mermaid fixture in `tests/integration/l3-mermaid-project/`.
 
-Workflow e inputs manuales:
+Workflow and manual inputs:
 
 - Workflow: `.github/workflows/ci.yml`
-- `run_render_integration=true` para ejecutar **L2**
-- `run_render_full=true` para ejecutar **L3**
+- `run_render_integration=true` to run **L2**
+- `run_render_full=true` to run **L3**
 
-Ejecutar por CLI:
+Run from the CLI:
 
 ```bash
 gh workflow run ci.yml -f run_render_integration=true
-# o
+# or
 gh workflow run ci.yml -f run_render_full=true
 ```

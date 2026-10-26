@@ -3,9 +3,9 @@
 ![CI](https://img.shields.io/badge/CI-configured-blue)
 [![CI](https://github.com/pablobernardo/pandoc-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/pablobernardo/pandoc-toolkit/actions/workflows/ci.yml)
 
-Toolkit agnóstico para generar PDF con Pandoc vía CLI (`pandoc-pdf`) usando configuración declarativa por repo consumidor (`pdf.config.yaml`).
+Agnostic toolkit for generating PDFs with Pandoc via a CLI (`pandoc-pdf`) using declarative configuration per consumer repository (`pdf.config.yaml`).
 
-## Comandos principales
+## Main commands
 
 ```bash
 pandoc-pdf --version
@@ -18,102 +18,102 @@ pandoc-pdf update
 pandoc-pdf update --to v1.2.3
 pandoc-pdf doctor
 pandoc-pdf validate-config -c pdf.config.yaml
-pandoc-pdf render -c pdf.config.yaml
+pandoc-pdf render -c pdf.config.yaml [--dry-run] [--json]
 ```
 
-## Onboarding rápido
+## Quick onboarding
 
 ```bash
 make bootstrap
 ```
 
-Instalación desde repo local al layout gestionado (para desarrollo con `update` funcional):
+Install from a local repository into the managed layout (for development with a working `update`):
 
 ```bash
 make install-local
 make install-local-dev   # + symlink pandoc-pdf-dev -> repo
 ```
 
-Instalación estable desde la última release (sin clonar):
+Stable installation from the latest release (no cloning):
 
 ```bash
 make install-release
 ```
 
-Opcional (sin ejecutar cambios):
+Optional (no changes are executed):
 
 ```bash
 make bootstrap-dry
-# modo no interactivo
+# non-interactive mode
 make bootstrap-yes
-# modo CI (no interactivo, sin symlink)
+# CI mode (non-interactive, no symlink)
 make bootstrap-ci
 ```
 
-Si clonas el repositorio, crea el enlace simbólico a `pandoc-pdf-dev` para evitar
-que se sobrescriba en las actualizaciones:
-```bash 
-ln -sfn <ruta_al_repo>/bin/pandoc-pdf ~/.local/bin/pandoc-pdf-dev
+If you clone the repository, create the `pandoc-pdf-dev` symlink so that
+updates do not overwrite it:
+```bash
+ln -sfn <path_to_the_repo>/bin/pandoc-pdf ~/.local/bin/pandoc-pdf-dev
 ```
 
 ## CI
 
-- Workflow principal: `.github/workflows/ci.yml`
-- Niveles actuales:
-  - **L1**: `tests/run.sh` en matriz macOS/Linux (PR/push).
-  - **L2**: integración semi-real (manual, `workflow_dispatch`).
-  - **L3**: integración completa con Mermaid CLI (manual o programada).
+- Main workflow: `.github/workflows/ci.yml`
+- Current levels:
+  - **L1**: `tests/run.sh` on a macOS/Linux matrix (PR/push).
+  - **L2**: semi-real integration (manual, `workflow_dispatch`).
+  - **L3**: full integration with Mermaid CLI (manual or scheduled).
 
-### Ejecución manual (workflow_dispatch)
+### Manual execution (workflow_dispatch)
 
-Desde **Actions → CI → Run workflow** puedes activar:
+From **Actions → CI → Run workflow** you can trigger:
 
-- `run_render_integration=true` para lanzar **L2**.
-- `run_render_full=true` para lanzar **L3**.
+- `run_render_integration=true` to run **L2**.
+- `run_render_full=true` to run **L3**.
 
-#### Desde GitHub UI
-1. Ir a **Actions** → **CI**.
-2. Haz clic en **Run workflow**.
-3. Activar el input que necesites (`run_render_integration` o `run_render_full`).
-4. Ejecutar.
+#### From the GitHub UI
+1. Go to **Actions** → **CI**.
+2. Click **Run workflow**.
+3. Enable the input you need (`run_render_integration` or `run_render_full`).
+4. Run it.
 
-#### Desde `gh` CLI
+#### From the `gh` CLI
 
 ```bash
 gh workflow run ci.yml -f run_render_integration=true
-# o
+# or
 gh workflow run ci.yml -f run_render_full=true
 ```
 
-Ver ejecución:
+Watching the run:
 
 ```bash
 gh run list --workflow ci.yml
 gh run view --log
 ```
 
-## Documentación
+## Documentation
 
-- `docs/install.md` — instalación y PATH
-- `docs/usage.md` — uso operativo y tests
-- `docs/migration.md` — migración desde legacy
-- `docs/architecture.md` — arquitectura y tradeoffs
-- `docs/release-readiness.md` — checklist de preparación de release
-- `docs/dependency-policy.md` — política de dependencias y actualizaciones
-- `docs/i18n.md` — estrategia de internacionalización del CLI
-- `.atl/skill-registry.md` — normas operativas para agentes
-- `CONTEXT.md` — estado operativo actual del proyecto
-- `.github/SECURITY.md` — política de seguridad y reporte de vulnerabilidades
+- `docs/install.md` — installation and PATH
+- `docs/usage.md` — operational usage and tests
+- `docs/migration.md` — migration from legacy setups
+- `docs/architecture.md` — architecture and tradeoffs
+- `docs/release-readiness.md` — release readiness checklist
+- `docs/dependency-policy.md` — dependency and update policy
+- `docs/i18n.md` — CLI internationalization strategy
+- `.agents/skills/` — operative skills for agents (versioned and reviewed in PRs)
+- `CONTEXT.md` — current operational state of the project
+- `.github/SECURITY.md` — security policy and vulnerability reporting
 
-## Housekeeping del repositorio
+## Repository housekeeping
 
-Para mantener el toolkit limpio y reusable:
+To keep the toolkit clean and reusable:
 
-- **No** agregar artefactos locales de sistema (`.DS_Store`, etc.).
-- **No** reintroducir scripts legacy acoplados al repo consumidor.
-- Usar siempre el entrypoint oficial: `bin/pandoc-pdf`.
-- Mantener ejemplos y docs neutrales (sin datos privados ni rutas de cliente).
+- **Do not** add local system artifacts (`.DS_Store`, etc.).
+- **Do not** reintroduce legacy scripts coupled to the consumer repository.
+- Always use the official entrypoint: `bin/pandoc-pdf`.
+- Keep examples and docs neutral (no private data or client paths).
 
-## Autor
+## Author
 
 Pablo Bernardo — https://github.com/pablobernardo

@@ -1,101 +1,102 @@
-# Migración — Legacy `.pandoc` a `pandoc-pdf`
+# Migration — Legacy `.pandoc` to `pandoc-pdf`
 
-Esta guía describe cómo migrar desde scripts locales acoplados a una adopción reusable del toolkit.
+This guide describes how to migrate from locally coupled scripts to a reusable adoption of the toolkit.
 
-## Objetivo de la migración
+## Goal of the migration
 
-Pasar de pipelines hardcodeados por repo a un contrato declarativo (`pdf.config.yaml`) + un CLI versionado (`pandoc-pdf`).
+Move from pipelines hardcoded per repository to a declarative contract (`pdf.config.yaml`) + a versioned CLI (`pandoc-pdf`).
 
-## Señales de que estás en modo legacy
+## Signals that you are in legacy mode
 
-- Scripts wrapper legacy locales con rutas fijas (`chapters/`, `output/`, etc.).
-- Filtros Lua acoplados a carpetas concretas.
-- Validaciones manuales de dependencias sin preflight unificado.
+- Local legacy wrapper scripts with fixed paths (`chapters/`, `output/`, etc.).
+- Lua filters coupled to specific folders.
+- Manual dependency checks without a unified preflight.
 
-## Estrategia recomendada (gradual)
+## Recommended strategy (gradual)
 
-### Fase 1 — Paridad funcional
+### Phase 1 — Functional parity
 
-1. Crear `pdf.config.yaml` replicando comportamiento actual.
-2. Ajustar rutas a valores declarativos (`project.base_dir`, `input`, `output`).
-3. Ejecutar `pandoc-pdf doctor` y resolver dependencias.
-4. Ejecutar `pandoc-pdf validate-config -c pdf.config.yaml`.
-5. Ejecutar `pandoc-pdf render -c pdf.config.yaml` y comparar salida con legacy.
+1. Create `pdf.config.yaml` replicating the current behavior.
+2. Adjust paths to declarative values (`project.base_dir`, `input`, `output`).
+3. Run `pandoc-pdf doctor` and resolve dependencies.
+4. Run `pandoc-pdf validate-config -c pdf.config.yaml`.
+5. Run `pandoc-pdf render -c pdf.config.yaml` and compare the output with the legacy one.
 
-### Fase 2 — Wrapper de transición
+### Phase 2 — Transition wrapper
 
-Mantener un wrapper local (por ejemplo `render-pdf.sh`) que internamente invoque:
+Keep a local wrapper (for example `render-pdf.sh`) that internally invokes:
 
 ```bash
 pandoc-pdf render -c pdf.config.yaml
 ```
 
-Esto permite adopción progresiva sin romper hábitos del equipo.
+This allows progressive adoption without breaking the team's habits.
 
-### Fase 3 — Retiro del legacy
+### Phase 3 — Retiring the legacy
 
-1. Eliminar hardcodes de rutas en scripts/filtros locales.
-2. Delegar validación al comando `validate-config`.
-3. Consolidar documentación en torno al CLI (`doctor`, `validate-config`, `render`).
+1. Remove path hardcodes from local scripts/filters.
+2. Delegate validation to the `validate-config` command.
+3. Consolidate documentation around the CLI (`doctor`, `validate-config`, `render`).
 
-## Checklist de migración
+## Migration checklist
 
-- [ ] `pdf.config.yaml` con `version` definido.
-- [ ] Rutas resueltas desde `project.base_dir`.
-- [ ] Dependencias verificadas con `doctor`.
-- [ ] Config validada por schema.
-- [ ] Render reproducible en local y CI.
-- [ ] Wrapper legacy documentado (si aplica) y plan de retiro definido.
+- [ ] `pdf.config.yaml` with `version` defined.
+- [ ] Paths resolved from `project.base_dir`.
+- [ ] Dependencies verified with `doctor`.
+- [ ] Config validated against the schema.
+- [ ] Render reproducible locally and in CI.
+- [ ] Legacy wrapper documented (if applicable) and a retirement plan defined.
 
-## Actualización 1.1.x → 1.2.0
+## Upgrading 1.1.x → 1.2.0
 
-Bump menor. **No se requiere ningún cambio en `pdf.config.yaml`**: los cinco campos afectados ya eran obligatorios en el schema y ninguno se ha eliminado ni renombrado, así que una config válida de 1.1.x sigue validando en 1.2.0.
+1.2.0 is on `master` but not yet released (there is no tag for it yet). Minor bump. **No change to `pdf.config.yaml` is required**: the five affected fields were already required by the schema and none has been removed or renamed, so a valid 1.1.x config still validates on 1.2.0.
 
-Cambios de comportamiento que puedes observar al actualizar:
+Behavior changes you can observe when upgrading:
 
-- **`document.*` ahora llega a la plantilla.** Con `pandoc.metadata_file` vacío, `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan a pandoc como variables `-V` y rellenan la portada. Si tu `templates/default.tex` (o tu template propio) esperaba esas variables vacías, la portada cambia: revisa el PDF resultante.
-- **`input.order` solo admite `natural` o `alphabetical`.** Antes cualquier valor se ignoraba; ahora un valor distinto falla en `render` con un mensaje que enumera los admitidos. Revisa el campo en tus configs.
-- **`runtime.strict: false` hace que `doctor` salga con exit 0** aunque falten dependencias auxiliares: las sigue imprimiendo, pero como advertencias. El motor TeX es la excepción y falla siempre. Si tu CI dependía del exit code de `doctor` para detectar entornos incompletos, pon `runtime.strict: true` (que además es el default).
-- **`output.keep_merged_markdown: false` borra el Markdown fusionado** tras un render correcto. Si algún paso posterior de tu pipeline leía ese `.md`, ponlo en `true` (default) o consume el PDF.
+- **`document.*` now reaches the template.** With `pandoc.metadata_file` empty, `title`, `subtitle`, `publisher`, `author`, `date` and `rights` are passed to pandoc as `-V` variables and fill the cover page. If your `templates/default.tex` (or your own template) expected those variables to be empty, the cover page changes: review the resulting PDF.
+- **`input.order` only accepts `natural` or `alphabetical`.** Previously any value was ignored; now a different value fails in `render` with a message listing the accepted ones. Review the field in your configs.
+- **`runtime.strict: false` makes `doctor` exit with exit 0** even when auxiliary dependencies are missing: it still prints them, but as warnings. The TeX engine is the exception and always fails. If your CI relied on the `doctor` exit code to detect incomplete environments, set `runtime.strict: true` (which is also the default).
+- **`output.keep_merged_markdown: false` deletes the merged Markdown** after a successful render. If a later step of your pipeline read that `.md`, set it to `true` (default) or consume the PDF.
+- **The Ruby renderer is removed** (see the section below).
 
-Quick wins incluidos en la misma versión:
+Quick wins included in the same version:
 
-- El error por locale no indicado sugiere `--project` (antes mencionaba `--team`, que no existe).
-- `--resource-path` se une con el separador de la plataforma en lugar de `:` hardcodeado, así que la ruta no se rompe donde el separador es distinto.
-- Los assets `filters/emoji/emoji_u*.svg` duplicados desaparecen; el renderer copia `2610/2611/2612.svg` en cada ejecución, así que no hay nada que ajustar en consumidores.
-- El artefacto de release ya no incluye `scripts/__pycache__`.
+- The error for a missing locale suggests `--project` (it previously mentioned `--team`, which does not exist).
+- `--resource-path` is joined with the platform separator instead of a hardcoded `:`, so the path no longer breaks where the separator differs.
+- The duplicate `filters/emoji/emoji_u*.svg` assets are gone; the renderer copies `2610/2611/2612.svg` on every run, so there is nothing to adjust for consumers.
+- The release artifact no longer includes `scripts/__pycache__`.
 
-### Baseline de configuración retirado
+### Removed configuration baseline
 
-`defaults/default.yaml` ya no existe: el schema es la única fuente de verdad y `render` no fusiona ningún fichero de defaults. Si validabas tu config, **no tienes que hacer nada** (las claves del baseline ya eran obligatorias). Si invocabas `scripts/render-native.*` directamente con configs parciales, declara las claves que esperabas heredar; en particular `pandoc.resource_path` ya no se rellena solo.
+`defaults/default.yaml` no longer exists: the schema is the single source of truth and `render` does not merge any defaults file. If you validated your config, **you do not have to do anything** (the baseline keys were already required). If you invoked `scripts/render-native.*` directly with partial configs, declare the keys you expected to inherit; in particular `pandoc.resource_path` is no longer filled in for you.
 
-`pandoc-pdf info` (y `info --json`) deja de mostrar `defaults_path` / `defaults_exists`.
+`pandoc-pdf info` (and `info --json`) no longer shows `defaults_path` / `defaults_exists`.
 
-### Filtro de emojis
+### Emoji filter
 
-`filters/emoji.lua` deja de reescribir el texto sin emojis. Si tu plantilla mínima no cargaba `graphicx` y `hyperref`, añádelos: son necesarios para imágenes y para encabezados con formato. Antes del cambio, cualquier encabezado emitía `\\texorpdfstring` y el render fallaba aunque no hubiera emojis.
+`filters/emoji.lua` no longer rewraps text without emojis. If your minimal template did not load `graphicx` and `hyperref`, add them: they are needed for images and for headings with formatting. Before the change, any heading emitted `\\texorpdfstring` and the render failed even when there were no emojis.
 
-## Retirada del renderer Ruby (próxima versión)
+## Removal of the Ruby renderer (ships with 1.2.0)
 
-`scripts/render-native.rb` ya no existe. El único renderer es `scripts/render-native.py`, que `pandoc-pdf render` invoca siempre.
+As of 1.2.0, `scripts/render-native.rb` no longer exists. The only renderer is `scripts/render-native.py`, which `pandoc-pdf render` always invokes.
 
-- **No tienes que hacer nada** si usas el CLI (`pandoc-pdf render -c ...`).
-- Si invocabas el script directamente, cambia la llamada a `python3 scripts/render-native.py <config> <toolkit_root> [--plan|--plan-json]` y mantén un parser YAML disponible: PyYAML, o Ruby con YAML de la stdlib (el renderer lo usa como fallback).
-- El plan JSON (`--dry-run --json`) mantiene su forma: `plan_version` sigue en 1.
+- **You do not have to do anything** if you use the CLI (`pandoc-pdf render -c ...`).
+- If you invoked the script directly, change the call to `python3 scripts/render-native.py <config> <toolkit_root> [--plan|--plan-json]` and keep a YAML parser available: PyYAML, or Ruby with stdlib YAML (the renderer uses it as a fallback).
+- The JSON plan (`--dry-run --json`) keeps its shape: `plan_version` is still 1.
 
-## Política de cambios breaking
+## Breaking change policy
 
-Si la migración requiere cambio breaking en CLI/contrato/defaults:
+If the migration requires a breaking change in CLI/contract/defaults:
 
-1. Bump de versión mayor del toolkit.
-2. Guía de migración explícita.
-3. Actualización de ejemplos de referencia.
+1. Major version bump of the toolkit.
+2. Explicit migration guide.
+3. Update of reference examples.
 
-## Riesgos comunes y mitigación
+## Common risks and mitigation
 
-- **Riesgo:** salida distinta al pipeline legacy.
-  - **Mitigación:** paridad por fases y comparación de artefactos.
-- **Riesgo:** dependencia faltante en CI.
-  - **Mitigación:** ejecutar `doctor` al inicio del pipeline.
-- **Riesgo:** configuraciones divergentes por repo.
-  - **Mitigación:** contrato versionado + validación schema + ejemplos neutrales.
+- **Risk:** output differs from the legacy pipeline.
+  - **Mitigation:** parity by phases and comparison of artifacts.
+- **Risk:** missing dependency in CI.
+  - **Mitigation:** run `doctor` at the start of the pipeline.
+- **Risk:** divergent configurations per repository.
+  - **Mitigation:** versioned contract + schema validation + neutral examples.
