@@ -50,7 +50,7 @@ pointing here for exactly that reason.
 1. Update the pinned version in bootstrap/workflows.
 2. Run `tests/run.sh`.
 3. Run the security workflow (`security.yml`).
-4. Update `CHANGELOG.md` (Unreleased) and, if applicable, `docs/release-readiness.md`.
+4. Update `CHANGELOG.md` (Unreleased) and, when the process itself changes, `docs/releasing.md`.
 
 ## Acceptance criteria
 

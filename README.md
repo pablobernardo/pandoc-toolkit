@@ -98,9 +98,10 @@ gh run view --log
 - `docs/usage.md` — operational usage and tests
 - `docs/migration.md` — migration from legacy setups
 - `docs/architecture.md` — architecture and tradeoffs
-- `docs/release-readiness.md` — release readiness checklist
+- `docs/releasing.md` — how a version is cut and published
 - `docs/dependency-policy.md` — dependency and update policy
 - `docs/i18n.md` — CLI internationalization strategy
+- `docs/design/` — design records for shipped features
 - `.agents/skills/` — operative skills for agents (versioned and reviewed in PRs)
 - `CONTEXT.md` — current operational state of the project
 - `.github/SECURITY.md` — security policy and vulnerability reporting

@@ -1,5 +1,9 @@
 # Design — Self-update from GitHub Releases (Linux/macOS)
 
+> Design record for the self-update feature, which shipped in 1.2.0. Current
+> behaviour is documented in `docs/usage.md`; this file keeps the reasoning
+> behind the shipped contract, not instructions.
+
 ## 1) Objective
 
 Add an update capability to the `pandoc-pdf` CLI from GitHub Releases, focused on:
