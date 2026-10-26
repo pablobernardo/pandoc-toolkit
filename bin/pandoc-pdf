@@ -26,7 +26,9 @@ SCRIPT_DIR="$(cd -P -- "$(path_dirname "$SOURCE_PATH")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 GLOBAL_CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/pandoc-pdf"
 GLOBAL_ENV_FILE="${GLOBAL_CONFIG_DIR}/config.env"
-PROJECT_ENV_FILE="${ROOT_DIR}/.pandoc-pdf.env"
+# `locale set --project` writes for the repository you are in, not for the
+# toolkit installation, so two consuming repositories keep independent locales.
+PROJECT_ENV_FILE="${PWD}/.pandoc-pdf.env"
 
 I18N_HELPER="${ROOT_DIR}/scripts/i18n.sh"
 if [[ ! -f "$I18N_HELPER" ]]; then

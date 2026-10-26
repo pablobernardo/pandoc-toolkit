@@ -62,6 +62,7 @@ main() {
   run_render_mermaid_failed_test
   run_mermaid_filter_marks_failure_test
   run_locale_missing_target_message_test
+  run_locale_project_file_location_test
   run_package_release_artifact_test
   run_emoji_filter_plain_heading_test
   run_emoji_filter_contexts_test

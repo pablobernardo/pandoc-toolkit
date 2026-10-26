@@ -106,7 +106,7 @@ Currently supported locales: `en`, `es`, `pt`, `gl`.
 
 `locale set <lang>` saves the global language in `~/.config/pandoc-pdf/config.env` (or `XDG_CONFIG_HOME/pandoc-pdf/config.env`) so it applies by default in future runs.
 
-`locale set --project <lang>` saves the language in `.pandoc-pdf.env` inside the toolkit's root directory (the directory that contains `bin/pandoc-pdf`), for that installation.
+`locale set --project <lang>` writes `.pandoc-pdf.env` in the directory you run it from, so each consuming repository keeps its own language. The CLI looks for that file from the current directory upwards, which means running it from a subdirectory still finds the repository's setting. `PANDOC_PDF_PROJECT_ENV` overrides the path when you need it.
 
 Check whether there is a new stable version of the toolkit:
 

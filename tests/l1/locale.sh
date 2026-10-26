@@ -78,3 +78,29 @@ run_locale_missing_target_message_test() {
   assert_not_contains "$out" "--team" "locale set error does not mention the removed --team option"
   rm -f "$out"
 }
+
+run_locale_project_file_location_test() {
+  local sandbox out
+  sandbox="$(mktemp -d)"
+  out="$(mktemp)"
+
+  ( cd "$sandbox" && PANDOC_PDF_LANG=en "$CLI" locale set --project es >"$out" 2>&1 ) || true
+
+  if [[ -f "${sandbox}/.pandoc-pdf.env" ]]; then
+    pass "locale set --project writes into the current directory"
+  else
+    fail "locale set --project must write into the current directory"
+  fi
+
+  if [[ -e "${ROOT_DIR}/.pandoc-pdf.env" ]]; then
+    fail "locale set --project must not write into the toolkit installation"
+  else
+    pass "locale set --project leaves the toolkit installation untouched"
+  fi
+
+  ( cd "$sandbox" && env -u PANDOC_PDF_LANG "$CLI" locale show >"$out" 2>&1 ) || true
+  assert_contains "$out" "project_config" "locale show reads the project file from the working directory"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}

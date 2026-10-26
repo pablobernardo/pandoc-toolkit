@@ -80,8 +80,32 @@ read_global_lang() {
   read_lang_from_env_file "${GLOBAL_ENV_FILE:-${XDG_CONFIG_HOME:-${HOME}/.config}/pandoc-pdf/config.env}"
 }
 
+# The project locale belongs to the consuming repository, not to the toolkit
+# installation. Look it up from the current directory upwards so running the CLI
+# from a subdirectory still finds it.
+project_env_file() {
+  if [[ -n "${PANDOC_PDF_PROJECT_ENV:-}" ]]; then
+    printf '%s\n' "${PANDOC_PDF_PROJECT_ENV}"
+    return 0
+  fi
+
+  local dir="$PWD"
+  while :; do
+    if [[ -f "${dir}/.pandoc-pdf.env" ]]; then
+      printf '%s\n' "${dir}/.pandoc-pdf.env"
+      return 0
+    fi
+    [[ "$dir" == "/" ]] && break
+    dir="$(dirname "$dir")"
+  done
+
+  return 1
+}
+
 read_project_lang() {
-  read_lang_from_env_file "${PROJECT_ENV_FILE:-${I18N_ROOT}/.pandoc-pdf.env}"
+  local file
+  file="$(project_env_file)" || return 1
+  read_lang_from_env_file "$file"
 }
 
 # Normalises a raw locale ("es_ES.UTF-8@euro" -> "es") and prints it, or fails.
