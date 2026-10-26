@@ -52,10 +52,10 @@ EOF
   local tmpbin
   tmpbin="$(mktemp -d)"
 
-  # Simula "python3 sin PyYAML": la sonda de detección (`python3 -` con un solo
-  # argumento) falla, validate-config se salta (no es lo que mide este test) y el
-  # volcado del catálogo (`python3 - <locale.json>`) usa el intérprete real, para
-  # que los mensajes salgan traducidos desde el catálogo de verdad.
+  # Simulates "python3 without PyYAML": the detection probe (`python3 -` with a
+  # single argument) fails, validate-config is skipped (this test does not measure
+  # it), and the catalog dump (`python3 - <locale.json>`) uses the real
+  # interpreter, so the messages really come translated from the catalog.
   cat >"${tmpbin}/python3" <<EOF
 #!/bin/bash
 set -euo pipefail
