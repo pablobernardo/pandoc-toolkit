@@ -24,6 +24,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # semgrep 1.86.0 needs pydantic-core wheels; ubuntu-latest now ships
+      # Python 3.14, which PyO3 0.22 cannot build against. Pin the interpreter
+      # so the install stays on prebuilt wheels instead of compiling Rust.
+      - name: Set up Python 3.12 for Semgrep
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Run Semgrep (SAST)
         run: |
           python3 -m pip install --upgrade pip
