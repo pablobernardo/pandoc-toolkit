@@ -55,7 +55,7 @@
 ### 5) Documentation and governance
 
 - ✅ `README.md`, `docs/install.md`, `docs/usage.md`, `docs/migration.md`, `docs/architecture.md` reviewed and translated to English.
-- ✅ `docs/release-readiness.md`, `docs/dependency-policy.md`, `docs/i18n.md`, `docs/self-update-design.md` reviewed and translated.
+- ✅ `docs/releasing.md`, `docs/dependency-policy.md`, `docs/i18n.md`, `docs/design/self-update.md` reviewed and translated.
 - ✅ `CHANGELOG.md`: one honest `[Unreleased]` section stating that 1.2.0 has no tag yet.
 - ✅ Release workflow available (`.github/workflows/release.yml`) for `v*` tags; it uses `action-gh-release@v3`, whose Node 24 runtime its own CI does not exercise.
 
