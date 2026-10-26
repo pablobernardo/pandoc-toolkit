@@ -1,43 +1,52 @@
-# Política de seguridad
+# Security policy
 
-## Versiones soportadas
+## Supported versions
 
-Mientras el proyecto no tenga releases públicas estables, se da soporte de seguridad a la rama principal (`main`/`master`) y al estado más reciente del código.
+Security support covers the main branch (`main`/`master`) and the latest state of
+the code. The most recent tagged release (`1.1.3`) receives fixes through a new
+release.
 
-## Cómo reportar vulnerabilidades
+## How to report a vulnerability
 
-Si detectas una vulnerabilidad:
+If you find a vulnerability:
 
-1. **No** abras una issue pública con detalles explotables.
-2. Contacta con el mantenedor:
+1. **Do not** open a public issue with exploitable details.
+2. Contact the maintainer:
    - Pablo Bernardo — https://github.com/pablobernardo
-3. Incluye en el reporte:
-   - descripción del impacto,
-   - pasos de reproducción,
-   - versión/commit afectado,
-   - posible mitigación si la conoces.
+3. Include in the report:
+   - a description of the impact,
+   - reproduction steps,
+   - the affected version or commit,
+   - a possible mitigation if you know one.
 
-Se intentará confirmar el problema y responder con un plan de mitigación lo antes posible.
+The problem will be confirmed and answered with a mitigation plan as soon as
+possible.
 
-## Modelo de confianza
+## Trust model
 
-Este toolkit asume que el archivo `pdf.config.yaml` es de confianza del repositorio consumidor.
+This toolkit assumes `pdf.config.yaml` is trusted by the consuming repository.
 
-Recomendaciones:
+Recommendations:
 
-- No ejecutes `pandoc-pdf render` ni `pandoc-pdf doctor -c` con configuraciones no confiables.
-- Revisa especialmente `filters.extra_lua_filters` y `runtime.required_commands`.
-- En CI, limita la ejecución a configuraciones versionadas y revisadas.
+- Do not run `pandoc-pdf render` or `pandoc-pdf doctor -c` with untrusted
+  configurations.
+- Review `filters.extra_lua_filters` and `runtime.required_commands` in
+  particular.
+- In CI, restrict execution to versioned and reviewed configurations.
 
-## Hardening aplicado
+## Hardening in place
 
-- Validación estricta por esquema (`schemas/pdf-config.schema.json`).
-- Validación funcional de rutas críticas en `validate-config`.
-- Validación de nombre seguro para `runtime.required_commands` en preflight.
-- Carga YAML segura en rutas Ruby (`YAML.safe_load`).
+- Strict schema validation (`schemas/pdf-config.schema.json`), including `enum`
+  values, with a test that fails if the schema starts using a keyword the
+  validator does not implement.
+- Functional validation of critical paths in `validate-config`.
+- Safe command-name validation for `runtime.required_commands` in preflight.
+- Safe YAML loading (`YAML.safe_load`) on the Ruby path.
+- Security CI running Semgrep and Gitleaks from pinned container images, so the
+  scanners do not depend on the runner's toolchain.
 
-## Buenas prácticas para contribuidores
+## Good practice for contributors
 
-- Evitar invocaciones shell con interpolación de entradas no confiables.
-- Preferir APIs sin shell (`subprocess.run([...])`, `shutil.which`, etc.).
-- Añadir tests de regresión de seguridad cuando se corrija una vulnerabilidad.
+- Avoid shell invocations interpolating untrusted input.
+- Prefer shell-free APIs (`subprocess.run([...])`, `shutil.which`, and so on).
+- Add a security regression test whenever a vulnerability is fixed.
