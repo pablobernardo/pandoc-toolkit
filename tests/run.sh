@@ -2015,6 +2015,160 @@ run_emoji_filter_plain_heading_test() {
   rm -f "$md" "$tex"
 }
 
+assert_json_expr() {
+  local file="$1"
+  local expr="$2"
+  local msg="$3"
+
+  if "${REAL_PYTHON3}" - "$file" "$expr" <<'PY' >/dev/null 2>&1
+import json
+import sys
+
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+scope = {"d": data, "any": any, "all": all, "len": len, "str": str, "sorted": sorted, "None": None}
+sys.exit(0 if bool(eval(sys.argv[2], {"__builtins__": {}}, scope)) else 1)
+PY
+  then
+    pass "$msg"
+  else
+    fail "$msg"
+  fi
+}
+
+run_render_plan_json_test() {
+  if [[ -z "${REAL_PYTHON3}" ]]; then
+    echo "SKIP render plan json (python3 not available)"
+    return 0
+  fi
+
+  local sandbox tmpbin capture plan out code
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  plan="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
+  printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+
+  set +e
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$plan" 2>"$out"
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "render --dry-run --json exits 0"
+
+  if "${REAL_PYTHON3}" -c "import json,sys; json.load(open(sys.argv[1]))" "$plan" >/dev/null 2>&1; then
+    pass "render --dry-run --json emits valid JSON"
+  else
+    fail "render --dry-run --json must emit valid JSON ($(head -3 "$out"))"
+  fi
+
+  assert_json_expr "$plan" 'd["plan_version"] == 1' "plan declares plan_version 1"
+  assert_json_expr "$plan" '[p.split("/")[-1] for p in d["chapters"]] == ["chapter-2.md", "chapter-10.md"]' "plan lists chapters in effective order"
+  assert_json_expr "$plan" 'd["pandoc"]["argv"][0] == "pandoc"' "plan argv starts with pandoc"
+  assert_json_expr "$plan" '"--pdf-engine=lualatex" in d["pandoc"]["argv"]' "plan reflects pdf_engine from config"
+  assert_json_expr "$plan" 'd["env"]["PANDOC_EMOJI_BALLOT_ICONS"] == "1"' "plan carries the emoji ballot environment"
+  assert_json_expr "$plan" 'd["side_effects"]["keep_merged_markdown"] is True' "plan declares keep_merged_markdown"
+  assert_json_expr "$plan" 'd["side_effects"]["emoji"]["dir"].endswith("/work/out/emoji")' "plan resolves the emoji directory"
+  assert_json_expr "$plan" 'd["toolkit"]["version"] != ""' "plan reports the toolkit version"
+
+  if [[ -s "$capture" ]]; then
+    fail "render --dry-run must not invoke pandoc"
+  else
+    pass "render --dry-run does not invoke pandoc"
+  fi
+
+  if [[ -e "${sandbox}/work/out" ]]; then
+    fail "render --dry-run must not create output files or directories"
+  else
+    pass "render --dry-run has no side effects"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$plan" "$out"
+}
+
+run_render_dry_run_human_test() {
+  local sandbox tmpbin capture out code
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+
+  set +e
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" --dry-run >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "render --dry-run exits 0"
+  assert_contains "$out" "pandoc " "render --dry-run prints the pandoc invocation"
+  assert_not_contains "$out" "Running:" "render --dry-run does not claim pandoc ran"
+
+  if [[ -e "${sandbox}/work/out" ]]; then
+    fail "render --dry-run (human) must not create output files"
+  else
+    pass "render --dry-run (human) has no side effects"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+run_render_plan_parity_test() {
+  if [[ -z "${REAL_PYTHON3}" ]] || ! command -v ruby >/dev/null 2>&1; then
+    echo "SKIP render plan parity (needs python3 and ruby)"
+    return 0
+  fi
+
+  local sandbox tmpbin capture plan_py plan_rb out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  plan_py="$(mktemp)"
+  plan_rb="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
+  printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural false "metadata.yaml" false
+  printf 'title: Metadata Title\n' >"${sandbox}/work/metadata.yaml"
+
+  if TMP_PANDOC_CAPTURE="$capture" PYTHONPATH="${FIXTURES_DIR}/yaml_shim" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/pdf.config.yaml" "$sandbox" --plan-json >"$plan_py" 2>"$out"; then
+    pass "python renderer emits a plan"
+  else
+    fail "python renderer should emit a plan ($(tail -2 "$out"))"
+  fi
+
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/pdf.config.yaml" "$sandbox" --plan-json >"$plan_rb" 2>"$out"; then
+    pass "ruby renderer emits a plan"
+  else
+    fail "ruby renderer should emit a plan ($(tail -2 "$out"))"
+  fi
+
+  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$plan_py"
+  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$plan_rb"
+  rm -f "${plan_py}.bak" "${plan_rb}.bak"
+
+  if diff -u "$plan_py" "$plan_rb" >"$out" 2>&1; then
+    pass "python and ruby renderers produce the same plan"
+  else
+    fail "python and ruby renderers diverge in the plan ($(head -12 "$out"))"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$plan_py" "$plan_rb" "$out"
+}
+
 main() {
   echo "== Running pandoc-pdf tests =="
   run_help_test
@@ -2053,6 +2207,9 @@ main() {
   run_locale_missing_target_message_test
   run_package_release_artifact_test
   run_emoji_filter_plain_heading_test
+  run_render_plan_json_test
+  run_render_dry_run_human_test
+  run_render_plan_parity_test
 
   echo ""
   echo "Summary: PASS=${PASS} FAIL=${FAIL}"
