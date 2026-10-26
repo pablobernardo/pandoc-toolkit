@@ -7,8 +7,8 @@
 - Estado general: **CLI estable con render nativo por defecto**.
 - Entry point activo: `bin/pandoc-pdf`.
 - Comandos activos: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c`.
-- Estado de suite local verificado: **PASS=143 FAIL=0** (`tests/run.sh`).
-- Versión actual del toolkit (`VERSION`): **1.1.0**.
+- Estado de suite local verificado: **PASS=207 FAIL=0** (`tests/run.sh`).
+- Versión actual del toolkit (`VERSION`): **1.2.0**.
 
 ## Convención activa de i18n (persistente)
 
@@ -44,7 +44,7 @@
 - ✅ Política publicada en `.github/SECURITY.md`.
 
 ### 4) Testing y CI
-- ✅ Suite local `tests/run.sh` en verde (PASS=113 FAIL=0).
+- ✅ Suite local `tests/run.sh` en verde (PASS=207 FAIL=0).
 - ✅ CI por niveles:
   - **L1** obligatorio en PR/push (macOS/Linux)
   - **L2** integración semi-real manual
@@ -55,6 +55,38 @@
 - ✅ `docs/release-readiness.md` y `docs/dependency-policy.md` activos.
 - ✅ `CHANGELOG.md` reorganizado para claridad de release (1.0.0 vs Unreleased).
 - ✅ Workflow de release automático disponible (`.github/workflows/release.yml`) para tags `v*`.
+
+## Migración a binario (Go) — decisión pendiente
+
+Estado: **no se migra ahora**. Windows no es un requisito actual y el consumo real del toolkit es Linux/macOS. La puerta queda abierta de forma explícita.
+
+Puerta abierta (lo que se construiría antes de decidir):
+
+1. ✅ `render --dry-run --json`: hecho (ver sección anterior).
+2. Una suite de conformidad sobre ese plan, ejecutable contra cualquier implementación (actual en bash/Python/Ruby y una futura en Go), para comparar salida sin leer código.
+
+Disparadores de migración (cualquiera de ellos):
+
+- (a) Windows pasa a ser un requisito real del toolkit.
+- (b) Un consumidor objetivo no puede tener `python3` + PyYAML en su entorno.
+- (c) Se necesitan artefactos firmados de fichero único para supply chain.
+- (d) Los defectos del updater en bash cuestan más que una reescritura.
+
+## Plan de render (`--dry-run --json`)
+
+Implementado en 1.2.0: `pandoc-pdf render -c <config> --dry-run [--json]` calcula un plan puro (sin escribir nada) con capítulos, dianas, `argv` de pandoc y entorno. `scripts/render-native.py` y `scripts/render-native.rb` se han partido en `build_plan` (puro), `execute_plan` (único punto con efectos) y `print_plan`; la paridad entre ambos se verifica byte a byte en la suite.
+
+## Contrato de configuración: una sola fuente
+
+`schemas/pdf-config.schema.json` es la única fuente de verdad. No hay fichero de defaults que fusionar: `render` valida el config del usuario y aplica solo los fallbacks históricos de código para claves ausentes. Decisión tomada en 1.2.0 (antes el baseline era inalcanzable por el camino validado).
+
+## Slices pendientes (post 1.2.0)
+
+1. ✅ Plan JSON `--dry-run --json` y decisión de defaults: `defaults/default.yaml` retirado, el schema es la única fuente de verdad.
+2. **Retiro del renderer Ruby**: mantener un solo runtime cuando el plan JSON y la conformidad estén verdes.
+3. **Unificación de i18n**: hoy hay catálogos consumidos desde bash y desde los renderers Python/Ruby.
+4. **Hardening del validador de schema**: cobertura más estricta que el `additionalProperties: false` actual.
+5. **Partir `tests/run.sh`**: es un monolito compartido por todas las áreas; conviene separarlo por dominio antes de seguir creciendo.
 
 ## Gap principal (post 1.1)
 
@@ -67,9 +99,40 @@ Sin bloqueantes técnicos abiertos para el contrato Linux/macOS del toolkit.
 2. **Hardening de supply chain (iteración siguiente)**
    - evaluar firma criptográfica de artefactos (Sigstore/GPG).
 
+## Revisión nativa (RDD) — bloqueada por límite del proveedor
+
+Estado: **no disponible para esta rama**. Dos intentos, mismo revisor y mismo límite:
+
+| lineage | candidato | resultado |
+| --- | --- | --- |
+| `review-d3a0f85c95b06577` | rama hasta `31bc09b` (1.088 líneas) | falla en `review-resilience` |
+| `review-53a11f26c014de04` | slice plan+defaults (1.159 líneas) | falla en `review-resilience` |
+
+Motivo: `reasoning-only stream guard: 420 s / 45.000 reasoning-character limit` en el modelo que sirve la lente de resiliencia, con `prepared_reviewers: 0` y sin mutación. Con tier `high` el proveedor exige las cuatro lentes, así que no se puede rescatar un subconjunto.
+
+Consecuencias operativas:
+
+- Ningún lineage está corrupto; ambos quedan en estado `reviewing`. **No se abandonan** sin decisión explícita del mantenedor (operación auditada y destructiva).
+- La revisión efectiva de la rama es la **revisión humana del PR**.
+- Si se quiere reintentar: candidatos por commit (≈200-600 líneas) en lugar de la rama completa; el guard salta por volumen de diff, no por tipo de cambio.
+
+## Verificación por commit
+
+Los 10 commits de la rama pasan `tests/run.sh` de forma independiente (verificado extrayendo cada árbol con `git archive` y ejecutando la suite): `75f6dc9`, `bfb5d8f`, `ae9cb3b`, `2b622ca`, `31bc09b`, `b4dab34`, `443e9ec`, `5a25fef`, `9b22148`, `e61657a`.
+
+## Decisiones de la revisión de 1.2.0
+
+| # | Decisión |
+| --- | --- |
+| A1 | Precedencia de metadatos: si `pandoc.metadata_file` está informado, manda el fichero y no se pasan variables `-V`; si está vacío, `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan como variables de plantilla. |
+| A2 | `runtime.strict: false` perdona dependencias auxiliares, nunca el motor TeX: sin motor no hay PDF, así que falla siempre. |
+| A3 | La forma del plan (`plan_version: 1`) se congela tal cual: `cwd: null` (heredado), `env` con las cuatro variables del toolkit y `prepare_argv[0]` como token neutro `python3`. Cualquier cambio de forma pide `plan_version: 2`. |
+| A4 | `defaults/default.yaml` retirado: `schemas/pdf-config.schema.json` es la única fuente de verdad del contrato. |
+
 ## Riesgos activos
 
 - Diferencias de entorno (TeX/Mermaid/Chromium) entre local y ejecución de integración completa.
+- Revisión nativa (RDD) indisponible por límite del proveedor: la cobertura externa de esta rama depende de la revisión humana del PR.
 - Dependencia de publicación en GitHub para cerrar automatización de reportes/updates.
 
 ## Decisiones tomadas

@@ -105,8 +105,6 @@ pandoc-toolkit/
   scripts/
     prepare-emojis.py
     preflight.sh
-  defaults/
-    default.yaml
   schemas/
     pdf-config.schema.json
   examples/

@@ -19,7 +19,9 @@ Esta guía explica cómo consumir el toolkit desde cualquier repositorio.
 
 Cada repositorio consumidor define su `pdf.config.yaml`.
 
-El toolkit incluye un baseline en `defaults/default.yaml` que se fusiona en render con la configuración local (la configuración del proyecto tiene prioridad en caso de conflicto).
+No hay baseline oculto: el contrato es exactamente lo que valida `schemas/pdf-config.schema.json`. El toolkit no fusiona ningún fichero de defaults, así que todo lo que el render necesita está declarado en tu `pdf.config.yaml`. Usa `examples/pdf.config.example.yaml` como plantilla de arranque.
+
+Los únicos valores que el renderer aplica por sí mismo son fallbacks históricos de código para claves ausentes (motor `xelatex`, TOC activo, plantilla `templates/default.tex`); un config válido no depende de ellos porque el schema obliga a declarar las claves.
 
 Campos mínimos esperados:
 
@@ -32,6 +34,38 @@ Campos mínimos esperados:
 - `filters`
 - `runtime`
 - `compat`
+
+### 2.1) Semántica de los campos declarativos
+
+Estos campos son obligatorios en `schemas/pdf-config.schema.json` y el runtime los aplica de verdad. Cuando faltan, el renderer y el preflight usan los valores por defecto indicados abajo (que coinciden con `examples/pdf.config.example.yaml`).
+
+`input.order` — orden de los capítulos:
+
+- `natural`: compara los tramos numéricos como números, así que `chapter-2.md` va antes que `chapter-10.md`.
+- `alphabetical`: orden lexicográfico por nombre de fichero.
+- Cualquier otro valor se rechaza en `render` con un mensaje localizado que enumera los valores admitidos (`natural`, `alphabetical`); no se ordena en silencio.
+- Solo aplica cuando `input.explicit_files` está vacío: una lista explícita se respeta tal cual.
+
+`output.keep_merged_markdown` — suerte del Markdown fusionado:
+
+- `true` (default): conserva el `.md` intermedio junto al PDF.
+- `false`: lo elimina tras un render de pandoc correcto. Si pandoc falla, el `.md` se conserva para diagnóstico.
+
+`document.*` — metadatos y portada:
+
+- Con `pandoc.metadata_file` vacío, los campos no vacíos `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan a pandoc como variables de plantilla (`-V campo=valor`) y rellenan la portada de `templates/default.tex`.
+- Con `pandoc.metadata_file` informado **no** se pasan: el fichero de metadatos manda (ver `docs/architecture.md` §2, regla 4 «Reglas del contrato»).
+- `document.title` sigue fijando el nombre del fichero de salida (`title-<suffix>`); `output.file_prefix` solo se usa como alternativa si `document.title` falta.
+
+`filters.emoji.include_ballot_icons` — casillas de tareas Markdown:
+
+- `true` (default): `☐` (U+2610), `☑` (U+2611) y `☒` (U+2612) se sustituyen por su imagen del set de emoji.
+- `false`: se dejan como caracteres, sin sustitución.
+
+`runtime.strict` — severidad del preflight:
+
+- `true` (default): `doctor` falla con exit 1 si falta un comando de `runtime.required_commands` o el motor TeX.
+- `false`: los reporta como advertencias y sale con exit 0, **salvo el motor TeX**: sin él no hay PDF, así que su ausencia falla siempre aunque `strict` sea `false`.
 
 ## 3) Comandos del CLI
 
@@ -135,6 +169,40 @@ Renderizar PDF:
 pandoc-pdf render -c pdf.config.yaml
 ```
 
+Inspeccionar el plan de render sin ejecutar nada:
+
+```bash
+pandoc-pdf render -c pdf.config.yaml --dry-run
+pandoc-pdf render -c pdf.config.yaml --dry-run --json
+```
+
+`--dry-run` imprime el plan legible (capítulos en orden efectivo, markdown fusionado, PDF de salida y la invocación de pandoc) y **no escribe nada**: no crea directorios, no genera el markdown fusionado, no prepara emojis y no invoca pandoc.
+
+`--dry-run --json` emite el mismo plan como JSON en stdout (el banner de validación va a stderr, así que stdout queda limpio) con esta forma:
+
+```json
+{
+  "plan_version": 1,
+  "toolkit": { "version": "1.2.0", "root": "/ruta/toolkit" },
+  "config": { "path": "/ruta/pdf.config.yaml", "base_dir": "/ruta/proyecto" },
+  "chapters": ["/ruta/proyecto/chapters/chapter-2.md"],
+  "pandoc": {
+    "target": { "markdown": "...", "pdf": "..." },
+    "argv": ["pandoc", "..."],
+    "cwd": null
+  },
+  "env": { "PANDOC_EMOJI_DIR": "...", "PANDOC_EMOJI_BALLOT_ICONS": "1" },
+  "side_effects": {
+    "keep_merged_markdown": true,
+    "clearpage_between_h1": true,
+    "emoji": { "enabled": true, "dir": "...", "missing_svg": "...", "prepare_argv": ["python3", "..."] },
+    "mermaid": { "enabled": true, "dir": "...", "background": "transparent" }
+  }
+}
+```
+
+El plan es el contrato verificable del render: es lo que permite comparar dos implementaciones (hoy la de Python y la de Ruby) sin leer código, y es la base de una futura suite de conformidad.
+
 ## 4) Flujo recomendado
 
 1. Preparar/actualizar `pdf.config.yaml`.
@@ -169,7 +237,9 @@ Secuencia sugerida:
 2. `pandoc-pdf validate-config -c pdf.config.yaml`
 3. `pandoc-pdf render -c pdf.config.yaml`
 
-Si `runtime.strict: true`, cualquier dependencia faltante debe fallar el pipeline.
+Si `runtime.strict: true` (default), cualquier dependencia faltante debe fallar el pipeline.
+
+Con `runtime.strict: false`, `doctor` degrada las dependencias faltantes a advertencias: las imprime igualmente y sale con exit 0. La única excepción es el motor TeX: su ausencia falla siempre, porque sin él el PDF no puede generarse. Úsalo solo en pipelines donde la dependencia auxiliar se resuelve más adelante (por ejemplo una imagen que la instala en un paso posterior).
 
 ## 8) Integración con OpenCode (agentes)
 
@@ -212,6 +282,17 @@ Cobertura actual de la suite:
 - rechazo explícito de flags legacy (`--legacy`)
 - integración avanzada de render (extra_lua_filters, resource_path, metadata opcional)
 - errores de render por `explicit_files` inexistentes
+- plan de render: JSON válido, sin efectos secundarios, `--dry-run` legible y paridad byte a byte entre los renderers Python y Ruby
+- filtro de emojis: encabezados planos no emiten `\\texorpdfstring`
+- comportamiento del contrato (desde 1.2.0):
+  - `input.order` con valores `natural` y `alphabetical`, y rechazo de un valor no admitido indicando el campo y los valores soportados
+  - `output.keep_merged_markdown` en `false` (borra el `.md`) y en `true` (lo conserva), con PDF producido en ambos casos
+  - `document.*` llega a pandoc como variables `-V`, y un `pandoc.metadata_file` tiene prioridad sobre ellas
+  - `include_ballot_icons` conmuta `PANDOC_EMOJI_BALLOT_ICONS` entre `1` y `0`
+  - `runtime.strict` en `false` (advertencia, exit 0) y en `true` (fallo)
+- paridad Python/Ruby: ambos renderers construyen una invocación de pandoc byte-idéntica
+- artefacto de release: el paquete generado no contiene bytecode de Python (`__pycache__`, `.pyc`)
+- mensaje de locale sin destino: nombra `--project`, no `--team`
 
 Además, esta suite corre automáticamente en CI (GitHub Actions) para PR/push sobre matriz macOS/Linux como **L1**.
 

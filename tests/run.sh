@@ -51,6 +51,17 @@ assert_contains() {
   fi
 }
 
+assert_not_contains() {
+  local file="$1"
+  local pattern="$2"
+  local msg="$3"
+  if grep -qE -- "$pattern" "$file"; then
+    fail "$msg"
+  else
+    pass "$msg"
+  fi
+}
+
 run_help_test() {
   local out
   out="$(mktemp)"
@@ -1397,88 +1408,56 @@ EOF
   rm -f "$capture" "$out"
 }
 
-run_render_defaults_merge_test() {
-  local sandbox
-  sandbox="$(mktemp -d)"
-  mkdir -p "${sandbox}/work/chapters" "${sandbox}/defaults" "${sandbox}/templates" "${sandbox}/scripts"
+run_no_hidden_defaults_test() {
+  if [[ -e "${ROOT_DIR}/defaults/default.yaml" ]]; then
+    fail "the toolkit must not ship a config defaults baseline"
+  else
+    pass "the toolkit ships no config defaults baseline"
+  fi
 
-  cp "${ROOT_DIR}/defaults/default.yaml" "${sandbox}/defaults/default.yaml"
-  cp "${ROOT_DIR}/scripts/render-native.rb" "${sandbox}/scripts/render-native.rb"
-  chmod +x "${sandbox}/scripts/render-native.rb"
+  if ! command -v ruby >/dev/null 2>&1; then
+    echo "SKIP hidden defaults check (ruby not available)"
+    return 0
+  fi
 
-  cat >"${sandbox}/work/chapters/01-defaults.md" <<'EOF'
-# Defaults
+  local sandbox tmpbin capture out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
 
-Content with defaults
-EOF
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
 
-  cat >"${sandbox}/templates/default.tex" <<'EOF'
-\documentclass{article}
-\begin{document}
-$body$
-\end{document}
-EOF
-
-  cat >"${sandbox}/pdf.config.yaml" <<'EOF'
+  cat >"${sandbox}/partial.config.yaml" <<'EOF'
 project:
-  name: defaults-test
+  name: partial
   base_dir: ./work
 
 document:
-  title: "Defaults Merge"
+  title: "Partial Document"
 
 input:
   chapters_dir: "chapters"
-  explicit_files:
-    - "01-defaults.md"
+  explicit_files: []
 
 output:
   dir: "out"
-  file_prefix: "defaults"
+  file_prefix: "partial"
   suffix: "manual"
 
 pandoc:
   pdf_engine: lualatex
-  toc: false
-
-filters:
-  emoji:
-    enabled: false
-  mermaid:
-    enabled: false
 EOF
 
-  local tmpbin
-  tmpbin="$(mktemp -d)"
-
-  cat >"${tmpbin}/pandoc" <<'EOF'
-#!/bin/bash
-set -euo pipefail
-echo "ARGS:$*" > "${TMP_PANDOC_CAPTURE}"
-exit 0
-EOF
-  chmod +x "${tmpbin}/pandoc"
-
-  local capture out
-  capture="$(mktemp)"
-  out="$(mktemp)"
-
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/pdf.config.yaml" "${sandbox}" >"$out" 2>&1; then
-    pass "render applies defaults merge + local override"
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/partial.config.yaml" "$sandbox" >"$out" 2>&1; then
+    pass "renderer accepts a config without the optional sections"
   else
-    fail "render should apply defaults merge"
+    fail "renderer should accept a config without the optional sections ($(tail -2 "$out"))"
   fi
 
-  assert_contains "$capture" "--pdf-engine=lualatex" "render defaults allow local pdf_engine override"
-  assert_contains "$capture" "--template=.*/templates/default\.tex" "render defaults apply toolkit default template"
-  assert_contains "$capture" "--number-sections" "render defaults apply default number_sections"
-  assert_contains "$capture" "--resource-path=.*/chapters" "render defaults apply default resource_path"
-
-  if grep -q -- "--toc" "$capture"; then
-    fail "render defaults should not include --toc when local config disables it"
-  else
-    pass "render defaults respect local toc=false override"
-  fi
+  assert_not_contains "$capture" "--resource-path" "a config without resource_path gets no hidden default resource path"
 
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$capture" "$out"
@@ -1531,6 +1510,782 @@ EOF
   rm -f "$out"
 }
 
+# ---------------------------------------------------------------------------
+# S1 — config contract alignment
+#   input.order / output.keep_merged_markdown / document.* template vars /
+#   filters.emoji.include_ballot_icons / runtime.strict
+# ---------------------------------------------------------------------------
+
+line_of_match() {
+  local file="$1"
+  local pattern="$2"
+  { grep -n -m1 -E -- "$pattern" "$file" 2>/dev/null || true; } | cut -d: -f1
+}
+
+write_pandoc_capture_mock() {
+  local bin_dir="$1"
+  mkdir -p "$bin_dir"
+  cat >"${bin_dir}/pandoc" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+{
+  echo "ARGS:$*"
+  echo "PANDOC_EMOJI_DIR=${PANDOC_EMOJI_DIR:-}"
+  echo "PANDOC_EMOJI_BALLOT_ICONS=${PANDOC_EMOJI_BALLOT_ICONS:-}"
+  echo "PANDOC_MERMAID_OUTPUT_DIR=${PANDOC_MERMAID_OUTPUT_DIR:-}"
+  echo "PANDOC_MERMAID_BACKGROUND=${PANDOC_MERMAID_BACKGROUND:-}"
+} > "${TMP_PANDOC_CAPTURE}"
+out=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+if [[ -n "$out" ]]; then
+  mkdir -p "$(dirname "$out")"
+  : > "$out"
+fi
+exit 0
+EOF
+  chmod +x "${bin_dir}/pandoc"
+}
+
+new_contract_sandbox() {
+  local sandbox
+  sandbox="$(mktemp -d)"
+  mkdir -p "${sandbox}/bin" "${sandbox}/work/chapters" "${sandbox}/templates"
+  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
+  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp -R "${ROOT_DIR}/scripts" "${sandbox}/scripts"
+  rm -rf "${sandbox}/scripts/__pycache__"
+  cp -R "${ROOT_DIR}/schemas" "${sandbox}/schemas"
+  cp -R "${ROOT_DIR}/filters" "${sandbox}/filters"
+  cp -R "${ROOT_DIR}/i18n" "${sandbox}/i18n"
+  cp "${ROOT_DIR}/VERSION" "${sandbox}/VERSION"
+  cat >"${sandbox}/templates/default.tex" <<'EOF'
+\documentclass{article}
+\begin{document}
+$body$
+\end{document}
+EOF
+  printf '%s\n' "$sandbox"
+}
+
+write_contract_config() {
+  local path="$1"
+  local order="$2"
+  local keep_md="$3"
+  local metadata_file="$4"
+  local ballot="$5"
+  local mermaid="${6:-false}"
+  cat >"$path" <<EOF
+version: 1
+
+project:
+  name: s1-contract
+  base_dir: ./work
+
+document:
+  title: "S1 Document"
+  subtitle: "S1 Subtitle"
+  publisher: "S1 Publisher"
+  author: "S1 Author"
+  date: "2026-01-02"
+  rights: "S1 Rights"
+
+input:
+  chapters_dir: "chapters"
+  glob: "*.md"
+  order: ${order}
+  explicit_files: []
+
+output:
+  dir: "out"
+  file_prefix: "s1"
+  suffix: "manual"
+  keep_merged_markdown: ${keep_md}
+
+pandoc:
+  pdf_engine: lualatex
+  toc: false
+  toc_depth: 2
+  number_sections: false
+  metadata_file: "${metadata_file}"
+  resource_path:
+    - "chapters"
+
+filters:
+  emoji:
+    enabled: true
+    emoji_dir: "out/emoji"
+    include_ballot_icons: ${ballot}
+  mermaid:
+    enabled: ${mermaid}
+    output_dir: "out/mermaid"
+    background: "transparent"
+  extra_lua_filters: []
+
+runtime:
+  required_commands:
+    - pandoc
+  strict: true
+
+compat:
+  legacy_clearpage_between_h1: false
+EOF
+}
+
+run_render_order_semantics_test() {
+  local sandbox tmpbin capture out merged
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+  merged="${sandbox}/work/out/S1 Document-manual.md"
+
+  printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
+  printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts input.order=natural"
+  else
+    fail "render should accept input.order=natural ($(tail -2 "$out"))"
+  fi
+
+  local pos_two pos_ten
+  pos_two="$(line_of_match "$merged" '^# Chapter Two')"
+  pos_ten="$(line_of_match "$merged" '^# Chapter Ten')"
+  if [[ -n "$pos_two" && -n "$pos_ten" && "$pos_two" -lt "$pos_ten" ]]; then
+    pass "input.order=natural sorts chapter-2 before chapter-10"
+  else
+    fail "input.order=natural must sort chapter-2 before chapter-10 (two=${pos_two:-none}, ten=${pos_ten:-none})"
+  fi
+
+  write_contract_config "${sandbox}/pdf.config.yaml" alphabetical true "" true
+  rm -f "$merged"
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts input.order=alphabetical"
+  else
+    fail "render should accept input.order=alphabetical ($(tail -2 "$out"))"
+  fi
+
+  pos_two="$(line_of_match "$merged" '^# Chapter Two')"
+  pos_ten="$(line_of_match "$merged" '^# Chapter Ten')"
+  if [[ -n "$pos_two" && -n "$pos_ten" && "$pos_ten" -lt "$pos_two" ]]; then
+    pass "input.order=alphabetical sorts chapter-10 before chapter-2"
+  else
+    fail "input.order=alphabetical must sort chapter-10 before chapter-2 (two=${pos_two:-none}, ten=${pos_ten:-none})"
+  fi
+
+  write_contract_config "${sandbox}/pdf.config.yaml" bogus true "" true
+  local code
+  set +e
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "render rejects an unsupported input.order"
+  assert_contains "$out" "input.order" "unsupported input.order names the field"
+  assert_contains "$out" "alphabetical" "unsupported input.order lists supported values"
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+run_render_keep_merged_markdown_test() {
+  local sandbox tmpbin capture out merged pdf
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+  merged="${sandbox}/work/out/S1 Document-manual.md"
+  pdf="${sandbox}/work/out/S1 Document-manual.pdf"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural false "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts output.keep_merged_markdown=false"
+  else
+    fail "render should accept output.keep_merged_markdown=false ($(tail -2 "$out"))"
+  fi
+
+  if [[ -f "$pdf" ]]; then
+    pass "keep_merged_markdown=false still writes the PDF"
+  else
+    fail "keep_merged_markdown=false must still write the PDF"
+  fi
+
+  if [[ -f "$merged" ]]; then
+    fail "keep_merged_markdown=false must remove the merged markdown"
+  else
+    pass "keep_merged_markdown=false removes the merged markdown"
+  fi
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts output.keep_merged_markdown=true"
+  else
+    fail "render should accept output.keep_merged_markdown=true ($(tail -2 "$out"))"
+  fi
+
+  if [[ -f "$merged" ]]; then
+    pass "keep_merged_markdown=true keeps the merged markdown"
+  else
+    fail "keep_merged_markdown=true must keep the merged markdown"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+run_render_document_vars_test() {
+  local sandbox tmpbin capture out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render succeeds without metadata_file"
+  else
+    fail "render should succeed without metadata_file ($(tail -2 "$out"))"
+  fi
+
+  assert_contains "$capture" "-V title=S1 Document" "document.title is passed as a template variable"
+  assert_contains "$capture" "-V subtitle=S1 Subtitle" "document.subtitle is passed as a template variable"
+  assert_contains "$capture" "-V publisher=S1 Publisher" "document.publisher is passed as a template variable"
+  assert_contains "$capture" "-V author=S1 Author" "document.author is passed as a template variable"
+  assert_contains "$capture" "-V date=2026-01-02" "document.date is passed as a template variable"
+  assert_contains "$capture" "-V rights=S1 Rights" "document.rights is passed as a template variable"
+
+  printf 'title: Metadata Title\nauthor: Metadata Author\n' >"${sandbox}/work/metadata.yaml"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "metadata.yaml" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render succeeds with metadata_file"
+  else
+    fail "render should succeed with metadata_file ($(tail -2 "$out"))"
+  fi
+
+  assert_contains "$capture" "--metadata-file=.*metadata.yaml" "metadata_file is forwarded to pandoc"
+  assert_not_contains "$capture" "-V author=" "metadata_file wins over document.* variables"
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+run_render_ballot_icons_test() {
+  local sandbox tmpbin capture out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter One\n\n- [ ] unchecked\n- [x] checked\n' >"${sandbox}/work/chapters/01-one.md"
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts include_ballot_icons=true"
+  else
+    fail "render should accept include_ballot_icons=true ($(tail -2 "$out"))"
+  fi
+  assert_contains "$capture" "^PANDOC_EMOJI_BALLOT_ICONS=1$" "include_ballot_icons=true enables ballot glyphs"
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" false
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts include_ballot_icons=false"
+  else
+    fail "render should accept include_ballot_icons=false ($(tail -2 "$out"))"
+  fi
+  assert_contains "$capture" "^PANDOC_EMOJI_BALLOT_ICONS=0$" "include_ballot_icons=false disables ballot glyphs"
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+run_doctor_strict_semantics_test() {
+  local tmpbin out code
+  tmpbin="$(mktemp -d)"
+  local cmds=(pandoc python3 xelatex)
+
+  for c in "${cmds[@]}"; do
+    if [[ "$c" == "python3" ]]; then
+      cat >"${tmpbin}/${c}" <<EOF
+#!/bin/bash
+exec "${REAL_PYTHON3}" "\$@"
+EOF
+    else
+      cat >"${tmpbin}/${c}" <<'EOF'
+#!/bin/bash
+exit 0
+EOF
+    fi
+    chmod +x "${tmpbin}/${c}"
+  done
+
+  out="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-required-cmd.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "runtime.strict=true fails on missing required command"
+
+  set +e
+  PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-strict-false.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "runtime.strict=false does not fail on missing required command"
+  assert_contains "$out" "mycustomcmd" "runtime.strict=false still reports the missing command"
+
+  # Sin motor TeX no hay PDF: strict=false no puede perdonarlo.
+  local tmpbin_no_tex
+  tmpbin_no_tex="$(mktemp -d)"
+  cat >"${tmpbin_no_tex}/pandoc" <<'EOF'
+#!/bin/bash
+exit 0
+EOF
+  cat >"${tmpbin_no_tex}/python3" <<EOF
+#!/bin/bash
+exec "${REAL_PYTHON3}" "\$@"
+EOF
+  chmod +x "${tmpbin_no_tex}/pandoc" "${tmpbin_no_tex}/python3"
+
+  set +e
+  PANDOC_PDF_LANG=en PATH="$tmpbin_no_tex" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-strict-false.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "runtime.strict=false still fails when the TeX engine is missing"
+  assert_contains "$out" "xelatex" "the missing TeX engine is named"
+
+  rm -rf "$tmpbin" "$tmpbin_no_tex"
+  rm -f "$out"
+}
+
+run_render_parity_python_ruby_test() {
+  if [[ -z "${REAL_PYTHON3}" ]] || ! command -v ruby >/dev/null 2>&1; then
+    echo "⏭  SKIP python/ruby renderer parity (needs python3 and ruby)"
+    return 0
+  fi
+
+  local sandbox tmpbin capture_path capture_rb out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture_path="$(mktemp)"
+  capture_rb="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
+  printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural false "" false
+
+  if TMP_PANDOC_CAPTURE="$capture_path" PYTHONPATH="${FIXTURES_DIR}/yaml_shim" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/pdf.config.yaml" "$sandbox" >"$out" 2>&1; then
+    pass "python renderer runs"
+  else
+    fail "python renderer should run ($(tail -2 "$out"))"
+  fi
+
+  if TMP_PANDOC_CAPTURE="$capture_rb" PATH="${tmpbin}:$PATH" \
+    ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/pdf.config.yaml" "$sandbox" >"$out" 2>&1; then
+    pass "ruby renderer runs"
+  else
+    fail "ruby renderer should run ($(tail -2 "$out"))"
+  fi
+
+  # macOS: Path.resolve() (python) resolves /var -> /private/var; expand_path (ruby) does not.
+  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$capture_path"
+  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$capture_rb"
+  rm -f "${capture_path}.bak" "${capture_rb}.bak"
+
+  if diff -u "$capture_path" "$capture_rb" >"$out" 2>&1; then
+    pass "python and ruby renderers build the same pandoc invocation"
+  else
+    fail "python and ruby renderers diverge ($(head -10 "$out"))"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture_path" "$capture_rb" "$out"
+}
+
+run_locale_missing_target_message_test() {
+  local out code
+  out="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en "$CLI" locale set >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "locale set without target fails"
+  assert_contains "$out" "--project" "locale set error names the real --project option"
+  assert_not_contains "$out" "--team" "locale set error does not mention the removed --team option"
+  rm -f "$out"
+}
+
+run_package_release_artifact_test() {
+  local out_dir artifact
+  out_dir="$(mktemp -d)"
+
+  if bash "${ROOT_DIR}/scripts/package-release.sh" "$out_dir" >/dev/null 2>&1; then
+    pass "package-release builds artifacts"
+  else
+    fail "package-release should build artifacts"
+  fi
+
+  for artifact in pandoc-pdf_darwin_amd64.tar.gz pandoc-pdf_darwin_arm64.tar.gz pandoc-pdf_linux_amd64.tar.gz pandoc-pdf_linux_arm64.tar.gz; do
+    if [[ -f "${out_dir}/${artifact}" ]]; then
+      pass "package-release emits ${artifact}"
+    else
+      fail "package-release must emit ${artifact}"
+    fi
+  done
+
+  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | grep -qE '__pycache__|\.pyc$'; then
+    fail "package-release artifact must not ship Python bytecode caches"
+  else
+    pass "package-release artifact excludes Python bytecode caches"
+  fi
+
+  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | grep -qxE '\./bin/pandoc-pdf'; then
+    pass "package-release artifact contains the CLI entrypoint"
+  else
+    fail "package-release artifact must contain ./bin/pandoc-pdf"
+  fi
+
+  local expected actual
+  expected="$(awk '$2=="pandoc-pdf_linux_arm64.tar.gz" {print $1}' "${out_dir}/checksums.txt")"
+  if command -v shasum >/dev/null 2>&1; then
+    actual="$(shasum -a 256 "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | awk '{print $1}')"
+  else
+    actual="$(sha256sum "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | awk '{print $1}')"
+  fi
+  if [[ -n "$expected" && "$expected" == "$actual" ]]; then
+    pass "package-release checksums match the emitted artifacts"
+  else
+    fail "package-release checksums must match the emitted artifacts"
+  fi
+
+  rm -rf "$out_dir"
+}
+
+run_emoji_filter_plain_heading_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "⏭  SKIP emoji filter heading check (pandoc not available)"
+    return 0
+  fi
+
+  local md tex
+  md="$(mktemp)"
+  tex="$(mktemp)"
+  printf '# Plain Heading\n\nText with an emoji \xe2\x9c\x85 and plain words.\n' >"$md"
+
+  if pandoc "$md" -t latex --lua-filter="${ROOT_DIR}/filters/emoji.lua" >"$tex" 2>&1; then
+    pass "emoji filter produces latex output"
+  else
+    fail "emoji filter should produce latex output ($(tail -2 "$tex"))"
+  fi
+
+  assert_contains "$tex" '\\section\{Plain Heading\}' "emoji filter keeps a plain heading plain"
+  assert_not_contains "$tex" '\\texorpdfstring' "emoji filter does not format plain headings (needs hyperref otherwise)"
+
+  rm -f "$md" "$tex"
+}
+
+assert_json_expr() {
+  local file="$1"
+  local expr="$2"
+  local msg="$3"
+
+  if "${REAL_PYTHON3}" - "$file" "$expr" <<'PY' >/dev/null 2>&1
+import json
+import sys
+
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+scope = {"d": data, "any": any, "all": all, "len": len, "str": str, "sorted": sorted, "None": None}
+sys.exit(0 if bool(eval(sys.argv[2], {"__builtins__": {}}, scope)) else 1)
+PY
+  then
+    pass "$msg"
+  else
+    fail "$msg"
+  fi
+}
+
+run_render_plan_json_test() {
+  if [[ -z "${REAL_PYTHON3}" ]]; then
+    echo "SKIP render plan json (python3 not available)"
+    return 0
+  fi
+
+  local sandbox tmpbin capture plan out code
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  plan="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
+  printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+
+  set +e
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$plan" 2>"$out"
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "render --dry-run --json exits 0"
+
+  if "${REAL_PYTHON3}" -c "import json,sys; json.load(open(sys.argv[1]))" "$plan" >/dev/null 2>&1; then
+    pass "render --dry-run --json emits valid JSON"
+  else
+    fail "render --dry-run --json must emit valid JSON ($(head -3 "$out"))"
+  fi
+
+  assert_json_expr "$plan" 'd["plan_version"] == 1' "plan declares plan_version 1"
+  assert_json_expr "$plan" '[p.split("/")[-1] for p in d["chapters"]] == ["chapter-2.md", "chapter-10.md"]' "plan lists chapters in effective order"
+  assert_json_expr "$plan" 'd["pandoc"]["argv"][0] == "pandoc"' "plan argv starts with pandoc"
+  assert_json_expr "$plan" '"--pdf-engine=lualatex" in d["pandoc"]["argv"]' "plan reflects pdf_engine from config"
+  assert_json_expr "$plan" 'd["env"]["PANDOC_EMOJI_BALLOT_ICONS"] == "1"' "plan carries the emoji ballot environment"
+  assert_json_expr "$plan" 'd["side_effects"]["keep_merged_markdown"] is True' "plan declares keep_merged_markdown"
+  assert_json_expr "$plan" 'd["side_effects"]["emoji"]["dir"].endswith("/work/out/emoji")' "plan resolves the emoji directory"
+  assert_json_expr "$plan" 'd["toolkit"]["version"] != ""' "plan reports the toolkit version"
+
+  if [[ -s "$capture" ]]; then
+    fail "render --dry-run must not invoke pandoc"
+  else
+    pass "render --dry-run does not invoke pandoc"
+  fi
+
+  if [[ -e "${sandbox}/work/out" ]]; then
+    fail "render --dry-run must not create output files or directories"
+  else
+    pass "render --dry-run has no side effects"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$plan" "$out"
+}
+
+run_render_dry_run_human_test() {
+  local sandbox tmpbin capture out code
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+
+  set +e
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" --dry-run >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "render --dry-run exits 0"
+  assert_contains "$out" "pandoc " "render --dry-run prints the pandoc invocation"
+  assert_not_contains "$out" "Running:" "render --dry-run does not claim pandoc ran"
+
+  if [[ -e "${sandbox}/work/out" ]]; then
+    fail "render --dry-run (human) must not create output files"
+  else
+    pass "render --dry-run (human) has no side effects"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+run_render_plan_parity_test() {
+  if [[ -z "${REAL_PYTHON3}" ]] || ! command -v ruby >/dev/null 2>&1; then
+    echo "SKIP render plan parity (needs python3 and ruby)"
+    return 0
+  fi
+
+  local sandbox tmpbin capture plan_py plan_rb out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  plan_py="$(mktemp)"
+  plan_rb="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
+  printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural false "metadata.yaml" false
+  printf 'title: Metadata Title\n' >"${sandbox}/work/metadata.yaml"
+
+  if TMP_PANDOC_CAPTURE="$capture" PYTHONPATH="${FIXTURES_DIR}/yaml_shim" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/pdf.config.yaml" "$sandbox" --plan-json >"$plan_py" 2>"$out"; then
+    pass "python renderer emits a plan"
+  else
+    fail "python renderer should emit a plan ($(tail -2 "$out"))"
+  fi
+
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/pdf.config.yaml" "$sandbox" --plan-json >"$plan_rb" 2>"$out"; then
+    pass "ruby renderer emits a plan"
+  else
+    fail "ruby renderer should emit a plan ($(tail -2 "$out"))"
+  fi
+
+  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$plan_py"
+  sed -i.bak -e "s#/private${sandbox}#<ROOT>#g" -e "s#${sandbox}#<ROOT>#g" "$plan_rb"
+  rm -f "${plan_py}.bak" "${plan_rb}.bak"
+
+  if diff -u "$plan_py" "$plan_rb" >"$out" 2>&1; then
+    pass "python and ruby renderers produce the same plan"
+  else
+    fail "python and ruby renderers diverge in the plan ($(head -12 "$out"))"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$plan_py" "$plan_rb" "$out"
+}
+
+run_emoji_filter_contexts_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP emoji filter contexts (pandoc not available)"
+    return 0
+  fi
+
+  local dir md tex images remaining
+  dir="$(mktemp -d)"
+  md="$(mktemp)"
+  tex="$(mktemp)"
+
+  # A real glyph so the filter substitutes instead of falling back to the character.
+  cp "${ROOT_DIR}/filters/emoji/2610.svg" "${dir}/2705.svg"
+
+  cat >"$md" <<'EOF'
+# Heading
+
+Paragraph text.
+
+| Col |
+|-----|
+| cell |
+
+: Caption here
+
+- item
+EOF
+  # Write the emoji through printf so this test file stays ASCII-clean.
+  printf '# Heading \xe2\x9c\x85\n\nParagraph \xe2\x9c\x85 text.\n\n| Col |\n|-----|\n| \xe2\x9c\x85 cell |\n\n: Caption \xe2\x9c\x85 here\n\n- item \xe2\x9c\x85\n' >"$md"
+
+  if PANDOC_EMOJI_DIR="$dir" pandoc "$md" -t latex --lua-filter="${ROOT_DIR}/filters/emoji.lua" >"$tex" 2>&1; then
+    pass "emoji filter renders mixed contexts"
+  else
+    fail "emoji filter should render mixed contexts ($(tail -2 "$tex"))"
+  fi
+
+  images="$(grep -c "includesvg\|includegraphics" "$tex" || true)"
+  remaining="$(grep -c $'\xe2\x9c\x85' "$tex" || true)"
+  assert_exit_code "0" "$remaining" "emoji filter substitutes every emoji context (heading, paragraph, table cell, caption, list)"
+  if [[ "${images:-0}" -ge 5 ]]; then
+    pass "emoji filter emits an image per substituted emoji"
+  else
+    fail "emoji filter should emit at least 5 images, got ${images:-0}"
+  fi
+
+  rm -rf "$dir"
+  rm -f "$md" "$tex"
+}
+
+run_render_keep_merged_on_pandoc_failure_test() {
+  local sandbox tmpbin capture out merged code
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  mkdir -p "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  cat >"${tmpbin}/pandoc" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+echo "ARGS:$*" > "${TMP_PANDOC_CAPTURE}"
+echo "failing on purpose" >&2
+exit 7
+EOF
+  chmod +x "${tmpbin}/pandoc"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+  write_contract_config "${sandbox}/pdf.config.yaml" natural false "" true
+  merged="${sandbox}/work/out/S1 Document-manual.md"
+
+  set +e
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+
+  assert_exit_code "7" "$code" "render propagates pandoc's exit code"
+  if [[ -f "$merged" ]]; then
+    pass "keep_merged_markdown=false preserves the markdown when pandoc fails"
+  else
+    fail "keep_merged_markdown=false must keep the markdown when pandoc fails (diagnosis)"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+run_render_mermaid_dir_gate_test() {
+  local sandbox tmpbin capture out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true false
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts mermaid.enabled=false"
+  else
+    fail "render should accept mermaid.enabled=false ($(tail -2 "$out"))"
+  fi
+
+  if [[ -d "${sandbox}/work/out/mermaid" ]]; then
+    fail "render must not create the mermaid directory when the filter is disabled"
+  else
+    pass "render skips the mermaid directory when the filter is disabled"
+  fi
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts mermaid.enabled=true"
+  else
+    fail "render should accept mermaid.enabled=true ($(tail -2 "$out"))"
+  fi
+
+  if [[ -d "${sandbox}/work/out/mermaid" ]]; then
+    pass "render creates the mermaid directory when the filter is enabled"
+  else
+    fail "render must create the mermaid directory when the filter is enabled"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
 main() {
   echo "== Running pandoc-pdf tests =="
   run_help_test
@@ -1558,8 +2313,23 @@ main() {
   run_render_no_yaml_parser_hints_i18n_test
   run_render_native_test
   run_render_native_advanced_paths_test
-  run_render_defaults_merge_test
   run_render_missing_explicit_file_test
+  run_no_hidden_defaults_test
+  run_render_order_semantics_test
+  run_render_keep_merged_markdown_test
+  run_render_document_vars_test
+  run_render_ballot_icons_test
+  run_doctor_strict_semantics_test
+  run_render_parity_python_ruby_test
+  run_locale_missing_target_message_test
+  run_package_release_artifact_test
+  run_emoji_filter_plain_heading_test
+  run_emoji_filter_contexts_test
+  run_render_keep_merged_on_pandoc_failure_test
+  run_render_mermaid_dir_gate_test
+  run_render_plan_json_test
+  run_render_dry_run_human_test
+  run_render_plan_parity_test
 
   echo ""
   echo "Summary: PASS=${PASS} FAIL=${FAIL}"

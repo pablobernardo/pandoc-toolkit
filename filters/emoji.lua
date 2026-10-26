@@ -59,15 +59,24 @@ local ALLOWED_DINGBATS = {
   [0x2705] = true, -- ✅ WHITE HEAVY CHECK MARK
   [0x274C] = true, -- ❌ CROSS MARK
   [0x26D4] = true, -- ⛔ NO ENTRY
+  [0x26A0] = true, -- ⚠ WARNING)
+}
+
+-- Casillas de las listas de tareas Markdown; se pueden desactivar con
+-- filters.emoji.include_ballot_icons=false (el runtime exporta la variable).
+local BALLOT_DINGBATS = {
   [0x2610] = true, -- ☐ BALLOT BOX (Markdown - [ ])
   [0x2611] = true, -- ☑ BALLOT BOX WITH CHECK
   [0x2612] = true, -- ☒ BALLOT BOX WITH X (Markdown - [x])
-  [0x26A0] = true, -- ⚠ WARNING)
 }
+
+local ballot_icons = os.getenv("PANDOC_EMOJI_BALLOT_ICONS") ~= "0"
 
 local function is_emojiish(cp)
   -- Planos principales de emoji
   if cp >= 0x1F000 and cp <= 0x1FAFF then return true end
+  -- Casillas de tareas Markdown (configurables)
+  if BALLOT_DINGBATS[cp] then return ballot_icons end
   -- Dingbats permitidos explícitamente
   if ALLOWED_DINGBATS[cp] then return true end
   -- Todo lo demás NO es emoji (esto excluye á, é, ñ, ¿, ¡, etc.)
@@ -138,9 +147,24 @@ end
 function Code(el) return nil end
 function CodeBlock(el) return nil end
 
--- Reemplaza emojis dentro de palabras/strings
+-- Reemplaza emojis dentro de palabras/strings.
+-- Solo envuelve en Span cuando hubo sustitución real: envolver texto plano
+-- convierte cualquier encabezado en "con formato" y hace que pandoc emita
+-- \texorpdfstring, que exige hyperref en la plantilla (rompía plantillas
+-- mínimas sin hyperref).
 function Str(el)
-  return pandoc.Span(string_to_inlines(el.text))
+  local inlines = string_to_inlines(el.text)
+  local replaced = false
+  for _, inline in ipairs(inlines) do
+    if inline.t ~= "Str" then
+      replaced = true
+      break
+    end
+  end
+  if not replaced then
+    return nil
+  end
+  return pandoc.Span(inlines)
 end
 
 -- Procesar inline recursivamente (Links, Emph, Strong, etc.)

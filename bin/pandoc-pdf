@@ -217,7 +217,7 @@ ${usage_title}
   pandoc-pdf update --to vX.Y.Z
   pandoc-pdf doctor [-c <pdf.config.yaml>]
   pandoc-pdf validate-config -c <pdf.config.yaml>
-  pandoc-pdf render -c <pdf.config.yaml>
+  pandoc-pdf render -c <pdf.config.yaml> [--dry-run] [--json]
 
 ${notes_title}
   - ${note_render_native}
@@ -941,7 +941,7 @@ run_locale() {
 
       local target="${1:-}"
       if [[ -z "$target" ]]; then
-        echo "❌ $(t "cli.locale.error.missing_target" "You must provide a locale or --team")"
+        echo "❌ $(t "cli.locale.error.missing_target" "You must provide a locale")"
         exit 1
       fi
       shift || true
@@ -1043,17 +1043,14 @@ show_info() {
   local version
   local yaml_parser
   local schema_path="$ROOT_DIR/schemas/pdf-config.schema.json"
-  local defaults_path="$ROOT_DIR/defaults/default.yaml"
   local template_path="$ROOT_DIR/templates/default.tex"
 
   version="$(get_version_value)"
   yaml_parser="$(detect_yaml_parser)"
 
   local schema_exists=false
-  local defaults_exists=false
   local template_exists=false
   [[ -f "$schema_path" ]] && schema_exists=true
-  [[ -f "$defaults_path" ]] && defaults_exists=true
   [[ -f "$template_path" ]] && template_exists=true
 
   if [[ "$output_format" == "json" ]]; then
@@ -1064,8 +1061,6 @@ show_info() {
     printf '  "yaml_parser": "%s",\n' "$(json_escape "$yaml_parser")"
     printf '  "schema_path": "%s",\n' "$(json_escape "$schema_path")"
     printf '  "schema_exists": %s,\n' "$schema_exists"
-    printf '  "defaults_path": "%s",\n' "$(json_escape "$defaults_path")"
-    printf '  "defaults_exists": %s,\n' "$defaults_exists"
     printf '  "template_path": "%s",\n' "$(json_escape "$template_path")"
     printf '  "template_exists": %s\n' "$template_exists"
     printf '}\n'
@@ -1076,7 +1071,6 @@ show_info() {
   echo "root_dir: ${ROOT_DIR}"
   echo "yaml_parser: ${yaml_parser}"
   echo "schema_path: ${schema_path} (exists=${schema_exists})"
-  echo "defaults_path: ${defaults_path} (exists=${defaults_exists})"
   echo "template_path: ${template_path} (exists=${template_exists})"
 }
 
@@ -1135,6 +1129,22 @@ run_render() {
   fi
 
   PANDOC_PDF_LANG="$CLI_LANG" ruby "$ROOT_DIR/scripts/render-native.rb" "$config_path" "$ROOT_DIR"
+}
+
+run_render_plan() {
+  local config_path="$1"
+  local plan_mode="$2"
+  local plan_flag="--plan"
+  [[ "$plan_mode" == "json" ]] && plan_flag="--plan-json"
+
+  ensure_config_parser
+
+  if [[ "${CONFIG_PARSER}" == "python" ]]; then
+    PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
+    return 0
+  fi
+
+  PANDOC_PDF_LANG="$CLI_LANG" ruby "$ROOT_DIR/scripts/render-native.rb" "$config_path" "$ROOT_DIR" "$plan_flag"
 }
 
 main() {
@@ -1219,11 +1229,21 @@ main() {
       ;;
     render)
       local config=""
+      local dry_run=false
+      local json_output=false
       while [[ $# -gt 0 ]]; do
         case "$1" in
           -c|--config)
             config="$2"
             shift 2
+            ;;
+          --dry-run)
+            dry_run=true
+            shift
+            ;;
+          --json)
+            json_output=true
+            shift
             ;;
           *)
             local msg
@@ -1240,8 +1260,19 @@ main() {
         exit 1
       fi
 
-      validate_config_file "$config"
-      run_render "$config"
+      if [[ "$json_output" == true ]]; then
+        validate_config_file "$config" >&2
+      else
+        validate_config_file "$config"
+      fi
+
+      if [[ "$json_output" == true ]]; then
+        run_render_plan "$config" "json"
+      elif [[ "$dry_run" == true ]]; then
+        run_render_plan "$config" "human"
+      else
+        run_render "$config"
+      fi
       ;;
     help|-h|--help)
       usage

@@ -16,6 +16,45 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 ---
 
+## [1.2.0] - released
+
+### Added
+
+- Los cinco campos del contrato que el schema declaraba obligatorios y el runtime no leía ahora tienen efecto real (mismo comportamiento en los renderers Python y Ruby):
+  - `input.order`: `natural` ordena los capítulos comparando los tramos numéricos como números (`chapter-2.md` antes que `chapter-10.md`); `alphabetical` conserva el orden lexicográfico.
+  - `output.keep_merged_markdown`: `false` elimina el `.md` fusionado tras un render de pandoc correcto; si pandoc falla, el `.md` se conserva para diagnóstico.
+  - `document.*`: con `pandoc.metadata_file` vacío, `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan a pandoc como variables de plantilla (`-V campo=valor`) y rellenan la portada de `templates/default.tex`.
+  - `filters.emoji.include_ballot_icons`: `false` deja las casillas de tareas Markdown (`☐`, `☑`, `☒`) como caracteres en lugar de sustituirlas por imagen.
+  - `runtime.strict`: `false` reporta las dependencias ausentes como advertencias y sale con exit 0, también en la ruta de parseo YAML mínimo usada cuando no hay PyYAML. El motor TeX queda fuera del perdón: sin él no hay PDF, así que su ausencia falla siempre.
+- `pandoc-pdf render -c <config> --dry-run` imprime el plan de render y no escribe nada; `--dry-run --json` lo emite como JSON (`plan_version: 1`) con capítulos en orden efectivo, dianas, `argv` de pandoc y entorno. El plan es puro: el ejecutor (`execute_plan`) es el único punto con efectos.
+
+### Changed
+
+- El mensaje de error por locale no indicado ya no sugiere `--team` (opción inexistente): ahora nombra la opción real, `pandoc-pdf locale set --project <lang>`.
+- `--resource-path` se une con el separador de la plataforma (`os.pathsep`) en lugar de `:` hardcodeado.
+- `scripts/package-release.sh` construye el árbol una sola vez y publica el mismo artefacto bajo los cuatro nombres de plataforma, en lugar de empaquetar cuatro veces.
+
+### Fixed
+
+- `filters/emoji.lua` ya no envuelve en `Span` el texto que no contiene emojis. Los encabezados planos dejan de emitir `\\texorpdfstring` (macro que define `hyperref`) y el filtro deja de romper plantillas mínimas. El defecto ya existía en 1.1.x: la integración L2 fallaba en `master`.
+- Un valor no admitido en `input.order` falla en `render` con mensaje localizado que enumera los valores soportados (`natural`, `alphabetical`), en lugar de ordenar silenciosamente por nombre.
+
+### Removed
+
+- `defaults/default.yaml`: el schema pasa a ser la única fuente de verdad. El archivo era inalcanzable por el camino validado (el schema ya exige esas claves) y solo lo ejercitaba un test que llamaba al renderer saltándose el CLI.
+- `defaults_path` / `defaults_exists` en `pandoc-pdf info` (texto y `--json`), porque el fichero ya no existe.
+- Assets `filters/emoji/emoji_u2610.svg`, `emoji_u2611.svg` y `emoji_u2612.svg`: copias byte-idénticas de `2610.svg`, `2611.svg` y `2612.svg` que no se referenciaban y se copiaban en cada ejecución del renderer.
+- El artefacto de release ya no incluye `scripts/__pycache__` ni ficheros `.pyc`.
+
+### Tests
+
+- 43 nuevas aserciones en `tests/run.sh`: los cinco comportamientos del contrato (`input.order`, `output.keep_merged_markdown`, `document.*`, `include_ballot_icons`, `runtime.strict`), paridad de invocación pandoc entre los renderers Python y Ruby, y el artefacto de release sin bytecode.
+- Test guardado con pandoc real: el filtro de emojis no reescribe encabezados planos (`\\texorpdfstring` ausente).
+- Las plantillas de `tests/integration/*` cargan `graphicx` y `hyperref`, así que L2 vuelve a verificar un render real completo.
+- Nueva fixture `tests/fixtures/doctor-config-strict-false.yaml` y doble de test `tests/fixtures/yaml_shim/yaml.py` para ejercitar el renderer Python donde no hay PyYAML.
+
+---
+
 ## [1.1.3] - released
 
 ### Fixed

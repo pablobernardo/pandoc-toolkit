@@ -89,6 +89,7 @@ def load_yaml_minimal_for_preflight(path: Path):
 
     pdf_engine: str | None = None
     required_commands: list[str] = []
+    strict_value: bool | None = None
 
     for raw_line in lines:
         line = raw_line.split("#", 1)[0].rstrip()
@@ -132,6 +133,12 @@ def load_yaml_minimal_for_preflight(path: Path):
                     required_commands.extend(inline_vals)
                 continue
 
+            if in_runtime and key == "strict":
+                raw_strict = value.strip().strip("\"'").lower()
+                if raw_strict in {"true", "false"}:
+                    strict_value = raw_strict == "true"
+                continue
+
             if in_pandoc and key == "pdf_engine":
                 v = value.strip().strip('"\'')
                 if v:
@@ -143,12 +150,17 @@ def load_yaml_minimal_for_preflight(path: Path):
             if item:
                 required_commands.append(item)
 
-    if not required_commands and pdf_engine is None:
+    if not required_commands and pdf_engine is None and strict_value is None:
         return None
 
     data: dict[str, object] = {}
+    runtime_data: dict[str, object] = {}
     if required_commands:
-        data["runtime"] = {"required_commands": required_commands}
+        runtime_data["required_commands"] = required_commands
+    if strict_value is not None:
+        runtime_data["strict"] = strict_value
+    if runtime_data:
+        data["runtime"] = runtime_data
     if pdf_engine is not None:
         data["pandoc"] = {"pdf_engine": pdf_engine}
     return data
@@ -189,6 +201,7 @@ def main() -> None:
 
     required = list(DEFAULT_REQUIRED)
     preferred_engine = None
+    strict = True
 
     if config_path:
         if not config_path.exists():
@@ -210,6 +223,9 @@ def main() -> None:
                 runtime_cmds = runtime.get("required_commands")
                 if isinstance(runtime_cmds, list):
                     required = [str(c) for c in runtime_cmds if str(c).strip()]
+                runtime_strict = runtime.get("strict")
+                if isinstance(runtime_strict, bool):
+                    strict = runtime_strict
 
             pandoc = cfg.get("pandoc")
             if isinstance(pandoc, dict):
@@ -218,6 +234,7 @@ def main() -> None:
                     preferred_engine = engine.strip()
 
     missing: list[str] = []
+    missing_engine: list[str] = []
     for cmd in required:
         if cmd in TEX_ENGINES:
             continue
@@ -231,13 +248,26 @@ def main() -> None:
     required_has_tex = any(cmd in TEX_ENGINES for cmd in required)
     if preferred_engine:
         if not command_exists(preferred_engine):
-            missing.append(preferred_engine)
+            missing_engine.append(preferred_engine)
     elif required_has_tex:
         found = any(command_exists(tex) for tex in TEX_ENGINES)
         if not found:
-            missing.append("xelatex|lualatex|pdflatex")
+            missing_engine.append("xelatex|lualatex|pdflatex")
 
+    # Without a TeX engine there is no PDF, so runtime.strict=false cannot waive it.
+    if missing_engine and not strict:
+        print(t("doctor.error.tex_required", "A TeX engine is required to render a PDF; runtime.strict=false cannot waive it."))
+
+    missing = missing + missing_engine
     if missing:
+        if not strict and not missing_engine:
+            print(
+                f"⚠️  {t('doctor.warn.missing', 'Doctor warnings: missing dependencies (runtime.strict=false):')}"
+            )
+            for m in missing:
+                print(f"   - {m}")
+            print(t("doctor.warn.continue", "Continuing because runtime.strict=false"))
+            return
         print(f"❌ {t('doctor.missing', 'Doctor detected missing dependencies:')}")
         for m in missing:
             print(f"   - {m}")

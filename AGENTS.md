@@ -39,7 +39,6 @@ El estado cambiante (fase actual, decisiones recientes, tareas abiertas) vive en
 - `scripts/package-release.sh`
 - `schemas/pdf-config.schema.json`
 - `examples/pdf.config.example.yaml`
-- `defaults/default.yaml`
 - `templates/default.tex`
 - `i18n/locales/`
 
@@ -103,3 +102,8 @@ Antes de escribir código:
 - Arquitectura y tradeoffs: `docs/architecture.md`
 - Instalación e integración de CLI: `docs/install.md`
 - Ejemplos para consumidores: `examples/` y `docs/usage.md`
+- Skills operativas para agentes: `.agents/skills/<nombre>/SKILL.md` (versionadas y revisadas en PRs)
+
+### Directorios generados (no versionados)
+
+- `.atl/` es estado local de gentle-ai: el registry de skills y su caché se regeneran en cada máquina y contienen rutas absolutas del usuario. Está en `.gitignore`; no se versiona ni se revisa.
