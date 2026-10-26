@@ -49,7 +49,7 @@
       "properties": {
         "chapters_dir": { "type": "string", "minLength": 1 },
         "glob": { "type": "string", "minLength": 1 },
-        "order": { "type": "string", "minLength": 1 },
+        "order": { "type": "string", "minLength": 1, "enum": ["natural", "alphabetical"] },
         "explicit_files": {
           "type": "array",
           "items": { "type": "string" }

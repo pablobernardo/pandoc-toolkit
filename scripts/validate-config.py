@@ -70,6 +70,9 @@ def path_label(path: list[str]) -> str:
     return "root" if not path else ".".join(path)
 
 
+# Supported JSON-Schema subset: type, properties, required, additionalProperties,
+# items, minItems, minLength, minimum and enum. tests/run.sh fails if the schema
+# starts using anything else, so a keyword can never be silently ignored.
 def check_type(value: Any, expected: str) -> bool:
     if expected == "object":
         return isinstance(value, dict)
@@ -93,6 +96,18 @@ def validate_with_schema(data: Any, schema: dict[str, Any], path: list[str] | No
         if label == "root":
             fail(t("validate.error.root_type", "Root must be of type {type}", type=expected_type))
         fail(t("validate.error.field_type", "'{label}' must be of type {type}", label=label, type=expected_type))
+
+    enum_values = schema.get("enum")
+    if isinstance(enum_values, list) and enum_values and data not in enum_values:
+        fail(
+            t(
+                "validate.error.not_in_enum",
+                "'{label}' must be one of: {allowed} (got '{value}')",
+                label=label,
+                allowed=", ".join(str(item) for item in enum_values),
+                value=data,
+            )
+        )
 
     if expected_type == "object":
         if not isinstance(data, dict):
