@@ -334,7 +334,7 @@ def execute_plan(plan)
     end
   end
 
-  Pathname.new(side_effects['mermaid']['dir']).mkpath
+  Pathname.new(side_effects['mermaid']['dir']).mkpath if side_effects['mermaid']['enabled']
 
   puts "✅ #{t('render.mode.native', 'Native mode enabled')}"
   puts "📄 #{t('render.output.markdown', 'Merged markdown: {path}', path: md_out)}"

@@ -1583,6 +1583,7 @@ write_contract_config() {
   local keep_md="$3"
   local metadata_file="$4"
   local ballot="$5"
+  local mermaid="${6:-false}"
   cat >"$path" <<EOF
 version: 1
 
@@ -1625,7 +1626,7 @@ filters:
     emoji_dir: "out/emoji"
     include_ballot_icons: ${ballot}
   mermaid:
-    enabled: false
+    enabled: ${mermaid}
     output_dir: "out/mermaid"
     background: "transparent"
   extra_lua_filters: []
@@ -2223,6 +2224,48 @@ EOF
   rm -f "$capture" "$out"
 }
 
+run_render_mermaid_dir_gate_test() {
+  local sandbox tmpbin capture out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true false
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts mermaid.enabled=false"
+  else
+    fail "render should accept mermaid.enabled=false ($(tail -2 "$out"))"
+  fi
+
+  if [[ -d "${sandbox}/work/out/mermaid" ]]; then
+    fail "render must not create the mermaid directory when the filter is disabled"
+  else
+    pass "render skips the mermaid directory when the filter is disabled"
+  fi
+
+  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
+    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+    pass "render accepts mermaid.enabled=true"
+  else
+    fail "render should accept mermaid.enabled=true ($(tail -2 "$out"))"
+  fi
+
+  if [[ -d "${sandbox}/work/out/mermaid" ]]; then
+    pass "render creates the mermaid directory when the filter is enabled"
+  else
+    fail "render must create the mermaid directory when the filter is enabled"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
 main() {
   echo "== Running pandoc-pdf tests =="
   run_help_test
@@ -2263,6 +2306,7 @@ main() {
   run_emoji_filter_plain_heading_test
   run_emoji_filter_contexts_test
   run_render_keep_merged_on_pandoc_failure_test
+  run_render_mermaid_dir_gate_test
   run_render_plan_json_test
   run_render_dry_run_human_test
   run_render_plan_parity_test

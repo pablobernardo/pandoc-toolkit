@@ -318,7 +318,8 @@ def execute_plan(plan: dict) -> int:
             if prep.returncode != 0:
                 print(f"⚠️  {t('render.warn.emoji_prepare', 'Could not auto-prepare emojis; continuing with fallback')}")
 
-    Path(side_effects["mermaid"]["dir"]).mkdir(parents=True, exist_ok=True)
+    if side_effects["mermaid"]["enabled"]:
+        Path(side_effects["mermaid"]["dir"]).mkdir(parents=True, exist_ok=True)
 
     env = os.environ.copy()
     env.update(plan["env"])
