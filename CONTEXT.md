@@ -7,8 +7,9 @@
 - Estado general: **CLI estable con render nativo por defecto**.
 - Entry point activo: `bin/pandoc-pdf`.
 - Comandos activos: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c`.
-- Estado de suite local verificado: **PASS=207 FAIL=0** (`tests/run.sh`).
-- Versión actual del toolkit (`VERSION`): **1.2.0**.
+- Estado de suite local verificado: **PASS=228 FAIL=0** (`tests/run.sh`).
+- Versión actual del toolkit (`VERSION`): **1.2.0**, sin tag: el release está pospuesto por decisión del mantenedor.
+- Suite L1 repartida: `tests/lib.sh` (aserciones y helpers de fixtures) + `tests/l1/<área>.sh`; `tests/run.sh` solo orquesta. Quedan por extraer `update`, `doctor`, `validate`, `i18n`, `locale` y `help`.
 
 ## Convención activa de i18n (persistente)
 
@@ -45,7 +46,7 @@
 - ✅ Política publicada en `.github/SECURITY.md`.
 
 ### 4) Testing y CI
-- ✅ Suite local `tests/run.sh` en verde (PASS=207 FAIL=0).
+- ✅ Suite local `tests/run.sh` en verde (PASS=228 FAIL=0).
 - ✅ CI por niveles:
   - **L1** obligatorio en PR/push (macOS/Linux)
   - **L2** integración semi-real manual
@@ -120,6 +121,17 @@ Consecuencias operativas:
 ## Verificación por commit
 
 Los 10 commits de la rama pasan `tests/run.sh` de forma independiente (verificado extrayendo cada árbol con `git archive` y ejecutando la suite): `75f6dc9`, `bfb5d8f`, `ae9cb3b`, `2b622ca`, `31bc09b`, `b4dab34`, `443e9ec`, `5a25fef`, `9b22148`, `e61657a`.
+
+## Decisiones tomadas durante la entrega de 1.2.0
+
+| # | Decisión |
+| --- | --- |
+| D1 | Un solo renderer (Python). Ruby se queda solo como parser YAML opcional por subproceso; retirarlo del todo exigiría hacer PyYAML obligatorio y se decidió **no** hacerlo. |
+| D2 | `runtime.strict: false` perdona dependencias auxiliares, nunca el motor TeX. |
+| D3 | `validate-config` rechaza un `metadata_file` inexistente y valida `input.order` contra su `enum`; el validador solo implementa un subconjunto documentado de JSON Schema y un test falla si el schema usa otra keyword. |
+| D4 | i18n de shell unificado en `scripts/i18n.sh` (catálogo cargado una vez, sin fork por mensaje). |
+| D5 | Release pospuesto: `1.2.0` está en `master` sin tag. Crear el tag dispara `release.yml` con `action-gh-release` v3 (Node 24), que su CI no ejercita. |
+| D6 | La revisión nativa (RDD) está bloqueada por el proveedor: la lente `review-resilience` devuelve respuesta vacía por el límite de razonamiento del gateway en todos los intentos. La revisión efectiva es la del mantenedor. |
 
 ## Decisiones de la revisión de 1.2.0
 
