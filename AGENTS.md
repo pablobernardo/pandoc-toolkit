@@ -45,29 +45,24 @@ Changing state (current phase, recent decisions, open tasks) lives in
 5. Safe migration without breaking adoption by consuming repositories.
 6. Documentation and examples with no client data and no private structure.
 
-## Core toolkit structure (implemented)
+## Where things live
 
-- `bin/pandoc-pdf`
-- `Makefile`
-- `filters/emoji.lua`, `filters/mermaid.lua`, `filters/emoji/`
-- `scripts/bootstrap.sh`, `scripts/install.sh`, `scripts/install-local.sh`,
-  `scripts/package-release.sh`
-- `scripts/preflight.sh`, `scripts/preflight.py`
-- `scripts/validate-config.py`, `scripts/render-native.py`,
-  `scripts/prepare-emojis.py`
-- `scripts/i18n.sh`, `scripts/i18n_runtime.py`, `scripts/check-i18n.py`
-- `scripts/enforce-security-thresholds.py`
-- `schemas/pdf-config.schema.json`
-- `examples/pdf.config.example.yaml`, `examples/metadata.yaml`
-- `templates/default.tex`
-- `i18n/locales/`, `i18n/schema/`
-- `tests/run.sh`, `tests/lib.sh`, `tests/l1/<area>.sh`, `tests/fixtures/`,
-  `tests/integration/`
-- `.agents/skills/<name>/SKILL.md`
+The full picture, with the render pipeline and the reasons behind it, is
+`docs/architecture.md`. What an agent needs to know before touching anything:
 
-There is exactly one renderer (`scripts/render-native.py`). YAML is read with
-PyYAML when available and otherwise through Ruby's stdlib in a subprocess.
+- **Entry point**: `bin/pandoc-pdf` (bash). Every user-facing string comes from
+  `i18n/locales/`; see the language policy above.
+- **One renderer**: `scripts/render-native.py`. There is no second renderer, and
+  adding one back is a regression.
+- **Checks before rendering**: `scripts/preflight.py` (invoked by
+  `pandoc-pdf doctor`) and `scripts/validate-config.py`.
+- **Contract**: `schemas/pdf-config.schema.json`. Anything about configuration
+  is answered there, not here.
+- **Tests**: `tests/run.sh` (orchestrator) plus `tests/l1/<area>.sh`. Add an
+  assertion to the file for the area you touched.
 
+YAML is read with PyYAML when available and otherwise through Ruby's stdlib in a
+subprocess; both paths must keep producing the same result.
 ## Planned additions (target)
 
 - Windows support: gated by the migration triggers recorded in `CONTEXT.md`. It
@@ -76,38 +71,25 @@ PyYAML when available and otherwise through Ruby's stdlib in a subprocess.
 
 ## Configuration contract (`pdf.config.yaml`)
 
-`schemas/pdf-config.schema.json` is the single source of truth; there is no
-defaults baseline to merge. The validator implements an explicit JSON Schema
-subset (`type`, `properties`, `required`, `additionalProperties`, `items`,
-`minItems`, `minLength`, `minimum`, `enum`), and a test fails if the schema starts
-using any other keyword.
+`schemas/pdf-config.schema.json` is the single source of truth: it lists the
+sections and the required fields, and it is what `validate-config` applies.
+There is no defaults baseline to merge.
 
-Required sections:
+Three rules that are not visible in the schema:
 
-- `version`
-- `project`
-- `document`
-- `input`
-- `output`
-- `pandoc`
-- `filters`
-- `runtime`
-- `compat`
+- The validator implements an explicit JSON Schema subset (`type`,
+  `properties`, `required`, `additionalProperties`, `items`, `minItems`,
+  `minLength`, `minimum`, `enum`). A test fails if the schema starts using any
+  other keyword, so a new keyword needs the validator extended first.
+- The schema is never bypassed: a configuration that fails validation does not
+  reach the renderer.
+- `version` is mandatory and the contract version is independent of the toolkit
+  `VERSION`; see the breaking change policy below.
+## CLI surface
 
-## Expected CLI commands
-
-- `pandoc-pdf --version` / `pandoc-pdf version`
-- `pandoc-pdf info` / `pandoc-pdf info --json`
-- `pandoc-pdf locale show`
-- `pandoc-pdf locale set <lang>`
-- `pandoc-pdf locale set --project <lang>`
-- `pandoc-pdf update --check`
-- `pandoc-pdf update`
-- `pandoc-pdf update --to <tag>`
-- `pandoc-pdf doctor [-c <file>]`
-- `pandoc-pdf validate-config -c <file>`
-- `pandoc-pdf render -c <file> [--dry-run] [--json]`
-
+`pandoc-pdf --help` prints the commands and `docs/usage.md` documents them. The
+CLI is a contract for humans, CI and integrations, so adding a command is free
+while changing or removing one follows the breaking change policy below.
 ## Breaking change policy
 
 Any breaking change in the CLI, the configuration contract, or default behaviour
