@@ -10,7 +10,7 @@
   "cli.help.notes": "Notes:",
   "cli.help.note.render_native": "render uses native implementation.",
   "cli.help.note.yaml_parsing": "Config parsing supports Python+PyYAML or Ruby stdlib YAML.",
-  "cli.locale.error.missing_target": "You must provide a locale",
+  "cli.locale.error.missing_target": "You must provide a locale (for example: pandoc-pdf locale set --project es)",
   "cli.locale.error.unsupported": "Unsupported locale: {locale}. Supported: {supported}",
   "cli.locale.show.language": "language",
   "cli.locale.show.source": "source",
@@ -51,6 +51,8 @@
   "cli.locale.init.usage": "Load it with: source {path}",
   "doctor.ok": "Doctor OK: dependencies available",
   "doctor.missing": "Doctor detected missing dependencies:",
+  "doctor.warn.missing": "Doctor warnings: missing dependencies (runtime.strict=false):",
+  "doctor.warn.continue": "Continuing because runtime.strict=false",
   "validate.ok": "Config valid",
   "validate.error.config_not_found": "Config not found: {path}",
   "validate.error.schema_not_found": "Schema not found: {path}",
@@ -108,6 +110,7 @@
   ,"render.error.chapters_dir_missing": "input.chapters_dir does not exist: {path}"
   ,"render.error.explicit_file_missing": "Explicit file not found: {path}"
   ,"render.error.no_chapters": "No chapters found to render"
+  ,"render.error.order_invalid": "Invalid 'input.order' value: {value}. Supported values: {supported}"
   ,"validate.error.yaml_invalid": "Invalid YAML: {error}"
   ,"validate.error.yaml_invalid_generic": "Invalid YAML"
   ,"validate.error.ruby_json_parse": "Could not parse JSON converted from Ruby: {error}"

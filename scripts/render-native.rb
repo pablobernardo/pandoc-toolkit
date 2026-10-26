@@ -61,6 +61,42 @@ def t(key, fallback, vars = {})
   end
 end
 
+ORDER_NATURAL = 'natural'
+ORDER_ALPHABETICAL = 'alphabetical'
+ORDER_CHOICES = [ORDER_NATURAL, ORDER_ALPHABETICAL].freeze
+DOCUMENT_VAR_FIELDS = %w[title subtitle publisher author date rights].freeze
+
+# Sort key where digit runs compare numerically (chapter-2 < chapter-10).
+def natural_key(path)
+  File.basename(path.to_s).downcase.split(/(\d+)/).map do |part|
+    part.match?(/\A\d+\z/) ? [0, part.length, part] : [1, 0, part]
+  end
+end
+
+def select_chapter_files(input_cfg, chapters_dir)
+  explicit_files = input_cfg['explicit_files']
+  explicit_files = [] unless explicit_files.is_a?(Array)
+
+  unless explicit_files.empty?
+    return explicit_files.map do |name|
+      candidate = chapters_dir + name.to_s
+      die(t('render.error.explicit_file_missing', 'Explicit file not found: {path}', path: candidate)) unless candidate.exist?
+      candidate
+    end
+  end
+
+  pattern = (input_cfg['glob'] || '*.md').to_s
+  order = (input_cfg['order'] || ORDER_NATURAL).to_s.strip.downcase
+  files = Dir.glob((chapters_dir + pattern).to_s).map { |f| Pathname.new(f) }
+
+  return files.sort_by { |p| p.basename.to_s } if order == ORDER_ALPHABETICAL
+  return files.sort_by { |p| natural_key(p) } if order == ORDER_NATURAL
+
+  die(t('render.error.order_invalid',
+        "Invalid 'input.order' value: {value}. Supported values: {supported}",
+        value: order, supported: ORDER_CHOICES.join(', ')))
+end
+
 def deep_merge(base, override)
   merged = base.dup
   override.each do |key, value|
@@ -126,18 +162,7 @@ suffix = resolve_suffix(output['suffix'])
 chapters_dir = (base_dir_path + (input_cfg['chapters_dir'] || 'chapters').to_s).expand_path
 die(t('render.error.chapters_dir_missing', 'input.chapters_dir does not exist: {path}', path: chapters_dir)) unless chapters_dir.directory?
 
-explicit_files = input_cfg['explicit_files'] || []
-selected_files = []
-if explicit_files.is_a?(Array) && !explicit_files.empty?
-  explicit_files.each do |name|
-    candidate = (chapters_dir + name.to_s).expand_path
-    die(t('render.error.explicit_file_missing', 'Explicit file not found: {path}', path: candidate)) unless candidate.file?
-    selected_files << candidate
-  end
-else
-  pattern = (input_cfg['glob'] || '*.md').to_s
-  selected_files = Dir.glob((chapters_dir + pattern).to_s).sort.map { |f| Pathname.new(f) }
-end
+selected_files = select_chapter_files(input_cfg, chapters_dir)
 
 die(t('render.error.no_chapters', 'No chapters found to render')) if selected_files.empty?
 
@@ -146,6 +171,8 @@ output_dir.mkpath
 filename_out = "#{title}-#{suffix}"
 pdf_out = output_dir + "#{filename_out}.pdf"
 md_out = output_dir + "#{filename_out}.md"
+
+keep_merged_markdown = output.fetch('keep_merged_markdown', true) ? true : false
 
 compat = cfg['compat'] || {}
 insert_clearpage = compat.fetch('legacy_clearpage_between_h1', true)
@@ -241,11 +268,19 @@ if pandoc.fetch('toc', true)
 end
 cmd << '--number-sections' if pandoc.fetch('number_sections', true)
 cmd << '-V' << 'titlepage=true' << '-V' << 'fig-pos=!htbp'
-cmd << "--resource-path=#{resource_path_values.join(':')}" unless resource_path_values.empty?
-cmd << "--metadata-file=#{metadata_path}" if metadata_path && metadata_path.file?
+cmd << "--resource-path=#{resource_path_values.join(File::PATH_SEPARATOR)}" unless resource_path_values.empty?
+if metadata_path && metadata_path.file?
+  cmd << "--metadata-file=#{metadata_path}"
+else
+  DOCUMENT_VAR_FIELDS.each do |field|
+    value = document[field]
+    cmd << '-V' << "#{field}=#{value}" if value.is_a?(String) && !value.strip.empty?
+  end
+end
 cmd << '-o' << pdf_out.to_s
 
 ENV['PANDOC_EMOJI_DIR'] = emoji_dir.to_s
+ENV['PANDOC_EMOJI_BALLOT_ICONS'] = emoji_cfg.fetch('include_ballot_icons', true) ? '1' : '0'
 ENV['PANDOC_MERMAID_OUTPUT_DIR'] = mermaid_output_dir.to_s
 ENV['PANDOC_MERMAID_BACKGROUND'] = (mermaid_cfg['background'] || 'transparent').to_s
 
@@ -255,4 +290,6 @@ puts "🖨️  #{t('render.output.pdf', 'Output PDF: {path}', path: pdf_out)}"
 puts "▶ #{t('render.command.exec', 'Running: {command}', command: cmd.join(' '))}"
 
 ok = system(*cmd)
-exit(ok ? 0 : ($?.exitstatus || 1))
+exit_code = ok ? 0 : ($?.exitstatus || 1)
+File.delete(md_out.to_s) if exit_code.zero? && !keep_merged_markdown
+exit(exit_code)

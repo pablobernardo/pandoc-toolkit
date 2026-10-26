@@ -2,27 +2,72 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime
 from copy import deepcopy
 from pathlib import Path
+from typing import NoReturn
 
 import yaml
 
 try:
     from i18n_runtime import t
 except Exception:
-    def t(_key: str, fallback: str, **kwargs: object) -> str:
+    def t(key: str, fallback: str, **kwargs: object) -> str:
         try:
             return fallback.format(**kwargs)
         except Exception:
             return fallback
 
 
-def die(msg: str) -> None:
+def die(msg: str) -> NoReturn:
     print(f"❌ {msg}")
     raise SystemExit(1)
+
+
+ORDER_NATURAL = "natural"
+ORDER_ALPHABETICAL = "alphabetical"
+ORDER_CHOICES = (ORDER_NATURAL, ORDER_ALPHABETICAL)
+
+DOCUMENT_VAR_FIELDS = ("title", "subtitle", "publisher", "author", "date", "rights")
+
+
+def natural_key(path: Path) -> list[tuple[int, int, str]]:
+    """Sort key where digit runs compare numerically (chapter-2 < chapter-10)."""
+    parts = re.split(r"(\d+)", path.name.lower())
+    return [(0, len(part), part) if part.isdigit() else (1, 0, part) for part in parts]
+
+
+def select_chapter_files(input_cfg: dict, chapters_dir: Path) -> list[Path]:
+    explicit_files = input_cfg.get("explicit_files") or []
+    if explicit_files:
+        selected_files = []
+        for name in explicit_files:
+            candidate = chapters_dir / str(name)
+            if not candidate.exists():
+                die(t("render.error.explicit_file_missing", "Explicit file not found: {path}", path=candidate))
+            selected_files.append(candidate)
+        return selected_files
+
+    pattern = str(input_cfg.get("glob", "*.md"))
+    order = str(input_cfg.get("order", ORDER_NATURAL)).strip().lower()
+    files = list(chapters_dir.glob(pattern))
+
+    if order == ORDER_ALPHABETICAL:
+        return sorted(files, key=lambda p: p.name)
+    if order == ORDER_NATURAL:
+        return sorted(files, key=natural_key)
+
+    die(
+        t(
+            "render.error.order_invalid",
+            "Invalid 'input.order' value: {value}. Supported values: {supported}",
+            value=order,
+            supported=", ".join(ORDER_CHOICES),
+        )
+    )
 
 
 def resolve_suffix(raw_suffix: str | None) -> str:
@@ -95,17 +140,7 @@ def main() -> None:
     if not chapters_dir.exists():
         die(t("render.error.chapters_dir_missing", "input.chapters_dir does not exist: {path}", path=chapters_dir))
 
-    explicit_files = input_cfg.get("explicit_files") or []
-    if explicit_files:
-        selected_files = []
-        for name in explicit_files:
-            candidate = chapters_dir / str(name)
-            if not candidate.exists():
-                die(t("render.error.explicit_file_missing", "Explicit file not found: {path}", path=candidate))
-            selected_files.append(candidate)
-    else:
-        pattern = str(input_cfg.get("glob", "*.md"))
-        selected_files = sorted(chapters_dir.glob(pattern), key=lambda p: p.name)
+    selected_files = select_chapter_files(input_cfg, chapters_dir)
 
     if not selected_files:
         die(t("render.error.no_chapters", "No chapters found to render"))
@@ -115,6 +150,8 @@ def main() -> None:
     filename_out = f"{title}-{suffix}"
     pdf_out = output_dir / f"{filename_out}.pdf"
     md_out = output_dir / f"{filename_out}.md"
+
+    keep_merged_markdown = bool(output.get("keep_merged_markdown", True))
 
     compat = cfg.get("compat", {})
     insert_clearpage = bool(compat.get("legacy_clearpage_between_h1", True))
@@ -136,7 +173,8 @@ def main() -> None:
 
     md_out.write_text("".join(parts), encoding="utf-8")
 
-    user_pandoc_cfg = cfg_user.get("pandoc") if isinstance(cfg_user.get("pandoc"), dict) else {}
+    raw_user_pandoc = cfg_user.get("pandoc")
+    user_pandoc_cfg = raw_user_pandoc if isinstance(raw_user_pandoc, dict) else {}
     user_template_raw = str(user_pandoc_cfg.get("template", "")).strip()
 
     if user_template_raw:
@@ -227,13 +265,20 @@ def main() -> None:
 
     cmd.extend(["-V", "titlepage=true", "-V", "fig-pos=!htbp"])
     if resource_path_values:
-        cmd.append(f"--resource-path={':'.join(resource_path_values)}")
-    if metadata_path and metadata_path.exists():
+        cmd.append(f"--resource-path={os.pathsep.join(resource_path_values)}")
+    uses_metadata_file = metadata_path is not None and metadata_path.exists()
+    if uses_metadata_file:
         cmd.append(f"--metadata-file={metadata_path}")
+    else:
+        for field in DOCUMENT_VAR_FIELDS:
+            value = document.get(field)
+            if isinstance(value, str) and value.strip():
+                cmd.extend(["-V", f"{field}={value}"])
     cmd.extend(["-o", str(pdf_out)])
 
     env = os.environ.copy()
     env["PANDOC_EMOJI_DIR"] = str(emoji_dir)
+    env["PANDOC_EMOJI_BALLOT_ICONS"] = "1" if bool(emoji_cfg.get("include_ballot_icons", True)) else "0"
     env["PANDOC_MERMAID_OUTPUT_DIR"] = str(mermaid_output_dir)
     env["PANDOC_MERMAID_BACKGROUND"] = str(mermaid_cfg.get("background", "transparent"))
 
@@ -243,6 +288,8 @@ def main() -> None:
     print(f"▶ {t('render.command.exec', 'Running: {command}', command=' '.join(cmd))}")
 
     result = subprocess.run(cmd, env=env)
+    if result.returncode == 0 and not keep_merged_markdown:
+        md_out.unlink(missing_ok=True)
     raise SystemExit(result.returncode)
 
 
