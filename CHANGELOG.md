@@ -26,6 +26,7 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
   - `document.*`: con `pandoc.metadata_file` vacío, `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan a pandoc como variables de plantilla (`-V campo=valor`) y rellenan la portada de `templates/default.tex`.
   - `filters.emoji.include_ballot_icons`: `false` deja las casillas de tareas Markdown (`☐`, `☑`, `☒`) como caracteres en lugar de sustituirlas por imagen.
   - `runtime.strict`: `false` reporta las dependencias ausentes como advertencias y sale con exit 0, también en la ruta de parseo YAML mínimo usada cuando no hay PyYAML.
+- `pandoc-pdf render -c <config> --dry-run` imprime el plan de render y no escribe nada; `--dry-run --json` lo emite como JSON (`plan_version: 1`) con capítulos en orden efectivo, dianas, `argv` de pandoc y entorno. El plan es puro: el ejecutor (`execute_plan`) es el único punto con efectos.
 
 ### Changed
 

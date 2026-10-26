@@ -7,7 +7,7 @@
 - Estado general: **CLI estable con render nativo por defecto**.
 - Entry point activo: `bin/pandoc-pdf`.
 - Comandos activos: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c`.
-- Estado de suite local verificado: **PASS=188 FAIL=0** (`tests/run.sh`).
+- Estado de suite local verificado: **PASS=210 FAIL=0** (`tests/run.sh`).
 - Versión actual del toolkit (`VERSION`): **1.2.0**.
 
 ## Convención activa de i18n (persistente)
@@ -44,7 +44,7 @@
 - ✅ Política publicada en `.github/SECURITY.md`.
 
 ### 4) Testing y CI
-- ✅ Suite local `tests/run.sh` en verde (PASS=188 FAIL=0).
+- ✅ Suite local `tests/run.sh` en verde (PASS=210 FAIL=0).
 - ✅ CI por niveles:
   - **L1** obligatorio en PR/push (macOS/Linux)
   - **L2** integración semi-real manual
@@ -62,7 +62,7 @@ Estado: **no se migra ahora**. Windows no es un requisito actual y el consumo re
 
 Puerta abierta (lo que se construiría antes de decidir):
 
-1. `render --dry-run --json`: un artefacto de plan (orden de capítulos, variables de plantilla, filtros, entorno y línea de pandoc) que sea el contrato verificable del comportamiento.
+1. ✅ `render --dry-run --json`: hecho (ver sección anterior).
 2. Una suite de conformidad sobre ese plan, ejecutable contra cualquier implementación (actual en bash/Python/Ruby y una futura en Go), para comparar salida sin leer código.
 
 Disparadores de migración (cualquiera de ellos):
@@ -71,6 +71,10 @@ Disparadores de migración (cualquiera de ellos):
 - (b) Un consumidor objetivo no puede tener `python3` + PyYAML en su entorno.
 - (c) Se necesitan artefactos firmados de fichero único para supply chain.
 - (d) Los defectos del updater en bash cuestan más que una reescritura.
+
+## Plan de render (`--dry-run --json`)
+
+Implementado en 1.2.0: `pandoc-pdf render -c <config> --dry-run [--json]` calcula un plan puro (sin escribir nada) con capítulos, dianas, `argv` de pandoc y entorno. `scripts/render-native.py` y `scripts/render-native.rb` se han partido en `build_plan` (puro), `execute_plan` (único punto con efectos) y `print_plan`; la paridad entre ambos se verifica byte a byte en la suite.
 
 ## Slices pendientes (post 1.2.0)
 

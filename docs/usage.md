@@ -167,6 +167,40 @@ Renderizar PDF:
 pandoc-pdf render -c pdf.config.yaml
 ```
 
+Inspeccionar el plan de render sin ejecutar nada:
+
+```bash
+pandoc-pdf render -c pdf.config.yaml --dry-run
+pandoc-pdf render -c pdf.config.yaml --dry-run --json
+```
+
+`--dry-run` imprime el plan legible (capítulos en orden efectivo, markdown fusionado, PDF de salida y la invocación de pandoc) y **no escribe nada**: no crea directorios, no genera el markdown fusionado, no prepara emojis y no invoca pandoc.
+
+`--dry-run --json` emite el mismo plan como JSON en stdout (el banner de validación va a stderr, así que stdout queda limpio) con esta forma:
+
+```json
+{
+  "plan_version": 1,
+  "toolkit": { "version": "1.2.0", "root": "/ruta/toolkit" },
+  "config": { "path": "/ruta/pdf.config.yaml", "base_dir": "/ruta/proyecto" },
+  "chapters": ["/ruta/proyecto/chapters/chapter-2.md"],
+  "pandoc": {
+    "target": { "markdown": "...", "pdf": "..." },
+    "argv": ["pandoc", "..."],
+    "cwd": null
+  },
+  "env": { "PANDOC_EMOJI_DIR": "...", "PANDOC_EMOJI_BALLOT_ICONS": "1" },
+  "side_effects": {
+    "keep_merged_markdown": true,
+    "clearpage_between_h1": true,
+    "emoji": { "enabled": true, "dir": "...", "missing_svg": "...", "prepare_argv": ["python3", "..."] },
+    "mermaid": { "enabled": true, "dir": "...", "background": "transparent" }
+  }
+}
+```
+
+El plan es el contrato verificable del render: es lo que permite comparar dos implementaciones (hoy la de Python y la de Ruby) sin leer código, y es la base de una futura suite de conformidad.
+
 ## 4) Flujo recomendado
 
 1. Preparar/actualizar `pdf.config.yaml`.
@@ -246,6 +280,8 @@ Cobertura actual de la suite:
 - rechazo explícito de flags legacy (`--legacy`)
 - integración avanzada de render (extra_lua_filters, resource_path, metadata opcional)
 - errores de render por `explicit_files` inexistentes
+- plan de render: JSON válido, sin efectos secundarios, `--dry-run` legible y paridad byte a byte entre los renderers Python y Ruby
+- filtro de emojis: encabezados planos no emiten `\\texorpdfstring`
 - comportamiento del contrato (desde 1.2.0):
   - `input.order` con valores `natural` y `alphabetical`, y rechazo de un valor no admitido indicando el campo y los valores soportados
   - `output.keep_merged_markdown` en `false` (borra el `.md`) y en `true` (lo conserva), con PDF producido en ambos casos
