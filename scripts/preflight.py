@@ -196,6 +196,27 @@ def parse_config_path(argv: list[str]) -> Path | None:
     fail(f"❌ {t('preflight.error.usage', 'Usage: preflight.py [-c <pdf.config.yaml>]')}")
 
 
+def mermaid_cli_version() -> str | None:
+    """Return the mermaid-cli version, or None when it cannot be read."""
+    import shutil
+    import subprocess
+
+    mmdc = shutil.which("mmdc")
+    if mmdc is None:
+        return None
+
+    try:
+        proc = subprocess.run([mmdc, "--version"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    if proc.returncode != 0:
+        return None
+
+    lines = (proc.stdout or "").strip().splitlines()
+    return lines[0].strip() if lines else None
+
+
 def mermaid_smoke_check() -> str | None:
     """Render a two-node diagram. Returns an error string, or None when mmdc works."""
     import shutil
@@ -305,6 +326,11 @@ def main() -> None:
 
     if mermaid_error:
         print(f"❌ {t('doctor.mermaid.failed', 'Mermaid diagrams cannot be rendered: mmdc is installed but could not produce an image')}")
+        # The version is the first thing to check when a diagram fails: Homebrew
+        # ships a release that downloads no browser.
+        version = mermaid_cli_version()
+        if version:
+            print(t("doctor.mermaid.version", "   mermaid-cli {version} detected", version=version))
         print(f"   - {mermaid_error}")
         print(t("doctor.mermaid.hint1", "   Fix A: install the Puppeteer browser: npx puppeteer browsers install chrome-headless-shell"))
         print(t("doctor.mermaid.hint2", "   Fix B: point Puppeteer at an installed Chrome: export PUPPETEER_EXECUTABLE_PATH=/path/to/chrome"))

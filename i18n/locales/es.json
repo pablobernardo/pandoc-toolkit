@@ -55,6 +55,7 @@
   "doctor.warn.continue": "Se continúa porque runtime.strict=false",
   "doctor.error.tex_required": "Se necesita un motor TeX para generar el PDF; runtime.strict=false no puede omitirlo.",
   "doctor.mermaid.failed": "Los diagramas Mermaid no se pueden renderizar: mmdc está instalado pero no produjo ninguna imagen",
+  "doctor.mermaid.version": "   mermaid-cli {version} detectado",
   "doctor.mermaid.hint1": "   Remedio A: instala el navegador de Puppeteer: npx puppeteer browsers install chrome-headless-shell",
   "doctor.mermaid.hint2": "   Remedio B: apunta Puppeteer a un Chrome instalado: export PUPPETEER_EXECUTABLE_PATH=/ruta/a/chrome",
   "render.error.mermaid_failed": "❌ {count} diagrama(s) Mermaid no se pudieron renderizar y saldrían como código: {diagrams}",
