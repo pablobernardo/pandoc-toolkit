@@ -24,93 +24,18 @@ ASSUME_YES=false
 MERMAID_CLI_VERSION="${MERMAID_CLI_VERSION:-10.9.1}"
 PYYAML_VERSION="${PYYAML_VERSION:-6.0.2}"
 
-resolve_lang() {
-  local raw="${PANDOC_PDF_LANG:-${LC_ALL:-${LANG:-en}}}"
-  raw="${raw%%.*}"
-  raw="${raw%%@*}"
-  raw="${raw//_/-}"
-  raw="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
+I18N_HELPER="${ROOT_DIR}/scripts/i18n.sh"
+if [[ ! -f "$I18N_HELPER" ]]; then
+  echo "❌ bootstrap: cannot find ${I18N_HELPER}; the installation looks incomplete" >&2
+  exit 1
+fi
 
-  local exact="$raw"
-  local base="${raw%%-*}"
-  if is_supported_locale "$exact"; then
-    printf '%s\n' "$exact"
-    return 0
-  fi
-  if is_supported_locale "$base"; then
-    printf '%s\n' "$base"
-    return 0
-  fi
-  if is_supported_locale "en"; then
-    printf 'en\n'
-    return 0
-  fi
-  printf 'en\n'
-}
+I18N_ROOT="$ROOT_DIR"
+# shellcheck source=../scripts/i18n.sh
+source "$I18N_HELPER"
 
 LANG_CODE="$(resolve_lang)"
-
-list_supported_locales() {
-  local dir="$ROOT_DIR/i18n/locales"
-  if [[ -d "$dir" ]]; then
-    local file
-    for file in "$dir"/*.json; do
-      [[ -e "$file" ]] || continue
-      file="${file##*/}"
-      printf '%s\n' "${file%.json}"
-    done | sort -u
-    return 0
-  fi
-  printf 'en\n'
-}
-
-is_supported_locale() {
-  local candidate="$1"
-  local loc
-  while IFS= read -r loc; do
-    [[ "$loc" == "$candidate" ]] && return 0
-  done < <(list_supported_locales)
-  return 1
-}
-
-t() {
-  local key="$1"
-  local fallback="$2"
-  local locale_file="$ROOT_DIR/i18n/locales/${LANG_CODE}.json"
-
-  if [[ -f "$locale_file" ]] && command -v python3 >/dev/null 2>&1; then
-    local translated
-    translated="$(python3 - "$locale_file" "$key" <<'PY'
-import json
-import sys
-
-path = sys.argv[1]
-key = sys.argv[2]
-try:
-    data = json.load(open(path, "r", encoding="utf-8"))
-except Exception:
-    print("")
-    raise SystemExit(0)
-
-value = data.get(key, "")
-print(value if isinstance(value, str) else "")
-PY
-)"
-    if [[ -n "$translated" ]]; then
-      printf '%s\n' "$translated"
-      return 0
-    fi
-  fi
-
-  printf '%s\n' "$fallback"
-}
-
-interp() {
-  local template="$1"
-  local token="$2"
-  local value="$3"
-  printf '%s\n' "${template//\{$token\}/$value}"
-}
+i18n_load_catalog "$LANG_CODE"
 
 usage() {
   cat <<EOF

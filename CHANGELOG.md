@@ -13,6 +13,10 @@ Este proyecto sigue versionado semántico y mantiene dos contratos versionados:
 
 - `validate-config` rechaza un `pandoc.metadata_file` que no existe. Antes el renderer lo omitía en silencio, así que una ruta mal escrita producía un PDF sin los metadatos declarados y sin ningún aviso.
 
+### Changed
+
+- Los dos entry points de bash comparten ahora un único runtime i18n (`scripts/i18n.sh`): la resolución de idioma y `t` ya no están duplicadas y traducir un mensaje no lanza un proceso. Medido en la misma máquina: `pandoc-pdf --help` pasa de 0,188 s a 0,080 s y de 5 procesos `python3` a 1. Además `bootstrap.sh` hereda el idioma configurado con `pandoc-pdf locale set`, que antes ignoraba.
+
 ### Removed
 
 - `scripts/render-native.rb`: queda un único renderer, en Python. El duplicado costaba 398 líneas de lógica paralela y solo existía porque el CLI lo elegía cuando faltaba PyYAML; ahora el renderer parsea YAML con PyYAML si está o, si no, delegando en la stdlib de Ruby por subproceso (el mismo recurso que ya usaba `validate-config`). Afecta solo a quien invocara ese script directamente: ni el CLI, ni el contrato de config, ni el comportamiento por defecto cambian.
