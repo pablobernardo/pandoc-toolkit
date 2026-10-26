@@ -26,7 +26,6 @@ fi
 ASSETS=(
   "bin"
   "filters"
-  "defaults"
   "templates"
   "schemas"
   "i18n"

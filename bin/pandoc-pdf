@@ -1043,17 +1043,14 @@ show_info() {
   local version
   local yaml_parser
   local schema_path="$ROOT_DIR/schemas/pdf-config.schema.json"
-  local defaults_path="$ROOT_DIR/defaults/default.yaml"
   local template_path="$ROOT_DIR/templates/default.tex"
 
   version="$(get_version_value)"
   yaml_parser="$(detect_yaml_parser)"
 
   local schema_exists=false
-  local defaults_exists=false
   local template_exists=false
   [[ -f "$schema_path" ]] && schema_exists=true
-  [[ -f "$defaults_path" ]] && defaults_exists=true
   [[ -f "$template_path" ]] && template_exists=true
 
   if [[ "$output_format" == "json" ]]; then
@@ -1064,8 +1061,6 @@ show_info() {
     printf '  "yaml_parser": "%s",\n' "$(json_escape "$yaml_parser")"
     printf '  "schema_path": "%s",\n' "$(json_escape "$schema_path")"
     printf '  "schema_exists": %s,\n' "$schema_exists"
-    printf '  "defaults_path": "%s",\n' "$(json_escape "$defaults_path")"
-    printf '  "defaults_exists": %s,\n' "$defaults_exists"
     printf '  "template_path": "%s",\n' "$(json_escape "$template_path")"
     printf '  "template_exists": %s\n' "$template_exists"
     printf '}\n'
@@ -1076,7 +1071,6 @@ show_info() {
   echo "root_dir: ${ROOT_DIR}"
   echo "yaml_parser: ${yaml_parser}"
   echo "schema_path: ${schema_path} (exists=${schema_exists})"
-  echo "defaults_path: ${defaults_path} (exists=${defaults_exists})"
   echo "template_path: ${template_path} (exists=${template_exists})"
 }
 

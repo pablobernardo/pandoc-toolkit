@@ -104,18 +104,6 @@ def select_chapter_files(input_cfg, chapters_dir)
         value: order, supported: ORDER_CHOICES.join(', ')))
 end
 
-def deep_merge(base, override)
-  merged = base.dup
-  override.each do |key, value|
-    if merged[key].is_a?(Hash) && value.is_a?(Hash)
-      merged[key] = deep_merge(merged[key], value)
-    else
-      merged[key] = value
-    end
-  end
-  merged
-end
-
 def load_yaml_map(path)
   data = YAML.safe_load(File.read(path.to_s), permitted_classes: [], aliases: false)
   return {} if data.nil?
@@ -150,9 +138,6 @@ end
 # Compute the render plan. Pure: no writes, no directory creation, no subprocess.
 def build_plan(cfg_user, cfg_path, root_dir)
   cfg = cfg_user
-
-  defaults_path = root_dir + 'defaults/default.yaml'
-  cfg = deep_merge(load_yaml_map(defaults_path), cfg) if defaults_path.file?
 
   %w[project document input output pandoc].each do |k|
     die(t('render.error.required_section', 'Invalid or missing required section: {section}', section: k)) unless cfg[k].is_a?(Hash)

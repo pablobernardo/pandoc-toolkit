@@ -1408,88 +1408,56 @@ EOF
   rm -f "$capture" "$out"
 }
 
-run_render_defaults_merge_test() {
-  local sandbox
-  sandbox="$(mktemp -d)"
-  mkdir -p "${sandbox}/work/chapters" "${sandbox}/defaults" "${sandbox}/templates" "${sandbox}/scripts"
+run_no_hidden_defaults_test() {
+  if [[ -e "${ROOT_DIR}/defaults/default.yaml" ]]; then
+    fail "the toolkit must not ship a config defaults baseline"
+  else
+    pass "the toolkit ships no config defaults baseline"
+  fi
 
-  cp "${ROOT_DIR}/defaults/default.yaml" "${sandbox}/defaults/default.yaml"
-  cp "${ROOT_DIR}/scripts/render-native.rb" "${sandbox}/scripts/render-native.rb"
-  chmod +x "${sandbox}/scripts/render-native.rb"
+  if ! command -v ruby >/dev/null 2>&1; then
+    echo "SKIP hidden defaults check (ruby not available)"
+    return 0
+  fi
 
-  cat >"${sandbox}/work/chapters/01-defaults.md" <<'EOF'
-# Defaults
+  local sandbox tmpbin capture out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
 
-Content with defaults
-EOF
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
 
-  cat >"${sandbox}/templates/default.tex" <<'EOF'
-\documentclass{article}
-\begin{document}
-$body$
-\end{document}
-EOF
-
-  cat >"${sandbox}/pdf.config.yaml" <<'EOF'
+  cat >"${sandbox}/partial.config.yaml" <<'EOF'
 project:
-  name: defaults-test
+  name: partial
   base_dir: ./work
 
 document:
-  title: "Defaults Merge"
+  title: "Partial Document"
 
 input:
   chapters_dir: "chapters"
-  explicit_files:
-    - "01-defaults.md"
+  explicit_files: []
 
 output:
   dir: "out"
-  file_prefix: "defaults"
+  file_prefix: "partial"
   suffix: "manual"
 
 pandoc:
   pdf_engine: lualatex
-  toc: false
-
-filters:
-  emoji:
-    enabled: false
-  mermaid:
-    enabled: false
 EOF
 
-  local tmpbin
-  tmpbin="$(mktemp -d)"
-
-  cat >"${tmpbin}/pandoc" <<'EOF'
-#!/bin/bash
-set -euo pipefail
-echo "ARGS:$*" > "${TMP_PANDOC_CAPTURE}"
-exit 0
-EOF
-  chmod +x "${tmpbin}/pandoc"
-
-  local capture out
-  capture="$(mktemp)"
-  out="$(mktemp)"
-
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/pdf.config.yaml" "${sandbox}" >"$out" 2>&1; then
-    pass "render applies defaults merge + local override"
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    ruby "${sandbox}/scripts/render-native.rb" "${sandbox}/partial.config.yaml" "$sandbox" >"$out" 2>&1; then
+    pass "renderer accepts a config without the optional sections"
   else
-    fail "render should apply defaults merge"
+    fail "renderer should accept a config without the optional sections ($(tail -2 "$out"))"
   fi
 
-  assert_contains "$capture" "--pdf-engine=lualatex" "render defaults allow local pdf_engine override"
-  assert_contains "$capture" "--template=.*/templates/default\.tex" "render defaults apply toolkit default template"
-  assert_contains "$capture" "--number-sections" "render defaults apply default number_sections"
-  assert_contains "$capture" "--resource-path=.*/chapters" "render defaults apply default resource_path"
-
-  if grep -q -- "--toc" "$capture"; then
-    fail "render defaults should not include --toc when local config disables it"
-  else
-    pass "render defaults respect local toc=false override"
-  fi
+  assert_not_contains "$capture" "--resource-path" "a config without resource_path gets no hidden default resource path"
 
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$capture" "$out"
@@ -1597,7 +1565,6 @@ new_contract_sandbox() {
   cp -R "${ROOT_DIR}/scripts" "${sandbox}/scripts"
   rm -rf "${sandbox}/scripts/__pycache__"
   cp -R "${ROOT_DIR}/schemas" "${sandbox}/schemas"
-  cp -R "${ROOT_DIR}/defaults" "${sandbox}/defaults"
   cp -R "${ROOT_DIR}/filters" "${sandbox}/filters"
   cp -R "${ROOT_DIR}/i18n" "${sandbox}/i18n"
   cp "${ROOT_DIR}/VERSION" "${sandbox}/VERSION"
@@ -2196,8 +2163,8 @@ main() {
   run_render_no_yaml_parser_hints_i18n_test
   run_render_native_test
   run_render_native_advanced_paths_test
-  run_render_defaults_merge_test
   run_render_missing_explicit_file_test
+  run_no_hidden_defaults_test
   run_render_order_semantics_test
   run_render_keep_merged_markdown_test
   run_render_document_vars_test

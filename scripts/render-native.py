@@ -7,7 +7,6 @@ import re
 import subprocess
 import sys
 from datetime import datetime
-from copy import deepcopy
 from pathlib import Path
 from typing import NoReturn
 
@@ -86,16 +85,6 @@ def resolve_suffix(raw_suffix: str | None) -> str:
     return raw_suffix.replace("${date:YYYYMMDD}", datetime.now().strftime("%Y%m%d"))
 
 
-def deep_merge(base: dict, override: dict) -> dict:
-    merged = deepcopy(base)
-    for key, value in override.items():
-        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
-            merged[key] = deep_merge(merged[key], value)
-        else:
-            merged[key] = value
-    return merged
-
-
 def load_yaml_map(path: Path) -> dict:
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -121,11 +110,6 @@ def toolkit_version(root_dir: Path) -> str:
 def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     """Compute the render plan. Pure: no writes, no directory creation, no subprocess."""
     cfg = cfg_user
-
-    defaults_path = root_dir / "defaults/default.yaml"
-    if defaults_path.exists():
-        defaults_cfg = load_yaml_map(defaults_path)
-        cfg = deep_merge(defaults_cfg, cfg)
 
     required = ["project", "document", "input", "output", "pandoc"]
     for key in required:
