@@ -85,21 +85,21 @@ run_locale_project_file_location_test() {
   out="$(mktemp)"
 
   ( cd "$sandbox" && PANDOC_PDF_LANG=en "$CLI" locale set --project es >"$out" 2>&1 ) || true
-
-  if [[ -f "${sandbox}/.pandoc-pdf.env" ]]; then
-    pass "locale set --project writes into the current directory"
-  else
-    fail "locale set --project must write into the current directory"
-  fi
-
-  if [[ -e "${ROOT_DIR}/.pandoc-pdf.env" ]]; then
-    fail "locale set --project must not write into the toolkit installation"
-  else
-    pass "locale set --project leaves the toolkit installation untouched"
-  fi
+  assert_file_exists "${sandbox}/.pandoc-pdf.env" "locale set --project writes into the current directory"
+  assert_file_absent "${ROOT_DIR}/.pandoc-pdf.env" "locale set --project leaves the toolkit installation untouched"
 
   ( cd "$sandbox" && env -u PANDOC_PDF_LANG "$CLI" locale show >"$out" 2>&1 ) || true
   assert_contains "$out" "project_config" "locale show reads the project file from the working directory"
+
+  # The lookup walks up, so a subdirectory of the consumer still finds it.
+  mkdir -p "${sandbox}/docs/infra"
+  ( cd "${sandbox}/docs/infra" && env -u PANDOC_PDF_LANG "$CLI" locale show >"$out" 2>&1 ) || true
+  assert_contains "$out" "project_config" "locale show finds the project file from a subdirectory"
+
+  # An existing file is replaced, not appended to or ignored.
+  printf 'export PANDOC_PDF_LANG=gl\n' >"${sandbox}/.pandoc-pdf.env"
+  ( cd "$sandbox" && PANDOC_PDF_LANG=en "$CLI" locale set --project es >"$out" 2>&1 ) || true
+  assert_contains "${sandbox}/.pandoc-pdf.env" "^export PANDOC_PDF_LANG=es$" "locale set --project replaces an existing file"
 
   rm -rf "$sandbox"
   rm -f "$out"
