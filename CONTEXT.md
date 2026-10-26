@@ -1,161 +1,131 @@
-## Contexto operativo (actual)
+## Operational context (current)
 
-> Este archivo refleja estado cambiante. Reglas estables viven en `AGENTS.md`.
+> This file reflects changing state. Stable rules live in `AGENTS.md`.
 
 ## Snapshot
 
-- Estado general: **CLI estable con render nativo por defecto**.
-- Entry point activo: `bin/pandoc-pdf`.
-- Comandos activos: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c`.
-- Estado de suite local verificado: **PASS=228 FAIL=0** (`tests/run.sh`).
-- Versión actual del toolkit (`VERSION`): **1.2.0**, sin tag: el release está pospuesto por decisión del mantenedor.
-- Suite L1 repartida: `tests/lib.sh` (aserciones y helpers de fixtures) + `tests/l1/<área>.sh`; `tests/run.sh` solo orquesta. Quedan por extraer `update`, `doctor`, `validate`, `i18n`, `locale` y `help`.
+- General state: **stable CLI with native render by default**.
+- Active entry point: `bin/pandoc-pdf`.
+- Active commands: `--version`, `version`, `info`, `locale`, `update --check`, `update`, `update --to`, `doctor`, `validate-config -c`, `render -c [--dry-run] [--json]`.
+- Verified local suite: **PASS=228 FAIL=0**.
+- Toolkit version (`VERSION`): **1.2.0**, no tag — the release is postponed by maintainer decision (see D8).
+- L1 suite is split: `tests/lib.sh` (assertions and fixture helpers) plus one file per area under `tests/l1/`; `tests/run.sh` (77 lines) only orchestrates. The split is complete.
 
-## Convención activa de i18n (persistente)
+## Active i18n convention
 
-- ✅ La app es **multiidioma** (locales activos: `en`, `es`, `pt`, `gl`).
-- ✅ Fallback por defecto: **inglés (`en`)**.
-- ✅ Política de implementación: **no hardcodear cadenas user-facing en runtime**; todas las cadenas deben salir de catálogos `i18n/locales/*.json`.
-- ✅ Preferencia de estilo en español: cuando se escriba contenido en español para el proyecto, usar **español de España (es-ES)**.
-- ✅ Un solo runtime de shell para i18n: `scripts/i18n.sh`, compartido por `bin/pandoc-pdf` y `scripts/bootstrap.sh`; el catálogo se carga una vez y `t` no lanza procesos.
+- ✅ The app is **multilingual** (active locales: `en`, `es`, `pt`, `gl`).
+- ✅ Default fallback: **English (`en`)**.
+- ✅ Implementation policy: **no user-facing strings hardcoded in runtime code**; every string comes from the `i18n/locales/*.json` catalogs.
+- ✅ One shell runtime: `scripts/i18n.sh`, shared by `bin/pandoc-pdf` and `scripts/bootstrap.sh`; the catalog loads once and `t` spawns no process.
+- ✅ Repository language: English, including this file (see `AGENTS.md`). The only Spanish in the tree is `i18n/locales/es.json`, written in Spain Spanish.
 
-## Estado por frente
+## State by area
 
 ### 1) CLI
-- ✅ `pandoc-pdf` operativo para humanos/CI/agentes.
-- ✅ `doctor` valida dependencias runtime vía `scripts/preflight.sh`.
-- ✅ `validate-config` valida contrato estricto (required + tipos + campos no permitidos).
-- ✅ `render` nativo con un único renderer en `scripts/render-native.py` (el duplicado en Ruby se retiró).
-- ✅ `bootstrap` simplifica onboarding (`make bootstrap*`, `scripts/bootstrap.sh`).
 
-### 2) Configuración y rutas
-- ✅ Contrato schema-driven activo (`schemas/pdf-config.schema.json`).
-- ✅ Validación funcional de rutas críticas en `validate-config`:
-  - `input.chapters_dir`
-  - `pandoc.template` (si viene informado)
-  - `filters.extra_lua_filters`
-- ✅ `pandoc.template` es opcional.
-- ✅ Fallback de template corregido:
-  - si el usuario **no** informa `pandoc.template`, se usa el template por defecto del toolkit (`templates/default.tex`);
-  - si el usuario informa `pandoc.template`, se resuelve relativo a `project.base_dir`.
+- ✅ `pandoc-pdf` works for humans, CI and agents.
+- ✅ `doctor` validates runtime dependencies through `scripts/preflight.sh`; `runtime.strict: false` waives auxiliary commands but never the TeX engine.
+- ✅ `validate-config` enforces the strict contract (required fields, types, disallowed fields, `enum`) plus functional path checks.
+- ✅ `render` is native with a single renderer, `scripts/render-native.py`; the Ruby duplicate is gone and Ruby remains only as an optional YAML parser.
+- ✅ `render --dry-run [--json]` prints a pure `plan_version: 1` plan and writes nothing.
+- ✅ `bootstrap` simplifies onboarding (`make bootstrap*`, `scripts/bootstrap.sh`).
 
-### 3) Seguridad
-- ✅ Preflight endurecido contra inyección (sin `bash -c` para resolver comandos de config).
-- ✅ Parseo YAML seguro en Ruby (`YAML.safe_load`).
-- ✅ Workflow de seguridad disponible (`.github/workflows/security.yml`: Semgrep + Gitleaks).
-- ✅ Política publicada en `.github/SECURITY.md`.
+### 2) Configuration and paths
 
-### 4) Testing y CI
-- ✅ Suite local `tests/run.sh` en verde (PASS=228 FAIL=0).
-- ✅ CI por niveles:
-  - **L1** obligatorio en PR/push (macOS/Linux)
-  - **L2** integración semi-real manual
-  - **L3** integración completa manual/programada (incluye Mermaid)
+- ✅ Schema-driven contract (`schemas/pdf-config.schema.json`) is the single source of truth; there is no defaults baseline to merge.
+- ✅ `validate-config` checks the critical paths: `input.chapters_dir`, `pandoc.template` when set, `pandoc.metadata_file` when set, and `filters.extra_lua_filters`.
+- ✅ `pandoc.template` is optional: when absent the toolkit template (`templates/default.tex`) is used; when present it resolves relative to `project.base_dir`.
 
-### 5) Documentación y gobierno
-- ✅ `README.md`, `docs/install.md`, `docs/usage.md`, `docs/migration.md`, `docs/architecture.md` actualizados.
-- ✅ `docs/release-readiness.md` y `docs/dependency-policy.md` activos.
-- ✅ `CHANGELOG.md` reorganizado para claridad de release (1.0.0 vs Unreleased).
-- ✅ Workflow de release automático disponible (`.github/workflows/release.yml`) para tags `v*`.
+### 3) Security
 
-## Migración a binario (Go) — decisión pendiente
+- ✅ Preflight hardened against injection (no `bash -c` to resolve commands from config).
+- ✅ Safe YAML parsing in Ruby (`YAML.safe_load`).
+- ✅ Security workflow (`.github/workflows/security.yml`) runs Semgrep and Gitleaks from pinned container images, so it no longer depends on the runner's Python.
+- ✅ Policy published in `.github/SECURITY.md`.
 
-Estado: **no se migra ahora**. Windows no es un requisito actual y el consumo real del toolkit es Linux/macOS. La puerta queda abierta de forma explícita.
+### 4) Testing and CI
 
-Puerta abierta (lo que se construiría antes de decidir):
+- ✅ Local suite green: **PASS=228 FAIL=0**, twelve files.
+- ✅ CI by levels:
+  - **L1** mandatory on PR/push (macOS and Linux);
+  - **L2** semi-real integration, manual;
+  - **L3** full integration, manual or scheduled (includes Mermaid).
+- ✅ Every commit of the 1.2.0 work passed the suite on its own, checked by extracting each tree with `git archive`.
 
-1. ✅ `render --dry-run --json`: hecho (ver sección anterior).
-2. Una suite de conformidad sobre ese plan, ejecutable contra cualquier implementación (actual en bash/Python/Ruby y una futura en Go), para comparar salida sin leer código.
+### 5) Documentation and governance
 
-Disparadores de migración (cualquiera de ellos):
+- ✅ `README.md`, `docs/install.md`, `docs/usage.md`, `docs/migration.md`, `docs/architecture.md` reviewed and translated to English.
+- ✅ `docs/release-readiness.md`, `docs/dependency-policy.md`, `docs/i18n.md`, `docs/self-update-design.md` reviewed and translated.
+- ✅ `CHANGELOG.md`: one honest `[Unreleased]` section stating that 1.2.0 has no tag yet.
+- ✅ Release workflow available (`.github/workflows/release.yml`) for `v*` tags; it uses `action-gh-release@v3`, whose Node 24 runtime its own CI does not exercise.
 
-- (a) Windows pasa a ser un requisito real del toolkit.
-- (b) Un consumidor objetivo no puede tener `python3` + PyYAML en su entorno.
-- (c) Se necesitan artefactos firmados de fichero único para supply chain.
-- (d) Los defectos del updater en bash cuestan más que una reescritura.
+## Decisions taken during 1.2.0
 
-## Plan de render (`--dry-run --json`)
+| # | Decision |
+| --- | --- |
+| D1 | A single renderer (Python). Ruby stays only as an optional YAML parser in a subprocess; removing it entirely would require making PyYAML mandatory, and that was decided **against**. |
+| D2 | `runtime.strict: false` waives auxiliary dependencies, never the TeX engine: without an engine there is no PDF, so it always fails. |
+| D3 | `validate-config` rejects a missing `pandoc.metadata_file` and validates `input.order` against its `enum`. The validator implements a documented JSON Schema subset and a test fails if the schema uses any other keyword. |
+| D4 | Shell i18n unified in `scripts/i18n.sh`: catalog loaded once, no fork per message, one precedence chain for both entry points. |
+| D5 | Metadata precedence: when `pandoc.metadata_file` is set it wins and no `-V` variables are passed; when empty, `title`, `subtitle`, `publisher`, `author`, `date` and `rights` become template variables. |
+| D6 | The plan shape (`plan_version: 1`) is frozen as is: `cwd: null` (inherited), `env` with the toolkit's four variables, and `prepare_argv[0]` as the neutral `python3` token. Any shape change requires `plan_version: 2`. |
+| D7 | `defaults/default.yaml` removed: `schemas/pdf-config.schema.json` is the single source of truth. |
+| D8 | Release postponed: 1.2.0 is on `master` with no tag. Creating the tag triggers `release.yml` with `action-gh-release@v3`, which its CI does not exercise. |
+| D9 | The repository is English, including this file and `odd/`; only `i18n/locales/es.json` is Spanish. |
 
-Implementado en 1.2.0: `pandoc-pdf render -c <config> --dry-run [--json]` calcula un plan puro (sin escribir nada) con capítulos, dianas, `argv` de pandoc y entorno. `scripts/render-native.py` está partido en `build_plan` (puro), `execute_plan` (único punto con efectos) y `print_plan`. Había un duplicado en Ruby que se retiró: el parseo YAML usa PyYAML si está y, si no, Ruby por subproceso.
+## Native review (RDD) — blocked by the provider
 
-## Contrato de configuración: una sola fuente
+State: **not available for this work**. Three attempts, always the same reviewer and the same limit:
 
-`schemas/pdf-config.schema.json` es la única fuente de verdad. No hay fichero de defaults que fusionar: `render` valida el config del usuario y aplica solo los fallbacks históricos de código para claves ausentes. Decisión tomada en 1.2.0 (antes el baseline era inalcanzable por el camino validado).
-
-## Slices pendientes (post 1.2.0)
-
-1. ✅ Plan JSON `--dry-run --json` y decisión de defaults: `defaults/default.yaml` retirado, el schema es la única fuente de verdad.
-2. **Retiro del renderer Ruby**: mantener un solo runtime cuando el plan JSON y la conformidad estén verdes.
-3. **Unificación de i18n**: hoy hay catálogos consumidos desde bash y desde los renderers Python/Ruby.
-4. **Hardening del validador de schema**: cobertura más estricta que el `additionalProperties: false` actual.
-5. **Partir `tests/run.sh`**: es un monolito compartido por todas las áreas; conviene separarlo por dominio antes de seguir creciendo.
-
-## Gap principal (post 1.1)
-
-Sin bloqueantes técnicos abiertos para el contrato Linux/macOS del toolkit.
-
-## Roadmap pendiente real (post 1.1)
-
-1. **Soporte Windows (futuro)**
-   - diseñar extensión de updater/instalación sin romper contrato CLI actual.
-2. **Hardening de supply chain (iteración siguiente)**
-   - evaluar firma criptográfica de artefactos (Sigstore/GPG).
-
-## Revisión nativa (RDD) — bloqueada por límite del proveedor
-
-Estado: **no disponible para esta rama**. Dos intentos, mismo revisor y mismo límite:
-
-| lineage | candidato | resultado |
+| lineage | candidate | result |
 | --- | --- | --- |
-| `review-d3a0f85c95b06577` | rama hasta `31bc09b` (1.088 líneas) | falla en `review-resilience` |
-| `review-53a11f26c014de04` | slice plan+defaults (1.159 líneas) | falla en `review-resilience` |
+| `review-d3a0f85c95b06577` | branch up to `31bc09b` (1,088 lines) | fails on `review-resilience` |
+| `review-53a11f26c014de04` | plan+defaults slice (1,159 lines) | fails on `review-resilience` |
+| `review-2197251eaa9a4fbc` | `9b22148` alone (159 lines) | fails on `review-resilience` |
 
-Motivo: `reasoning-only stream guard: 420 s / 45.000 reasoning-character limit` en el modelo que sirve la lente de resiliencia, con `prepared_reviewers: 0` y sin mutación. Con tier `high` el proveedor exige las cuatro lentes, así que no se puede rescatar un subconjunto.
+Cause: `reasoning-only stream guard: 420 s / 45.000 reasoning-character limit` in the model serving the resilience lens, with `prepared_reviewers: 0` and no mutation. The third attempt settles the diagnosis: a 159-line candidate fails identically, so it is the model, not the diff size. At `high` tier the provider requires all four lenses, so a subset cannot be salvaged.
 
-Consecuencias operativas:
+Operational consequences:
 
-- Ningún lineage está corrupto; ambos quedan en estado `reviewing`. **No se abandonan** sin decisión explícita del mantenedor (operación auditada y destructiva).
-- La revisión efectiva de la rama es la **revisión humana del PR**.
-- Si se quiere reintentar: candidatos por commit (≈200-600 líneas) en lugar de la rama completa; el guard salta por volumen de diff, no por tipo de cambio.
+- No lineage is corrupt; all three stay in `reviewing`. They are **not** abandoned without an explicit maintainer decision (audited, destructive operation).
+- The effective review of this work is the **human review of the pull requests**.
+- Retrying requires a different reviewer model in the relay; per-commit candidates do not help.
 
-## Verificación por commit
+## Binary migration (Go) — pending decision
 
-Los 10 commits de la rama pasan `tests/run.sh` de forma independiente (verificado extrayendo cada árbol con `git archive` y ejecutando la suite): `75f6dc9`, `bfb5d8f`, `ae9cb3b`, `2b622ca`, `31bc09b`, `b4dab34`, `443e9ec`, `5a25fef`, `9b22148`, `e61657a`.
+State: **no migration now**. Windows is not a current requirement and the toolkit is consumed on Linux and macOS. The door is explicitly left open.
 
-## Decisiones tomadas durante la entrega de 1.2.0
+What the door consists of:
 
-| # | Decisión |
-| --- | --- |
-| D1 | Un solo renderer (Python). Ruby se queda solo como parser YAML opcional por subproceso; retirarlo del todo exigiría hacer PyYAML obligatorio y se decidió **no** hacerlo. |
-| D2 | `runtime.strict: false` perdona dependencias auxiliares, nunca el motor TeX. |
-| D3 | `validate-config` rechaza un `metadata_file` inexistente y valida `input.order` contra su `enum`; el validador solo implementa un subconjunto documentado de JSON Schema y un test falla si el schema usa otra keyword. |
-| D4 | i18n de shell unificado en `scripts/i18n.sh` (catálogo cargado una vez, sin fork por mensaje). |
-| D5 | Release pospuesto: `1.2.0` está en `master` sin tag. Crear el tag dispara `release.yml` con `action-gh-release` v3 (Node 24), que su CI no ejercita. |
-| D6 | La revisión nativa (RDD) está bloqueada por el proveedor: la lente `review-resilience` devuelve respuesta vacía por el límite de razonamiento del gateway en todos los intentos. La revisión efectiva es la del mantenedor. |
+1. ✅ `render --dry-run --json`: done, and the plan shape is frozen (D6).
+2. A conformance suite over that plan, runnable against any implementation (today's Python, a future Go one), to compare output without reading code.
 
-## Decisiones de la revisión de 1.2.0
+Migration triggers (any one of them):
 
-| # | Decisión |
-| --- | --- |
-| A1 | Precedencia de metadatos: si `pandoc.metadata_file` está informado, manda el fichero y no se pasan variables `-V`; si está vacío, `title`, `subtitle`, `publisher`, `author`, `date` y `rights` se pasan como variables de plantilla. |
-| A2 | `runtime.strict: false` perdona dependencias auxiliares, nunca el motor TeX: sin motor no hay PDF, así que falla siempre. |
-| A3 | La forma del plan (`plan_version: 1`) se congela tal cual: `cwd: null` (heredado), `env` con las cuatro variables del toolkit y `prepare_argv[0]` como token neutro `python3`. Cualquier cambio de forma pide `plan_version: 2`. |
-| A4 | `defaults/default.yaml` retirado: `schemas/pdf-config.schema.json` es la única fuente de verdad del contrato. |
+- (a) Windows becomes a real requirement.
+- (b) A target consumer cannot provide `python3` + PyYAML.
+- (c) Signed single-file artifacts are needed for supply chain.
+- (d) Bash updater defects cost more than a rewrite.
 
-## Riesgos activos
+## Known follow-ups
 
-- Diferencias de entorno (TeX/Mermaid/Chromium) entre local y ejecución de integración completa.
-- Revisión nativa (RDD) indisponible por límite del proveedor: la cobertura externa de esta rama depende de la revisión humana del PR.
-- Dependencia de publicación en GitHub para cerrar automatización de reportes/updates.
+1. **`locale set --project` writes `.pandoc-pdf.env` in the toolkit root**, not in the consuming repository, so every consumer shares one "project" locale. The docs describe the behaviour; deciding whether to change it is still open.
+2. **Action pinning**: workflows use major tags (`@v4`, `@v7`) managed by Dependabot. Moving to commit SHAs is a supply-chain policy decision, not taken yet.
+3. **Artifact signing** (Sigstore/GPG) for release artifacts.
 
-## Decisiones tomadas
+## Main gap (post 1.1)
 
-1. **Release 1.0.0 primero**, sin bloquear por updater.
-2. `pandoc-pdf update` se entregó en **v1.1.0** con rollback + observabilidad.
-3. Seguridad CI en **v1.1.0**: SARIF + umbrales explícitos para SAST/secrets.
+No open technical blockers for the Linux/macOS contract of the toolkit.
 
-## Próximo hito recomendado
+## Next recommended milestone
 
-### M3 — Preparación multi-plataforma
-1. Diseñar estrategia de soporte Windows en updater/install.
-2. Evaluar firma de artefactos para reforzar supply chain.
+### M3 — Multi-platform preparation
+
+1. Design Windows support for the updater and install path, which today is blocked by the bash entry point.
+2. Evaluate artifact signing to strengthen the supply chain.
+
+## Active risks
+
+- Environment differences (TeX/Mermaid/Chromium) between local runs and full integration execution.
+- Native review (RDD) unavailable because of the provider limit: external coverage of this work depends on human review of the pull requests.
+- Dependency on GitHub publication to close the reporting and update automation.
