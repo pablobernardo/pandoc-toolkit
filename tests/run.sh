@@ -12,55 +12,13 @@ export PANDOC_PDF_LANG="en"
 PASS=0
 FAIL=0
 
-green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
-red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
-
-pass() {
-  PASS=$((PASS + 1))
-  if [[ "${TEST_VERBOSE:-1}" == "1" ]]; then
-    green "✅ PASS [${PASS}] $1"
-  else
-    green "✅ PASS [${PASS}]"
-  fi
-}
-
-fail() {
-  FAIL=$((FAIL + 1))
-  red "❌ FAIL [${FAIL}] $1"
-}
-
-assert_exit_code() {
-  local expected="$1"
-  local actual="$2"
-  local msg="$3"
-  if [[ "$expected" == "$actual" ]]; then
-    pass "$msg"
-  else
-    fail "$msg (expected=${expected}, actual=${actual})"
-  fi
-}
-
-assert_contains() {
-  local file="$1"
-  local pattern="$2"
-  local msg="$3"
-  if grep -qE -- "$pattern" "$file"; then
-    pass "$msg"
-  else
-    fail "$msg"
-  fi
-}
-
-assert_not_contains() {
-  local file="$1"
-  local pattern="$2"
-  local msg="$3"
-  if grep -qE -- "$pattern" "$file"; then
-    fail "$msg"
-  else
-    pass "$msg"
-  fi
-}
+# Shared assertions plus one file per area; this file only orchestrates.
+source "${ROOT_DIR}/tests/lib.sh"
+# shellcheck disable=SC1090,SC1091  # area paths are resolved at runtime
+for area in "${ROOT_DIR}"/tests/l1/*.sh; do
+  [[ -e "$area" ]] || continue
+  source "$area"
+done
 
 run_help_test() {
   local out
@@ -791,39 +749,6 @@ EOF
   rm -f "$out"
 }
 
-run_install_local_dev_link_test() {
-  local sandbox
-  sandbox="$(mktemp -d)"
-  local out
-  out="$(mktemp)"
-
-  local install_home install_bin
-  install_home="${sandbox}/managed"
-  install_bin="${sandbox}/bin"
-
-  if PANDOC_PDF_INSTALL_HOME="$install_home" PANDOC_PDF_INSTALL_DIR="$install_bin" /bin/bash "${ROOT_DIR}/scripts/install-local.sh" dev >"$out" 2>&1; then
-    pass "install-local dev completes successfully"
-  else
-    fail "install-local dev should complete successfully"
-  fi
-
-  if [[ -L "${install_bin}/pandoc-pdf-dev" ]]; then
-    pass "install-local dev creates pandoc-pdf-dev symlink"
-  else
-    fail "install-local dev should create pandoc-pdf-dev symlink"
-  fi
-
-  set +e
-  "${install_bin}/pandoc-pdf-dev" --version >>"$out" 2>&1
-  local code=$?
-  set -e
-  assert_exit_code "0" "$code" "pandoc-pdf-dev symlink is executable"
-  assert_contains "$out" "^pandoc-pdf [0-9]+\.[0-9]+\.[0-9]+$" "pandoc-pdf-dev reports toolkit version"
-
-  rm -rf "$sandbox"
-  rm -f "$out"
-}
-
 run_doctor_success_with_mocked_path() {
   local tmpbin
   tmpbin="$(mktemp -d)"
@@ -952,93 +877,6 @@ EOF
   assert_exit_code "1" "$code" "doctor -c fails with invalid command name"
   assert_contains "$out" "Invalid command name" "doctor -c reports invalid command"
 
-  rm -rf "$tmpbin"
-  rm -f "$out"
-}
-
-run_bootstrap_linux_pkg_manager_detection_tests() {
-  local bootstrap_script
-  bootstrap_script="${ROOT_DIR}/scripts/bootstrap.sh"
-
-  local tmpbin out
-
-  # Caso 1: apt-get detectado
-  tmpbin="$(mktemp -d)"
-  cat >"${tmpbin}/uname" <<'EOF'
-#!/bin/bash
-echo Linux
-EOF
-  chmod +x "${tmpbin}/uname"
-
-  for c in pandoc python3 curl mmdc xelatex apt-get; do
-    cat >"${tmpbin}/${c}" <<'EOF'
-#!/bin/bash
-exit 0
-EOF
-    chmod +x "${tmpbin}/${c}"
-  done
-
-  out="$(mktemp)"
-  if PATH="${tmpbin}" /bin/bash "${bootstrap_script}" --dry-run --yes --skip-link >"$out" 2>&1; then
-    pass "bootstrap detects apt-get on Linux"
-  else
-    fail "bootstrap should detect apt-get on Linux"
-  fi
-  assert_contains "$out" "Detected package manager: apt-get" "bootstrap reports detected apt-get"
-  assert_contains "$out" "\[dry-run\] sudo apt-get install -y pandoc" "bootstrap generates expected apt-get command"
-  rm -rf "$tmpbin"
-  rm -f "$out"
-
-  # Caso 2: dnf detectado
-  tmpbin="$(mktemp -d)"
-  cat >"${tmpbin}/uname" <<'EOF'
-#!/bin/bash
-echo Linux
-EOF
-  chmod +x "${tmpbin}/uname"
-
-  for c in pandoc python3 curl mmdc xelatex dnf; do
-    cat >"${tmpbin}/${c}" <<'EOF'
-#!/bin/bash
-exit 0
-EOF
-    chmod +x "${tmpbin}/${c}"
-  done
-
-  out="$(mktemp)"
-  if PATH="${tmpbin}" /bin/bash "${bootstrap_script}" --dry-run --yes --skip-link >"$out" 2>&1; then
-    pass "bootstrap detects dnf on Linux"
-  else
-    fail "bootstrap should detect dnf on Linux"
-  fi
-  assert_contains "$out" "Detected package manager: dnf" "bootstrap reports detected dnf"
-  assert_contains "$out" "\[dry-run\] sudo dnf install -y pandoc" "bootstrap generates expected dnf command"
-  rm -rf "$tmpbin"
-  rm -f "$out"
-
-  # Case 3: without supported package manager
-  tmpbin="$(mktemp -d)"
-  cat >"${tmpbin}/uname" <<'EOF'
-#!/bin/bash
-echo Linux
-EOF
-  chmod +x "${tmpbin}/uname"
-
-  for c in pandoc python3 curl mmdc xelatex; do
-    cat >"${tmpbin}/${c}" <<'EOF'
-#!/bin/bash
-exit 0
-EOF
-    chmod +x "${tmpbin}/${c}"
-  done
-
-  out="$(mktemp)"
-  set +e
-  PATH="${tmpbin}" /bin/bash "${bootstrap_script}" --dry-run --yes --skip-link >"$out" 2>&1
-  local code=$?
-  set -e
-  assert_exit_code "1" "$code" "bootstrap fails when no package manager is detected"
-  assert_contains "$out" "No supported package manager detected" "bootstrap reports missing supported package manager"
   rm -rf "$tmpbin"
   rm -f "$out"
 }
@@ -1903,52 +1741,6 @@ run_locale_missing_target_message_test() {
   assert_contains "$out" "--project" "locale set error names the real --project option"
   assert_not_contains "$out" "--team" "locale set error does not mention the removed --team option"
   rm -f "$out"
-}
-
-run_package_release_artifact_test() {
-  local out_dir artifact
-  out_dir="$(mktemp -d)"
-
-  if bash "${ROOT_DIR}/scripts/package-release.sh" "$out_dir" >/dev/null 2>&1; then
-    pass "package-release builds artifacts"
-  else
-    fail "package-release should build artifacts"
-  fi
-
-  for artifact in pandoc-pdf_darwin_amd64.tar.gz pandoc-pdf_darwin_arm64.tar.gz pandoc-pdf_linux_amd64.tar.gz pandoc-pdf_linux_arm64.tar.gz; do
-    if [[ -f "${out_dir}/${artifact}" ]]; then
-      pass "package-release emits ${artifact}"
-    else
-      fail "package-release must emit ${artifact}"
-    fi
-  done
-
-  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | grep -qE '__pycache__|\.pyc$'; then
-    fail "package-release artifact must not ship Python bytecode caches"
-  else
-    pass "package-release artifact excludes Python bytecode caches"
-  fi
-
-  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | grep -qxE '\./bin/pandoc-pdf'; then
-    pass "package-release artifact contains the CLI entrypoint"
-  else
-    fail "package-release artifact must contain ./bin/pandoc-pdf"
-  fi
-
-  local expected actual
-  expected="$(awk '$2=="pandoc-pdf_linux_arm64.tar.gz" {print $1}' "${out_dir}/checksums.txt")"
-  if command -v shasum >/dev/null 2>&1; then
-    actual="$(shasum -a 256 "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | awk '{print $1}')"
-  else
-    actual="$(sha256sum "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | awk '{print $1}')"
-  fi
-  if [[ -n "$expected" && "$expected" == "$actual" ]]; then
-    pass "package-release checksums match the emitted artifacts"
-  else
-    fail "package-release checksums must match the emitted artifacts"
-  fi
-
-  rm -rf "$out_dir"
 }
 
 run_emoji_filter_plain_heading_test() {
