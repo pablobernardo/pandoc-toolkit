@@ -16,6 +16,7 @@
 - ✅ Fallback por defecto: **inglés (`en`)**.
 - ✅ Política de implementación: **no hardcodear cadenas user-facing en runtime**; todas las cadenas deben salir de catálogos `i18n/locales/*.json`.
 - ✅ Preferencia de estilo en español: cuando se escriba contenido en español para el proyecto, usar **español de España (es-ES)**.
+- ✅ Un solo runtime de shell para i18n: `scripts/i18n.sh`, compartido por `bin/pandoc-pdf` y `scripts/bootstrap.sh`; el catálogo se carga una vez y `t` no lanza procesos.
 
 ## Estado por frente
 

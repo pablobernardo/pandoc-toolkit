@@ -1165,6 +1165,7 @@ run_render_no_yaml_parser_hints_i18n_test() {
 
   cp "$CLI" "${sandbox}/bin/pandoc-pdf"
   chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "${ROOT_DIR}/scripts/i18n.sh" "${sandbox}/scripts/i18n.sh"
   cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
   cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
   cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
@@ -1196,30 +1197,20 @@ EOF
   local tmpbin
   tmpbin="$(mktemp -d)"
 
-  cat >"${tmpbin}/python3" <<'EOF'
+  # Simula "python3 sin PyYAML": la sonda de detección (`python3 -` con un solo
+  # argumento) falla, validate-config se salta (no es lo que mide este test) y el
+  # volcado del catálogo (`python3 - <locale.json>`) usa el intérprete real, para
+  # que los mensajes salgan traducidos desde el catálogo de verdad.
+  cat >"${tmpbin}/python3" <<EOF
 #!/bin/bash
 set -euo pipefail
-if [[ "${1:-}" == *"validate-config.py" ]]; then
+if [[ "\${1:-}" == *"validate-config.py" ]]; then
   exit 0
 fi
-if [[ "${1:-}" == "-" && "${2:-}" == *"/i18n/locales/"*".json" ]]; then
-  case "${3:-}" in
-    cli.error.no_yaml_parser)
-      printf 'No hay parser YAML disponible\n'
-      ;;
-    cli.error.no_yaml_parser.option1)
-      printf 'Opción 1: python3 -m pip install pyyaml\n'
-      ;;
-    cli.error.no_yaml_parser.option2)
-      printf 'Opción 2: instalar Ruby con stdlib YAML\n'
-      ;;
-    *)
-      printf '\n'
-      ;;
-  esac
-  exit 0
+if [[ "\${1:-}" == "-" && \$# -eq 1 ]]; then
+  exit 1
 fi
-exit 1
+exec "${REAL_PYTHON3}" "\$@"
 EOF
   chmod +x "${tmpbin}/python3"
 
@@ -1254,6 +1245,7 @@ run_render_native_test() {
 
   cp "$CLI" "${sandbox}/bin/pandoc-pdf"
   chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "${ROOT_DIR}/scripts/i18n.sh" "${sandbox}/scripts/i18n.sh"
   cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
   cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
   cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
@@ -1360,6 +1352,7 @@ run_render_native_advanced_paths_test() {
 
   cp "$CLI" "${sandbox}/bin/pandoc-pdf"
   chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "${ROOT_DIR}/scripts/i18n.sh" "${sandbox}/scripts/i18n.sh"
   cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
   cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
   cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
@@ -1494,6 +1487,7 @@ run_render_missing_explicit_file_test() {
 
   cp "$CLI" "${sandbox}/bin/pandoc-pdf"
   chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "${ROOT_DIR}/scripts/i18n.sh" "${sandbox}/scripts/i18n.sh"
   cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
   cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
   cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
@@ -2216,6 +2210,38 @@ run_render_mermaid_dir_gate_test() {
   rm -f "$capture" "$out"
 }
 
+run_shared_i18n_runtime_test() {
+  if [[ ! -f "${ROOT_DIR}/scripts/i18n.sh" ]]; then
+    fail "scripts/i18n.sh must exist: it is the single shell i18n runtime"
+    return 0
+  fi
+  pass "scripts/i18n.sh exists"
+
+  local entry
+  for entry in bin/pandoc-pdf scripts/bootstrap.sh; do
+    if grep -q 'scripts/i18n.sh' "${ROOT_DIR}/${entry}"; then
+      pass "${entry} sources the shared i18n runtime"
+    else
+      fail "${entry} must source scripts/i18n.sh instead of duplicating locale logic"
+    fi
+    if grep -qE '^resolve_lang\(\) \{|^list_supported_locales\(\) \{' "${ROOT_DIR}/${entry}"; then
+      fail "${entry} still defines its own locale resolution"
+    else
+      pass "${entry} has no local locale resolution"
+    fi
+  done
+
+  local out
+  out="$(mktemp)"
+  if PANDOC_PDF_LANG=es bash "${ROOT_DIR}/scripts/bootstrap.sh" --help >"$out" 2>&1; then
+    pass "bootstrap --help runs with the shared runtime"
+  else
+    fail "bootstrap --help should run with the shared runtime"
+  fi
+  assert_contains "$out" "Bootstrap de instalación" "bootstrap inherits the project language"
+  rm -f "$out"
+}
+
 main() {
   echo "== Running pandoc-pdf tests =="
   run_help_test
@@ -2223,6 +2249,7 @@ main() {
   run_version_tests
   run_info_tests
   run_i18n_catalog_consistency_test
+  run_shared_i18n_runtime_test
   run_unknown_command_test
   run_i18n_default_fallback_english_test
   run_i18n_force_english_unknown_command_test
