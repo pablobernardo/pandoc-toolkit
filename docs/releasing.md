@@ -5,8 +5,10 @@ version: what is about to ship lives in `CHANGELOG.md`.
 
 ## Before tagging
 
-1. **Checks green on `master`**: `make test`, the security workflow (thresholds
-   at zero), and `python3 scripts/check-i18n.py`.
+1. **Checks green on `master`**: `make gate` (suite, catalogs, documentation
+   references and plan conformance), plus the security workflow with its
+   thresholds at zero. When CI cannot start, `make gate` output pasted into the
+   pull request is the verification a maintainer accepts.
 2. **`VERSION`** holds the version to publish.
 3. **`CHANGELOG.md`** has the entry, written for the reader who upgrades.
 4. **Contract change?** `pdf.config.yaml -> version` moves only for a breaking

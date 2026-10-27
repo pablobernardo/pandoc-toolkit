@@ -22,11 +22,17 @@ everything except an actual render, `make test` needs no extra setup.
 | Command | What it does |
 | --- | --- |
 | `make test` | Runs `bash tests/run.sh`, the whole suite |
+| `make gate` | Everything a pull request is verified with: suite, catalogs, docs, plan conformance |
 | `make validate CONFIG=path/to/pdf.config.yaml` | Validates a configuration against the schema |
 | `make doctor` | Checks the local toolchain |
 | `make install-local-dev` | Puts the working copy on `PATH` for manual testing |
 | `python3 scripts/check-i18n.py` | Catalog parity and placeholders |
 | `python3 scripts/check-docs.py` | No document points at something missing |
+
+`make gate` is the gate: run it before opening a pull request. When CI cannot start
+(an account without Actions minutes is the usual reason), it is the verification:
+put its output in the pull request so the decision to merge is recorded rather
+than assumed.
 
 The suite is one process: `tests/run.sh` sources every `tests/l1/<area>.sh` and
 runs them in order. There is no per-area flag, so when you touch one area, read
