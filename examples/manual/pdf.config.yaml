@@ -1,0 +1,71 @@
+version: 1
+
+project:
+  name: honest-machine-manual
+  base_dir: "."
+
+document:
+  title: "The Honest Machine"
+  subtitle: "Operator's Manual, first edition"
+  author: "The Example Maintainers"
+  publisher: "Public Domain Press"
+  date: "2026"
+  rights: "CC0 1.0 Universal — public domain dedication"
+  language: "en"
+  # No cover page: a manual opens on its table of contents.
+  titlepage: false
+  metadata:
+    keywords: "manual, verification, evidence, fictional device"
+    subject: "Example manual for the pandoc-pdf toolkit"
+
+input:
+  chapters_dir: "chapters"
+  glob: "*.md"
+  order: natural
+  # The third input strategy: an explicit reading order, appendix last.
+  explicit_files:
+    - "01-overview.md"
+    - "02-installation.md"
+    - "03-operation.md"
+    - "04-error-codes.md"
+    - "05-maintenance.md"
+    - "06-appendix.md"
+
+output:
+  dir: "../.output/manual"
+  # An explicit name instead of the slug of the title.
+  file_prefix: "honest-machine-manual"
+  suffix: "${date:YYYYMMDD}"
+  # No merged Markdown: a manual ships as a PDF and nothing else.
+  keep_merged_markdown: false
+
+pandoc:
+  pdf_engine: xelatex
+  toc: true
+  toc_depth: 3
+  number_sections: true
+  resource_path:
+    - "chapters"
+
+filters:
+  emoji:
+    enabled: true
+    emoji_dir: "../.output/emoji"
+    include_ballot_icons: true
+  mermaid:
+    enabled: true
+    output_dir: "../.output/mermaid"
+    background: "transparent"
+  extra_lua_filters: []
+
+runtime:
+  required_commands:
+    - pandoc
+    - xelatex
+    - python3
+    - curl
+    - mmdc
+  strict: true
+
+compat:
+  legacy_clearpage_between_h1: true

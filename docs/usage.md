@@ -15,6 +15,20 @@ This guide explains how to consume the toolkit from any repository.
 
 > Recommendation: always run `pandoc-pdf doctor` before `render`.
 
+## 1.1) Examples in this repository
+
+Each example is runnable and demonstrates a different corner of the contract, so
+together they cover it instead of repeating it:
+
+| Example | What it shows |
+| --- | --- |
+| `examples/ohmyfake/` | Defaults: `glob` plus `order: natural`, `toc_depth: 2`, a cover built from `document.*`, merged Markdown kept, the name as a slug of the title |
+| `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `titlepage: false`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
+| `examples/test/` | The smallest valid configuration |
+
+`examples/toPDF.sh` renders all three. The content is original and released under
+CC0: it is there to exercise the toolkit, not to be read as product documentation.
+
 ## 2) Configuration contract
 
 Each consumer repository defines its own `pdf.config.yaml`.

@@ -13,3 +13,4 @@ fi
 
 "$PANDOC_PDF_BIN" render -c ohmyfake/pdf.config.yaml
 "$PANDOC_PDF_BIN" render -c test/pdf.config.yaml
+"$PANDOC_PDF_BIN" render -c manual/pdf.config.yaml
