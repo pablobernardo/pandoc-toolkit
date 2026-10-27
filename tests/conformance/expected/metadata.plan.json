@@ -28,6 +28,10 @@
       "fig-pos=!htbp",
       "--resource-path=<CASES>/chapters",
       "--metadata-file=<CASES>/assets/metadata.yaml",
+      "-V",
+      "babel-lang=spanish",
+      "--metadata",
+      "titlepage=true",
       "-o",
       "<CASES>/output/Conformance-recorded.pdf"
     ],

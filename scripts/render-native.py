@@ -32,6 +32,12 @@ ORDER_CHOICES = (ORDER_NATURAL, ORDER_ALPHABETICAL)
 
 DOCUMENT_VAR_FIELDS = ("title", "subtitle", "publisher", "author", "date", "rights")
 
+# babel wants a language name, the contract uses the code.
+BABEL_LANGS = {"en": "english", "es": "spanish", "pt": "portuguese", "gl": "galician"}
+# Spanish is what the template hardcoded before language existed, so it stays the
+# default: nobody's output changes unless they ask for another language.
+DEFAULT_BABEL_LANGUAGE = "spanish"
+
 PLAN_VERSION = 1
 
 MISSING_SVG = (
@@ -281,6 +287,19 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
             value = document.get(field)
             if isinstance(value, str) and value.strip():
                 cmd.extend(["-V", f"{field}={value}"])
+
+        # Free-form metadata is only meaningful when no metadata file wins (D5).
+        extra_metadata = document.get("metadata")
+        if isinstance(extra_metadata, dict):
+            for key, value in extra_metadata.items():
+                cmd.extend(["--metadata", f"{key}={value}"])
+
+    # Language and the cover switch are typesetting decisions, not cover text, so
+    # they apply even when a metadata file provides the title page.
+    language = str(document.get("language") or "").strip()
+    cmd.extend(["-V", f"babel-lang={BABEL_LANGS.get(language, DEFAULT_BABEL_LANGUAGE)}"])
+    titlepage = document.get("titlepage", True)
+    cmd.extend(["--metadata", "titlepage=true" if titlepage is not False else "titlepage=false"])
     cmd.extend(["-o", str(pdf_out)])
 
     return {

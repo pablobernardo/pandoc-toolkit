@@ -1,7 +1,11 @@
 \documentclass[11pt]{article}
 
 % ---- Language & encoding / fonts ----
+$if(babel-lang)$
+\usepackage[$babel-lang$]{babel}
+$else$
 \usepackage[spanish]{babel}
+$endif$
 \usepackage{pifont} % para \checkmark, \ding, etc.
 
 % ---- Strikethrough (for Markdown ~~text~~) ----
@@ -174,7 +178,11 @@ $endif$
 
 % ---- Title (cover) page ----
 \newif\iftitlepage
+$if(titlepage)$
 \titlepagetrue
+$else$
+\titlepagefalse
+$endif$
 \newcommand{\doTitlePage}{%
 \begin{titlepage}
 \centering

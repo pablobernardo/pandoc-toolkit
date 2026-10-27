@@ -31,6 +31,10 @@
       "--resource-path=<CASES>/chapters:<CASES>/assets",
       "-V",
       "title=Conformance",
+      "-V",
+      "babel-lang=spanish",
+      "--metadata",
+      "titlepage=true",
       "-o",
       "<CASES>/output/Conformance-recorded.pdf"
     ],
