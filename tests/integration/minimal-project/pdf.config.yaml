@@ -25,7 +25,6 @@ pandoc:
   toc: false
   toc_depth: 2
   number_sections: false
-  template: "templates/default.tex"
   metadata_file: ""
   resource_path:
     - "chapters"
