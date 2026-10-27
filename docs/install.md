@@ -152,16 +152,11 @@ If it returns `Doctor OK`, the environment is ready.
 pandoc-pdf validate-config -c examples/ohmyfake/pdf.config.yaml
 ```
 
-## 7) OpenCode integration (models)
+## 7) OpenCode integration
 
-So that models use the command correctly:
-
-1. Make sure `pandoc-pdf` is on the PATH of the environment where OpenCode runs.
-2. State in the project instructions that the official flow is:
-   - `pandoc-pdf doctor`
-   - `pandoc-pdf validate-config -c <config>`
-   - `pandoc-pdf render -c <config>`
-3. Avoid invoking local legacy scripts directly from prompts.
+Making a model use the CLI consistently is one procedure, so it lives in one
+place: see *OpenCode integration* in `docs/usage.md`. The short version is that
+`pandoc-pdf` must be on the `PATH` and the repository instructions must say so.
 
 ## Note on the current state
 

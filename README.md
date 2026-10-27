@@ -8,18 +8,12 @@ Agnostic toolkit for generating PDFs with Pandoc via a CLI (`pandoc-pdf`) using 
 ## Main commands
 
 ```bash
-pandoc-pdf --version
-pandoc-pdf info
-pandoc-pdf locale show
-pandoc-pdf locale set es
-pandoc-pdf locale set --project es
-pandoc-pdf update --check
-pandoc-pdf update
-pandoc-pdf update --to v1.2.3
-pandoc-pdf doctor
-pandoc-pdf validate-config -c pdf.config.yaml
-pandoc-pdf render -c pdf.config.yaml [--dry-run] [--json]
+pandoc-pdf doctor                              # check the local toolchain
+pandoc-pdf validate-config -c pdf.config.yaml  # validate a configuration
+pandoc-pdf render -c pdf.config.yaml           # produce the PDF
 ```
+
+`pandoc-pdf --help` lists every command; `docs/usage.md` documents them.
 
 ## Quick onboarding
 
@@ -100,14 +94,10 @@ The full index, with one line per document and the question it answers, is
 [`docs/usage.md`](docs/usage.md) and
 [`docs/architecture.md`](docs/architecture.md).
 
-## Repository housekeeping
+## Contributing
 
-To keep the toolkit clean and reusable:
-
-- **Do not** add local system artifacts (`.DS_Store`, etc.).
-- **Do not** reintroduce legacy scripts coupled to the consumer repository.
-- Always use the official entrypoint: `bin/pandoc-pdf`.
-- Keep examples and docs neutral (no private data or client paths).
+Setup, tests, commit conventions and the rules that keep this toolkit reusable are
+in `CONTRIBUTING.md`.
 
 ## Author
 
