@@ -29,6 +29,7 @@ marked with an arrow.
 | [`../AGENTS.md`](../AGENTS.md) | The stable rules: contract, compatibility, language policy, where to change what. |
 | [`../CONTEXT.md`](../CONTEXT.md) | Current operational state and the decisions behind it. |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | What changed in each version. A record, not current documentation. |
+| [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | How to set up, test and submit a change. |
 | [`../.github/SECURITY.md`](../.github/SECURITY.md) | How to report a vulnerability. |
 | [`../.agents/skills/`](../.agents/skills/) | Operating skills for agents, versioned and reviewed in pull requests. |
 
