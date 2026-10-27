@@ -209,7 +209,7 @@ object key order is ignored, but array order and all non-path values are checked
 - ❌ Guaranteed technical drift
 - ❌ High future maintenance cost
 
-### Decisions taken during 1.2.0
+### Decisions taken during 2.0.0
 
 | # | Decision |
 | --- | --- |
@@ -220,7 +220,7 @@ object key order is ignored, but array order and all non-path values are checked
 | D5 | Metadata precedence: when `pandoc.metadata_file` is set it wins and no `-V` variables are passed; when empty, the `document.*` fields become template variables. |
 | D6 | The plan shape (`plan_version: 1`) is frozen as is: `cwd: null` (inherited), `env` with the toolkit's four variables, and `prepare_argv[0]` as the neutral `python3` token. Any shape change requires `plan_version: 2`. |
 | D7 | `defaults/default.yaml` removed: the schema is the single source of truth. |
-| D8 | Release postponed: 1.2.0 is on `main` with no tag. Creating the tag triggers `release.yml`, a path no pull request exercises. |
+| D8 | Release postponed during the work and cut as **2.0.0**: a major release, because the output file name, the default typesetting language and the update path changed. Creating the tag triggers `release.yml`, a path no pull request exercises. |
 | D9 | The repository is English, including this file and `odd/`; only the catalogs are translated. |
 | D10 | Every action is pinned to a commit SHA with its tag in a comment. Dependabot tracks the `github-actions` ecosystem weekly, so the pins do not rot; a tag is a mutable pointer, and these workflows handle the token that publishes releases. |
 | D11 | `mermaid-cli` is a **tested** version, not an enforced one: 10.9.1 is what the toolkit installs and CI renders with, any other version is accepted when `doctor` renders its test diagram, and this repository never pins a user's system-wide install. See `docs/dependency-policy.md`. |

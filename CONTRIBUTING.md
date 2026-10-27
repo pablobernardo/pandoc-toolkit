@@ -116,7 +116,7 @@ Current suite coverage:
 - render errors for non-existent `explicit_files`
 - render plan: valid JSON, no side effects, readable `--dry-run`
 - emoji filter: plain headings do not emit `\\texorpdfstring`
-- contract behavior (since 1.2.0):
+- contract behavior (since 2.0.0):
   - `input.order` with `natural` and `alphabetical` values, and rejection of an unsupported value naming the field and the supported values
   - `output.keep_merged_markdown` set to `false` (deletes the `.md`) and `true` (keeps it), with a PDF produced in both cases
   - `document.*` reaches pandoc as `-V` variables, and a `pandoc.metadata_file` takes precedence over them

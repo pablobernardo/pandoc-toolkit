@@ -202,7 +202,7 @@ pandoc-pdf render -c pdf.config.yaml --dry-run --json
 ```json
 {
   "plan_version": 1,
-  "toolkit": { "version": "1.2.0", "root": "/path/toolkit" },
+  "toolkit": { "version": "2.0.0", "root": "/path/toolkit" },
   "config": { "path": "/path/pdf.config.yaml", "base_dir": "/path/project" },
   "chapters": ["/path/project/chapters/chapter-2.md"],
   "pandoc": {

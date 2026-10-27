@@ -15,8 +15,9 @@
 - **CI is not running**: the account has no Actions minutes, so every job fails to
   start. Until it does, `make gate` output pasted into the pull request is the
   evidence a maintainer accepts.
-- Toolkit version (`VERSION`): **1.2.0**, with **no tag**; the release is
-  postponed by decision D8, recorded in `docs/architecture.md`.
+- Toolkit version (`VERSION`): **2.0.0**, with **no tag yet**. The release is
+  prepared and the tag waits for the repository to be public, because
+  `release.yml` needs Actions minutes to build the artifacts (D8).
 - Local `python3` has no PyYAML, so the Ruby YAML path is the one exercised here,
   and the Python one runs where PyYAML exists. Neither environment exercises both
   (`docs/dependency-policy.md`).

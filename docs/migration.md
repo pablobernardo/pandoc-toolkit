@@ -47,9 +47,9 @@ This allows progressive adoption without breaking the team's habits.
 - [ ] Render reproducible locally and in CI.
 - [ ] Legacy wrapper documented (if applicable) and a retirement plan defined.
 
-## Upgrading 1.1.x → 1.2.0
+## Upgrading 1.1.x → 2.0.0
 
-1.2.0 is on `main` but not yet released (there is no tag for it yet). Minor bump. **No change to `pdf.config.yaml` is required**: the five affected fields were already required by the schema and none has been removed or renamed, so a valid 1.1.x config still validates on 1.2.0.
+2.0.0 is a **major** release because defaults changed, not because the contract did: **no change to `pdf.config.yaml` is required**. The five affected fields were already required by the schema, none has been removed or renamed, and a valid 1.1.x configuration still validates. What changes is what the renderer does with it, and every section below says exactly what.
 
 Behavior changes you can observe when upgrading:
 
@@ -79,7 +79,7 @@ Quick wins included in the same version:
 
 `filters/emoji.lua` no longer rewraps text without emojis. If your minimal template did not load `graphicx` and `hyperref`, add them: they are needed for images and for headings with formatting. Before the change, any heading emitted `\\texorpdfstring` and the render failed even when there were no emojis.
 
-## The default language is English (ships with 1.2.0)
+## The default language is English (ships with 2.0.0)
 
 Hyphenation and typographic conventions used to be Spanish by default, because
 that was the language of the first consuming repository. They are English now.
@@ -95,7 +95,7 @@ Supported values are `en`, `es`, `pt` and `gl`. Without this line, a Spanish
 document hyphenates as English: the words still render, and the line breaks are
 wrong in a way that is easy to miss and unpleasant to read.
 
-## Output file names changed (ships with 1.2.0)
+## Output file names changed (ships with 2.0.0)
 
 The PDF used to be named after `document.title`, spaces and accents included:
 `Project Technical Documentation-20260101.pdf`. It is now a slug of
@@ -111,9 +111,9 @@ What to do if a script, a link or an index depends on the name:
 Nothing else changes: the suffix, the directory and the merged Markdown follow
 the same name.
 
-## Removal of the Ruby renderer (ships with 1.2.0)
+## Removal of the Ruby renderer (ships with 2.0.0)
 
-As of 1.2.0, `scripts/render-native.rb` no longer exists. The only renderer is `scripts/render-native.py`, which `pandoc-pdf render` always invokes.
+As of 2.0.0, `scripts/render-native.rb` no longer exists. The only renderer is `scripts/render-native.py`, which `pandoc-pdf render` always invokes.
 
 - **You do not have to do anything** if you use the CLI (`pandoc-pdf render -c ...`).
 - If you invoked the script directly, change the call to `python3 scripts/render-native.py <config> <toolkit_root> [--plan|--plan-json]` and keep a YAML parser available: PyYAML, or Ruby with stdlib YAML (the renderer uses it as a fallback).
