@@ -18,8 +18,12 @@ except Exception:
             return fallback
 
 
-NOTO_BASE_URL = "https://raw.githubusercontent.com/googlefonts/noto-emoji/main/svg"
+NOTO_BASE_URL = "https://raw.githubusercontent.com/googlefonts/noto-emoji/main/2D/svg"
 TWEMOJI_BASE_URL = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg"
+# The allowlist below must stay in step with these bases: when upstream moves a
+# directory, the download is refused and every emoji fails silently.
+NOTO_PATH_PREFIX = "/googlefonts/noto-emoji/main/2D/svg/"
+TWEMOJI_PATH_PREFIX = "/gh/twitter/twemoji@14.0.2/assets/svg/"
 ALLOWED_HOSTS = {"raw.githubusercontent.com", "cdn.jsdelivr.net"}
 NAME_PATTERN = re.compile(r"^[0-9a-f]+(?:-[0-9a-f]+)*$")
 
@@ -108,19 +112,21 @@ def extract_emoji_names(text: str) -> set[str]:
     return names
 
 
-def download(url: str, dest: Path) -> bool:
+def allowed_url(url: str) -> bool:
+    """Only the two pinned asset sources this tool knows how to fetch."""
     parsed = urlparse(url)
-    if parsed.scheme != "https":
+    if parsed.scheme != "https" or parsed.netloc not in ALLOWED_HOSTS:
         return False
-    if parsed.netloc not in ALLOWED_HOSTS:
-        return False
-
     if parsed.netloc == "raw.githubusercontent.com":
-        if not parsed.path.startswith("/googlefonts/noto-emoji/main/svg/"):
-            return False
-    elif parsed.netloc == "cdn.jsdelivr.net":
-        if not parsed.path.startswith("/gh/twitter/twemoji@14.0.2/assets/svg/"):
-            return False
+        return parsed.path.startswith(NOTO_PATH_PREFIX)
+    if parsed.netloc == "cdn.jsdelivr.net":
+        return parsed.path.startswith(TWEMOJI_PATH_PREFIX)
+    return False
+
+
+def download(url: str, dest: Path) -> bool:
+    if not allowed_url(url):
+        return False
 
     try:
         result = subprocess.run(

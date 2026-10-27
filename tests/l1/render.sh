@@ -890,3 +890,31 @@ MD
   rm -rf "$tmpbin" "$dir"
   rm -f "$md" "$out"
 }
+
+run_emoji_source_allowlist_test() {
+  local out code
+  out="$(mktemp)"
+
+  set +e
+  "${REAL_PYTHON3}" - "${ROOT_DIR}/scripts/prepare-emojis.py" >"$out" 2>&1 <<'PY'
+import importlib.util
+import sys
+
+spec = importlib.util.spec_from_file_location("prepare_emojis", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+for base, label in ((module.NOTO_BASE_URL, "noto"), (module.TWEMOJI_BASE_URL, "twemoji")):
+    assert module.allowed_url(base + "/probe.svg"), f"{label} base URL is refused by its own allowlist"
+assert not module.allowed_url("https://raw.githubusercontent.com/evil/repo/main/2D/svg/x.svg"), \
+    "a foreign repository must be refused"
+assert not module.allowed_url("http://raw.githubusercontent.com/googlefonts/noto-emoji/main/2D/svg/x.svg"), \
+    "plain http must be refused"
+PY
+  code=$?
+  set -e
+
+  assert_exit_code "0" "$code" "each asset base URL is accepted by its own allowlist (an upstream move cannot pass silently)"
+  cat "$out" | head -3
+  rm -f "$out"
+}
