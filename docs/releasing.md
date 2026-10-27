@@ -27,7 +27,10 @@ git push github v2.0.0
 The tag triggers `.github/workflows/release.yml`, which:
 
 - builds `dist/pandoc-pdf_{darwin,linux}_{amd64,arm64}.tar.gz` and
-  `dist/checksums.txt` with `scripts/package-release.sh`;
+  `dist/checksums.txt` with `scripts/package-release.sh`. The artifact is bash and
+  Python, so it is platform-independent: the four names are aliases of the same
+  tarball and their checksums are identical by design, which is worth knowing
+  before treating a matching hash as a broken build;
 - creates or updates the GitHub release for that tag, with generated notes;
 - fails if any expected asset is missing.
 
