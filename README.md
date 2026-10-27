@@ -94,17 +94,11 @@ gh run view --log
 
 ## Documentation
 
-- `docs/install.md` — installation and PATH
-- `docs/usage.md` — operational usage and tests
-- `docs/migration.md` — migration from legacy setups
-- `docs/architecture.md` — architecture and tradeoffs
-- `docs/releasing.md` — how a version is cut and published
-- `docs/dependency-policy.md` — dependency and update policy
-- `docs/i18n.md` — CLI internationalization strategy
-- `docs/design/` — design records for shipped features
-- `.agents/skills/` — operative skills for agents (versioned and reviewed in PRs)
-- `CONTEXT.md` — current operational state of the project
-- `.github/SECURITY.md` — security policy and vulnerability reporting
+The full index, with one line per document and the question it answers, is
+[`docs/README.md`](docs/README.md). The three starting points are
+[`docs/install.md`](docs/install.md),
+[`docs/usage.md`](docs/usage.md) and
+[`docs/architecture.md`](docs/architecture.md).
 
 ## Repository housekeeping
 
