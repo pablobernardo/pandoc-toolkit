@@ -16,7 +16,7 @@
   start. Until it does, `make gate` output pasted into the pull request is the
   evidence a maintainer accepts.
 - Toolkit version (`VERSION`): **1.2.0**, with **no tag**; the release is
-  postponed by decision (D8).
+  postponed by decision D8, recorded in `docs/architecture.md`.
 - Local `python3` has no PyYAML, so the Ruby YAML path is the one exercised here,
   and the Python one runs where PyYAML exists. Neither environment exercises both
   (`docs/dependency-policy.md`).
@@ -29,29 +29,13 @@ Not restated here: a second copy of a description is a second place to be wrong.
 | --- | --- |
 | CLI surface and behaviour | `docs/usage.md`; the command list is `--help` |
 | The contract and its rules | 'Configuration contract' in `docs/architecture.md`, and the schema itself |
+| Numbered decisions D1 to D12 | 'Decision record' in `docs/architecture.md` |
 | Render pipeline and the plan | 'Toolkit structure' and 'Render pipeline' in `docs/architecture.md` |
 | Security posture and CI gates | `docs/releasing.md`, `.github/SECURITY.md` |
 | Suite and CI levels | `CONTRIBUTING.md` |
 | Pinned dependencies and blind spots | `docs/dependency-policy.md` |
 | Internationalisation | `docs/i18n.md` |
 | How a version is cut | `docs/releasing.md` |
-
-## Decisions taken during 1.2.0
-
-| # | Decision |
-| --- | --- |
-| D1 | A single renderer (Python). Ruby stays only as an optional YAML parser in a subprocess; removing it entirely would require making PyYAML mandatory, and that was decided **against**. |
-| D2 | `runtime.strict: false` waives auxiliary dependencies, never the TeX engine: without an engine there is no PDF, so it always fails. |
-| D3 | `validate-config` rejects a missing `pandoc.metadata_file` and validates `input.order` against its `enum`. The validator implements a documented JSON Schema subset and a test fails if the schema uses any other keyword. |
-| D4 | Shell i18n unified in `scripts/i18n.sh`: catalog loaded once, no fork per message, one precedence chain for both entry points. |
-| D5 | Metadata precedence: when `pandoc.metadata_file` is set it wins and no `-V` variables are passed; when empty, the `document.*` fields become template variables. |
-| D6 | The plan shape (`plan_version: 1`) is frozen as is: `cwd: null` (inherited), `env` with the toolkit's four variables, and `prepare_argv[0]` as the neutral `python3` token. Any shape change requires `plan_version: 2`. |
-| D7 | `defaults/default.yaml` removed: the schema is the single source of truth. |
-| D8 | Release postponed: 1.2.0 is on `master` with no tag. Creating the tag triggers `release.yml`, a path no pull request exercises. |
-| D9 | The repository is English, including this file and `odd/`; only the catalogs are translated. |
-| D10 | Every action is pinned to a commit SHA with its tag in a comment. Dependabot tracks the `github-actions` ecosystem weekly, so the pins do not rot; a tag is a mutable pointer, and these workflows handle the token that publishes releases. |
-| D11 | `mermaid-cli` is a **tested** version, not an enforced one: 10.9.1 is what the toolkit installs and CI renders with, any other version is accepted when `doctor` renders its test diagram, and this repository never pins a user's system-wide install. See `docs/dependency-policy.md`. |
-| D12 | `pandoc.metadata_file` is optional: the legacy side file stays supported and wins when present, but a configuration can now carry the cover through `document.*`, plus `document.language`, `document.titlepage` and a free-form `document.metadata` map. The file name still comes from `document.title`, so no consumer's output is renamed. |
 
 ## Native review (RDD) — a size threshold, not a broken provider
 

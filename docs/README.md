@@ -27,7 +27,7 @@ marked with an arrow.
 | --- | --- |
 | [`../README.md`](../README.md) | What the project is, and the shortest path to a first PDF. |
 | [`../AGENTS.md`](../AGENTS.md) | The stable rules: contract, compatibility, language policy, where to change what. |
-| [`../CONTEXT.md`](../CONTEXT.md) | Current operational state and the decisions behind it. |
+| [`../CONTEXT.md`](../CONTEXT.md) | What is true today: current state, pending decisions, follow-ups and risks. |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | What changed in each version. A record, not current documentation. |
 | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | How to set up, test and submit a change. |
 | [`../.github/SECURITY.md`](../.github/SECURITY.md) | How to report a vulnerability. |
