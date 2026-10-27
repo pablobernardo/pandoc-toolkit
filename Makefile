@@ -43,3 +43,10 @@ render:
 
 test:
 	bash tests/run.sh
+
+# Everything a pull request is verified with, runnable without CI.
+gate:
+	bash tests/run.sh
+	python3 scripts/check-i18n.py
+	python3 scripts/check-docs.py
+	python3 scripts/check-plan-conformance.py
