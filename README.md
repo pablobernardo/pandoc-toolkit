@@ -5,6 +5,28 @@
 
 Agnostic toolkit for generating PDFs with Pandoc via a CLI (`pandoc-pdf`) using declarative configuration per consumer repository (`pdf.config.yaml`).
 
+## Install
+
+On macOS or Linux, no clone and no token:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/install.sh | bash
+```
+
+It installs the latest release into `~/.local/share/pandoc-pdf/versions/<tag>` behind a
+`current` pointer and links `pandoc-pdf` into `~/.local/bin`; `pandoc-pdf update`
+replaces it later. Piping a script into a shell is a choice, not a requirement, so if
+you would rather read it first:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/install.sh
+less install.sh
+bash install.sh
+```
+
+Then `pandoc-pdf doctor` checks that `pandoc`, a TeX engine and `mmdc` are where the
+toolkit expects them. System dependencies are in `docs/install.md`.
+
 ## Main commands
 
 ```bash
@@ -15,7 +37,10 @@ pandoc-pdf render -c pdf.config.yaml           # produce the PDF
 
 `pandoc-pdf --help` lists every command; `docs/usage.md` documents them.
 
-## Quick onboarding
+## Work on the toolkit
+
+For end users, `## Install` above is the whole story. For developing the toolkit
+itself, clone it and:
 
 ```bash
 make bootstrap
