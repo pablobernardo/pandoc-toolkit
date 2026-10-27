@@ -2,7 +2,7 @@
 
 This guide gets the `pandoc-pdf` command available for humans, CI and agents (OpenCode).
 
-## 0) Quick install from a release (recommended for end users)
+## Quick install from a release (recommended for end users)
 
 Without cloning the repository:
 
@@ -23,7 +23,7 @@ export PANDOC_PDF_UPDATE_TOKEN=<your_token>
 # or GH_TOKEN
 ```
 
-## 1) Development installation (from the repo)
+## Development installation (from the repo)
 
 From the repository root:
 
@@ -53,7 +53,7 @@ bash scripts/bootstrap.sh --yes          # non-interactive equivalent
 bash scripts/bootstrap.sh --ci           # CI equivalent
 ```
 
-## 2) Install from a local repository into the managed layout
+## Install from a local repository into the managed layout
 
 Once the repo is cloned, you can install it into the same layout used by `install-release` (so that `update` works correctly) and additionally create the development symlink:
 
@@ -64,7 +64,7 @@ make install-local-dev      # installs into the managed layout + symlink pandoc-
 
 This copies the contents of the repo to `~/.local/share/pandoc-pdf/versions/<VERSION>` and creates the corresponding symlinks. With `install-local-dev`, `pandoc-pdf-dev` also becomes available, pointing at the development entrypoint `bin/pandoc-pdf` of the repo.
 
-## 3) System dependencies
+## System dependencies
 
 Install at least:
 
@@ -109,9 +109,9 @@ python3 -m pip install pyyaml
 
 Option B — use Ruby with stdlib YAML (it ships by default on macOS).
 
-## 4) Put the CLI on PATH (development)
+## Put the CLI on PATH (development)
 
-> **For end users:** use `make install-local` (section 2) instead of this section.
+> **For end users:** use `make install-local`, described in 'Install from a local repository', instead of this section.
 
 This section describes installation for **local development** (from the cloned repo):
 
@@ -138,7 +138,7 @@ Persistence (zsh):
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
 ```
 
-## 5) Verify the installation
+## Verify the installation
 
 ```bash
 pandoc-pdf doctor
@@ -146,13 +146,13 @@ pandoc-pdf doctor
 
 If it returns `Doctor OK`, the environment is ready.
 
-## 6) Try it with the example config
+## Try it with the example config
 
 ```bash
 pandoc-pdf validate-config -c examples/ohmyfake/pdf.config.yaml
 ```
 
-## 7) OpenCode integration
+## OpenCode integration
 
 Making a model use the CLI consistently is one procedure, so it lives in one
 place: see *OpenCode integration* in `docs/usage.md`. The short version is that
