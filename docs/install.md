@@ -16,13 +16,6 @@ This installs into the managed layout:
 - `~/.local/share/pandoc-pdf/current`
 - `~/.local/bin/pandoc-pdf`
 
-If the releases repository is private, export a token before installing:
-
-```bash
-export PANDOC_PDF_UPDATE_TOKEN=<your_token>
-# or GH_TOKEN
-```
-
 ## Development installation (from the repo)
 
 From the repository root:

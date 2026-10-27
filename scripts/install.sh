@@ -7,7 +7,6 @@ API_BASE="${PANDOC_PDF_RELEASE_API_BASE:-https://api.github.com/repos/${OWNER}/$
 
 INSTALL_BIN_DIR="${PANDOC_PDF_INSTALL_DIR:-${HOME}/.local/bin}"
 MANAGED_HOME="${PANDOC_PDF_INSTALL_HOME:-${HOME}/.local/share/pandoc-pdf}"
-TOKEN="${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}"
 
 if ! command -v curl >/dev/null 2>&1; then
   echo "❌ install requires curl" >&2
@@ -30,22 +29,11 @@ esac
 artifact="pandoc-pdf_${os}_${arch}.tar.gz"
 
 curl_json() {
-  local url="$1"
-  if [[ -n "$TOKEN" ]]; then
-    curl -fsSL -H "Authorization: Bearer ${TOKEN}" "$url"
-  else
-    curl -fsSL "$url"
-  fi
+  curl -fsSL "$1"
 }
 
 download_to() {
-  local url="$1"
-  local out="$2"
-  if [[ -n "$TOKEN" ]]; then
-    curl -fsSL -H "Authorization: Bearer ${TOKEN}" "$url" -o "$out"
-  else
-    curl -fsSL "$url" -o "$out"
-  fi
+  curl -fsSL "$1" -o "$2"
 }
 
 release_json="$(curl_json "${API_BASE}/latest")"

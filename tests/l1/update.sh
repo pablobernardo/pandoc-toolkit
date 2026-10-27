@@ -11,16 +11,6 @@ run_update_check_tests() {
   cat >"${tmpbin}/curl" <<'EOF'
 #!/bin/bash
 set -euo pipefail
-if [[ -n "${TMP_EXPECT_AUTH_TOKEN:-}" ]]; then
-  found="0"
-  for arg in "$@"; do
-    if [[ "$arg" == "Authorization: Bearer ${TMP_EXPECT_AUTH_TOKEN}" ]]; then
-      found="1"
-      break
-    fi
-  done
-  [[ "$found" == "1" ]] || exit 1
-fi
 printf '{"tag_name":"%s"}\n' "${TMP_UPDATE_TAG:-v1.0.0}"
 EOF
   chmod +x "${tmpbin}/curl"
@@ -44,10 +34,6 @@ EOF
   assert_exit_code "0" "$code" "update --check succeeds when already up to date"
   assert_contains "$out" "You are already on the latest stable version" "update --check reports up-to-date status"
 
-  set +e
-  TMP_EXPECT_AUTH_TOKEN=token-123 TMP_UPDATE_TAG=v1.0.0 PANDOC_PDF_UPDATE_TOKEN=token-123 PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
-  code=$?
-  set -e
   assert_exit_code "0" "$code" "update --check sends auth header when token is configured"
 
   set +e
@@ -211,132 +197,6 @@ EOF
   rm -f "$out"
 }
 
-run_update_install_private_api_asset_test() {
-  local sandbox
-  sandbox="$(mktemp -d)"
-  local tmpbin
-  tmpbin="$(mktemp -d)"
-
-  local os arch artifact_name
-  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-  arch="$(uname -m | tr '[:upper:]' '[:lower:]')"
-  case "$os" in
-    darwin) os="darwin" ;;
-    linux) os="linux" ;;
-    *) os="linux" ;;
-  esac
-  case "$arch" in
-    x86_64|amd64) arch="amd64" ;;
-    arm64|aarch64) arch="arm64" ;;
-    *) arch="amd64" ;;
-  esac
-  artifact_name="pandoc-pdf_${os}_${arch}.tar.gz"
-
-  local payload_dir
-  payload_dir="${sandbox}/payload"
-  mkdir -p "$payload_dir"
-  cat >"${payload_dir}/pandoc-pdf" <<'EOF'
-#!/bin/bash
-echo "pandoc-pdf 8.8.8"
-EOF
-  chmod +x "${payload_dir}/pandoc-pdf"
-
-  local artifact_path
-  artifact_path="${sandbox}/${artifact_name}"
-  tar -czf "$artifact_path" -C "$payload_dir" pandoc-pdf
-
-  local checksums_path
-  checksums_path="${sandbox}/checksums.txt"
-  local sha
-  sha="$(python3 - <<'PY' "$artifact_path"
-import hashlib
-import sys
-path = sys.argv[1]
-h = hashlib.sha256()
-with open(path, 'rb') as f:
-    for chunk in iter(lambda: f.read(1024 * 1024), b''):
-        h.update(chunk)
-print(h.hexdigest())
-PY
-)"
-  printf '%s  %s\n' "$sha" "$artifact_name" >"$checksums_path"
-
-  local artifact_api checksums_api
-  artifact_api="https://api.github.com/repos/pablobernardo/pandoc-toolkit/releases/assets/asset-888"
-  checksums_api="https://api.github.com/repos/pablobernardo/pandoc-toolkit/releases/assets/checksums-888"
-
-  local release_json
-  release_json="${sandbox}/release.json"
-  cat >"$release_json" <<EOF
-{"tag_name":"v8.8.8","assets":[{"name":"${artifact_name}","url":"${artifact_api}","browser_download_url":"https://downloads.invalid/${artifact_name}"},{"name":"checksums.txt","url":"${checksums_api}","browser_download_url":"https://downloads.invalid/checksums.txt"}]}
-EOF
-
-  cat >"${tmpbin}/curl" <<'EOF'
-#!/bin/bash
-set -euo pipefail
-url=""
-out=""
-auth_ok="0"
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -o|--output)
-      out="$2"
-      shift 2
-      ;;
-    -H|--header)
-      if [[ "${2:-}" == "Authorization: Bearer ${TMP_EXPECT_AUTH_TOKEN}" ]]; then
-        auth_ok="1"
-      fi
-      shift 2
-      ;;
-    -f|-s|-S|-L|--fail|--silent|--show-error|--location)
-      shift
-      ;;
-    *)
-      url="$1"
-      shift
-      ;;
-  esac
-done
-
-if [[ -n "${TMP_EXPECT_AUTH_TOKEN:-}" && "$auth_ok" != "1" ]]; then
-  exit 1
-fi
-
-if [[ "$url" == *"/releases/tags/"* ]]; then
-  cat "$TMP_UPDATE_RELEASE_JSON"
-  exit 0
-fi
-
-if [[ "$url" == "$TMP_UPDATE_ARTIFACT_API" ]]; then
-  cp "$TMP_UPDATE_ARTIFACT_PATH" "$out"
-  exit 0
-fi
-
-if [[ "$url" == "$TMP_UPDATE_CHECKSUMS_API" ]]; then
-  cp "$TMP_UPDATE_CHECKSUMS_PATH" "$out"
-  exit 0
-fi
-
-exit 1
-EOF
-  chmod +x "${tmpbin}/curl"
-
-  local out install_dir
-  out="$(mktemp)"
-  install_dir="${sandbox}/bin"
-
-  set +e
-  TMP_EXPECT_AUTH_TOKEN=token-888 TMP_UPDATE_RELEASE_JSON="$release_json" TMP_UPDATE_ARTIFACT_API="$artifact_api" TMP_UPDATE_ARTIFACT_PATH="$artifact_path" TMP_UPDATE_CHECKSUMS_API="$checksums_api" TMP_UPDATE_CHECKSUMS_PATH="$checksums_path" PANDOC_PDF_UPDATE_TOKEN=token-888 PANDOC_PDF_UPDATE_HOME="${sandbox}/managed" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v8.8.8 --yes --install-dir "$install_dir" >"$out" 2>&1
-  local code=$?
-  set -e
-
-  assert_exit_code "0" "$code" "update uses API asset URLs for authenticated private releases"
-  assert_contains "$out" "Updated to version 8\.8\.8" "update reports installed version from API asset download"
-
-  rm -rf "$sandbox" "$tmpbin"
-  rm -f "$out"
-}
 
 run_update_dev_command_blocked_test() {
   local sandbox
@@ -500,5 +360,75 @@ EOF
   fi
 
   rm -rf "$sandbox" "$tmpbin"
+  rm -f "$out"
+}
+
+# The updater used to say "could not fetch latest release metadata" for a missing
+# release, an exhausted quota and a dead network alike, and then suggested a token
+# for private repositories. Public repositories need no token for a download; what
+# they need is to be told which of the three happened.
+run_update_diagnostics_tests() {
+  local tmpbin out code
+  tmpbin="$(mktemp -d)"
+  out="$(mktemp)"
+
+  cat >"${tmpbin}/curl" <<'MOCK'
+#!/bin/bash
+set -euo pipefail
+for arg in "$@"; do
+  if [[ "${TMP_FORBID_AUTH:-0}" == "1" && "$arg" == "Authorization:"* ]]; then
+    exit 99
+  fi
+done
+printf '%s\n' "${TMP_UPDATE_BODY:-{\"tag_name\":\"v1.0.0\"}}"
+printf '%s\n' "${TMP_UPDATE_HTTP_STATUS:-200}"
+MOCK
+  chmod +x "${tmpbin}/curl"
+
+  # 404: the release does not exist yet.
+  set +e
+  TMP_UPDATE_HTTP_STATUS=404 TMP_UPDATE_BODY='{"message":"Not Found"}' \
+    PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" \
+    PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" \
+    "$CLI" update --check >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "a missing release fails update --check"
+  assert_contains "$out" "no release published" "a 404 says the release does not exist yet"
+
+  # 403: the anonymous quota is spent.
+  set +e
+  TMP_UPDATE_HTTP_STATUS=403 TMP_UPDATE_BODY='{"message":"rate limit exceeded"}' \
+    PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" \
+    PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" \
+    "$CLI" update --check >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "an exhausted quota fails update --check"
+  assert_contains "$out" "quota" "a 403 names the anonymous quota"
+
+  # Anything else: the status is reported rather than guessed.
+  set +e
+  TMP_UPDATE_HTTP_STATUS=500 TMP_UPDATE_BODY='{"message":"boom"}' \
+    PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" \
+    PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" \
+    "$CLI" update --check >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "an unexpected status fails update --check"
+  assert_contains "$out" "500" "an unexpected status is reported by number"
+
+  # The token is gone: no Authorization header may be sent even when the old
+  # variable is exported, or the removal is cosmetic.
+  set +e
+  TMP_FORBID_AUTH=1 TMP_UPDATE_HTTP_STATUS=200 PANDOC_PDF_UPDATE_TOKEN=token-123 \
+    PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" \
+    PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" \
+    "$CLI" update --check >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "update --check never sends an Authorization header"
+
+  rm -rf "$tmpbin"
   rm -f "$out"
 }

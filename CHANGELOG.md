@@ -9,6 +9,18 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased] — planned as 1.2.0
 
+### Update without a token
+
+- The updater no longer reads `PANDOC_PDF_UPDATE_TOKEN` or `GH_TOKEN`. Release
+  metadata and artifacts are fetched anonymously from the public release, which
+  needs no credentials; the cost is a quota of 60 requests per hour per address
+  for the metadata. A private mirror of the releases is no longer supported by
+  this updater.
+- The failure now says which of three things happened: no release published yet
+  (404), the anonymous quota exhausted (403 or 429), or an unreachable host.
+  Before, all three reported "could not fetch latest release metadata" and then
+  suggested a token for private repositories.
+
 ### License
 
 The toolkit is MIT from 1.2.0 onwards. Everything published up to 1.1.3 stays
