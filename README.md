@@ -101,7 +101,7 @@ in `CONTRIBUTING.md`.
 
 ## Built with Gentle AI
 
-The 1.2.0 refactor of this toolkit is being built with [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai#built-with-gentle-ai).
+The 2.0.0 refactor of this toolkit is being built with [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai#built-with-gentle-ai).
 
 <a href="https://github.com/Gentleman-Programming/gentle-ai">
   <img width="220" src="https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/docs/assets/brand/built-with-gentle-ai.png" alt="Built with Gentle-AI" />

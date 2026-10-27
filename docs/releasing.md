@@ -20,8 +20,8 @@ version: what is about to ship lives in `CHANGELOG.md`.
 ## Cutting it
 
 ```bash
-git tag -a v1.2.0 -m "pandoc-pdf 1.2.0"
-git push github v1.2.0
+git tag -a v2.0.0 -m "pandoc-pdf 2.0.0"
+git push github v2.0.0
 ```
 
 The tag triggers `.github/workflows/release.yml`, which:
