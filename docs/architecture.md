@@ -49,6 +49,8 @@ input:
 
 output:
   dir: "output"
+  # Optional: without it the name is a slug of document.title.
+  file_prefix: "report"
   suffix: "${date:YYYYMMDD}"
   keep_merged_markdown: true
 

@@ -79,6 +79,22 @@ Quick wins included in the same version:
 
 `filters/emoji.lua` no longer rewraps text without emojis. If your minimal template did not load `graphicx` and `hyperref`, add them: they are needed for images and for headings with formatting. Before the change, any heading emitted `\\texorpdfstring` and the render failed even when there were no emojis.
 
+## Output file names changed (ships with 1.2.0)
+
+The PDF used to be named after `document.title`, spaces and accents included:
+`Project Technical Documentation-20260101.pdf`. It is now a slug of
+`output.file_prefix` when that field is set, and a slug of the title otherwise:
+`project-technical-documentation-20260101.pdf`.
+
+What to do if a script, a link or an index depends on the name:
+
+1. Declare the name you want, without spaces: `output.file_prefix: "report"`
+   produces `report-<suffix>.pdf`.
+2. Or keep the slug of the title and update the reference.
+
+Nothing else changes: the suffix, the directory and the merged Markdown follow
+the same name.
+
 ## Removal of the Ruby renderer (ships with 1.2.0)
 
 As of 1.2.0, `scripts/render-native.rb` no longer exists. The only renderer is `scripts/render-native.py`, which `pandoc-pdf render` always invokes.

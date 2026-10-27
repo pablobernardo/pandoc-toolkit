@@ -55,7 +55,7 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 
 - With `pandoc.metadata_file` empty, the non-empty `title`, `subtitle`, `publisher`, `author`, `date` and `rights` fields are passed to pandoc as template variables (`-V field=value`) and fill the cover page of `templates/default.tex`.
 - With `pandoc.metadata_file` set, they are **not** passed: the metadata file takes precedence (see `docs/architecture.md` §2, rule 4 «Contract rules»).
-- `document.title` still determines the output file name (`title-<suffix>`); `output.file_prefix` is optional and only used as a fallback when the title is missing.
+- The output file name is a **slug**: `output.file_prefix` when declared, otherwise `document.title`. Lowercase, ASCII, dashes; accents are transliterated (`Informe Ñandú` becomes `informe-nandu`), so a name never needs quoting and can never escape the output directory.
 - `pandoc.metadata_file` is **optional**: without it, `document.*` is what reaches the template, so a project needs no side YAML file.
 - `document.language` (`en`, `es`, `pt`, `gl`) selects the babel language and applies even when a metadata file provides the cover. The default is the Spanish the template used to hardcode.
 - `document.titlepage` enables or disables the cover. It is a typesetting decision, so it also applies with a metadata file.

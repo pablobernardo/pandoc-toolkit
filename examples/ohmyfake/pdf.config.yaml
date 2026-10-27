@@ -22,7 +22,7 @@ input:
   explicit_files: []
 
 output:
-  # The file name comes from document.title, so it is "Oh my fake-latest.pdf".
+  # No file_prefix: the name is a slug of document.title, "oh-my-fake-latest.pdf".
   dir: "../.output/ohmyfake"
   suffix: "latest"
   keep_merged_markdown: true

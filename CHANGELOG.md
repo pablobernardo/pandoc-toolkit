@@ -23,6 +23,9 @@ after the 1.1.3 release and is **not published**.
   unconditional, which made the same key in a metadata file inert.
 - New `document.metadata` map for arbitrary Pandoc metadata (`keywords`,
   `subject`, any template variable), so those no longer need a side YAML file.
+- The output file name is now a slug of `output.file_prefix` when declared, and a
+  slug of `document.title` otherwise. It used to be the raw title, spaces and
+  accents included, while `file_prefix` was ignored. See the migration guide.
 
 ### Added
 
