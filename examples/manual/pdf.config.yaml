@@ -12,8 +12,8 @@ document:
   date: "2026"
   rights: "CC0 1.0 Universal — public domain dedication"
   language: "en"
-  # No cover page: a manual opens on its table of contents.
-  titlepage: false
+  # A manual opens on its cover, then the table of contents.
+  titlepage: true
   metadata:
     keywords: "manual, verification, evidence, fictional device"
     subject: "Example manual for the pandoc-pdf toolkit"
