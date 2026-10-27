@@ -157,13 +157,12 @@ Useful flags:
 - `--dry-run`: shows the plan without writing to disk.
 - `--install-dir <path>`: sets the installation path.
 
-For private GitHub repositories, export a token before running update:
+No token is needed: the update reads the public release metadata and downloads the
+asset from the public release URL. Anonymous requests to the GitHub API are limited
+to **60 per hour per address**, which a check uses one of.
 
-```bash
-export PANDOC_PDF_UPDATE_TOKEN=<your_token>
-# or alternatively
-export GH_TOKEN=<your_token>
-```
+If `update` reports that quota as exhausted, wait for it to reset. A private mirror
+of the releases is not supported by this updater.
 
 Validate the environment and dependencies:
 

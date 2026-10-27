@@ -109,14 +109,6 @@ update_api_base() {
   printf '%s\n' "${PANDOC_PDF_UPDATE_API_BASE:-https://api.github.com/repos/pablobernardo/pandoc-toolkit/releases}"
 }
 
-print_update_auth_hint_if_missing() {
-  local token
-  token="${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}"
-  if [[ -z "$token" ]]; then
-    echo "ℹ️  $(t "cli.update.error.auth_hint" "for private repositories set PANDOC_PDF_UPDATE_TOKEN or GH_TOKEN")" >&2
-  fi
-}
-
 fetch_release_json() {
   local url="$1"
   if ! command -v curl >/dev/null 2>&1; then
@@ -124,24 +116,45 @@ fetch_release_json() {
     return 1
   fi
 
-  local token
-  token="${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}"
+  # The status travels on the last line, because a body that is not JSON still
+  # says why it is not JSON: 404 means no release exists yet, 403 means the
+  # anonymous quota is spent, and neither of those is a network failure, which is
+  # what the previous single message implied.
+  local raw status response msg rc
+  raw="$(curl -sS -w '\n%{http_code}' "$url" 2>/dev/null)"
+  rc=$?
+  status="${raw##*$'\n'}"
+  response="${raw%$'\n'*}"
 
-  local -a curl_args
-  curl_args=(-fsSL "$url")
-  if [[ -n "$token" ]]; then
-    curl_args=(-fsSL -H "Authorization: Bearer ${token}" "$url")
-  fi
-
-  local response
-  if ! response="$(curl "${curl_args[@]}" 2>/dev/null)"; then
-    local msg
-    msg="$(t "cli.update.error.fetch_latest" "could not fetch latest release metadata from {url}")"
+  if [[ "$rc" -ne 0 && -z "$response" ]]; then
+    msg="$(t "cli.update.error.fetch_unreachable" "could not reach {url}")"
     echo "❌ $(interp "$msg" "url" "$url")" >&2
-    print_update_auth_hint_if_missing
     return 1
   fi
-  printf '%s\n' "$response"
+  if [[ ! "$status" =~ ^[0-9]{3}$ ]]; then
+    # A curl without -w support (the tests' simpler mock): trust the body.
+    status="200"
+    response="$raw"
+  fi
+
+  case "$status" in
+    200)
+      printf '%s\n' "$response"
+      return 0
+      ;;
+    404)
+      msg="$(t "cli.update.error.fetch_not_found" "no release published at {url} yet")"
+      echo "❌ $(interp "$msg" "url" "$url")" >&2
+      ;;
+    403 | 429)
+      echo "❌ $(t "cli.update.error.fetch_rate_limited" "GitHub's anonymous request quota is exhausted (60 per hour per address); retry later")" >&2
+      ;;
+    *)
+      msg="$(t "cli.update.error.fetch_status" "GitHub answered {status} while fetching {url}")"
+      echo "❌ $(interp "$(interp "$msg" "status" "$status")" "url" "$url")" >&2
+      ;;
+  esac
+  return 1
 }
 
 release_tag_from_json() {
@@ -196,53 +209,14 @@ PY
   printf '%s\n' "$asset_url"
 }
 
-release_asset_api_url_from_json() {
-  local response="$1"
-  local asset_name="$2"
-  local asset_url=""
-  if command -v python3 >/dev/null 2>&1; then
-    asset_url="$(python3 - <<'PY' "$response" "$asset_name"
-import json
-import sys
-payload = sys.argv[1]
-name = sys.argv[2]
-try:
-    data = json.loads(payload)
-except Exception:
-    print("")
-    raise SystemExit(0)
-for asset in data.get("assets", []):
-    if isinstance(asset, dict) and asset.get("name") == name:
-        url = asset.get("url", "")
-        print(url if isinstance(url, str) else "")
-        raise SystemExit(0)
-print("")
-PY
-)"
-  else
-    asset_url=""
-  fi
-  printf '%s\n' "$asset_url"
-}
 
 download_file() {
   local url="$1"
   local destination="$2"
-  local token
-  token="${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}"
 
+  # Public release assets are served from the CDN and need no credentials.
   local -a curl_args
   curl_args=(-fsSL "$url" -o "$destination")
-  if [[ "$url" == https://api.github.com/repos/*/releases/assets/* ]]; then
-    curl_args=(-fsSL -H "Accept: application/octet-stream" "$url" -o "$destination")
-  fi
-  if [[ -n "$token" ]]; then
-    if [[ "$url" == https://api.github.com/repos/*/releases/assets/* ]]; then
-      curl_args=(-fsSL -H "Authorization: Bearer ${token}" -H "Accept: application/octet-stream" "$url" -o "$destination")
-    else
-      curl_args=(-fsSL -H "Authorization: Bearer ${token}" "$url" -o "$destination")
-    fi
-  fi
 
   if ! curl "${curl_args[@]}"; then
     local msg
@@ -519,16 +493,8 @@ run_update() {
   checksums_name="checksums.txt"
 
   local artifact_url checksums_url
-  local artifact_api_url checksums_api_url
   artifact_url="$(release_asset_url_from_json "$release_json" "$artifact_name")"
   checksums_url="$(release_asset_url_from_json "$release_json" "$checksums_name")"
-  artifact_api_url="$(release_asset_api_url_from_json "$release_json" "$artifact_name")"
-  checksums_api_url="$(release_asset_api_url_from_json "$release_json" "$checksums_name")"
-
-  if [[ -n "${PANDOC_PDF_UPDATE_TOKEN:-${GH_TOKEN:-}}" ]]; then
-    [[ -n "$artifact_api_url" ]] && artifact_url="$artifact_api_url"
-    [[ -n "$checksums_api_url" ]] && checksums_url="$checksums_api_url"
-  fi
 
   if [[ -z "$artifact_url" ]]; then
     local msg

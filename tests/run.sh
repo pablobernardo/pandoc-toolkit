@@ -33,8 +33,8 @@ main() {
   run_i18n_force_english_unknown_command_test
   run_locale_command_tests
   run_update_check_tests
+  run_update_diagnostics_tests
   run_update_install_tests
-  run_update_install_private_api_asset_test
   run_update_dev_command_blocked_test
   run_update_rollback_on_validation_failure_test
   run_install_local_dev_link_test
