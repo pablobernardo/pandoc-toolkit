@@ -167,8 +167,8 @@ EOF
   capture="$(mktemp)"
   out="$(mktemp)"
   suffix="$(date +%Y%m%d)"
-  md_file="${sandbox}/custom-output/Render Test-${suffix}.md"
-  pdf_file="${sandbox}/custom-output/Render Test-${suffix}.pdf"
+  md_file="${sandbox}/custom-output/report-${suffix}.md"
+  pdf_file="${sandbox}/custom-output/report-${suffix}.pdf"
 
   if PANDOC_PDF_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
     pass "native render runs pandoc"
@@ -177,7 +177,7 @@ EOF
   fi
 
   assert_contains "$out" "Native mode enabled" "render reports native mode"
-  assert_contains "$capture" "custom-output/Render Test-${suffix}\.pdf" "native render respects output.dir"
+  assert_contains "$capture" "custom-output/report-${suffix}\.pdf" "native render respects output.dir"
   assert_contains "$capture" "PANDOC_EMOJI_DIR=.*output/emoji" "native render exports emoji dir"
   assert_contains "$capture" "PANDOC_MERMAID_OUTPUT_DIR=.*output/mermaid" "native render exports mermaid dir"
   assert_contains "$capture" "PANDOC_MERMAID_BACKGROUND=transparent" "native render exports background"
@@ -395,7 +395,7 @@ run_render_order_semantics_test() {
   write_pandoc_capture_mock "$tmpbin"
   capture="$(mktemp)"
   out="$(mktemp)"
-  merged="${sandbox}/work/out/S1 Document-manual.md"
+  merged="${sandbox}/work/out/s1-manual.md"
 
   printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
   printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
@@ -453,8 +453,8 @@ run_render_keep_merged_markdown_test() {
   write_pandoc_capture_mock "$tmpbin"
   capture="$(mktemp)"
   out="$(mktemp)"
-  merged="${sandbox}/work/out/S1 Document-manual.md"
-  pdf="${sandbox}/work/out/S1 Document-manual.pdf"
+  merged="${sandbox}/work/out/s1-manual.md"
+  pdf="${sandbox}/work/out/s1-manual.pdf"
 
   printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
 
@@ -740,7 +740,7 @@ EOF
 
   printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
   write_contract_config "${sandbox}/pdf.config.yaml" natural false "" true
-  merged="${sandbox}/work/out/S1 Document-manual.md"
+  merged="${sandbox}/work/out/s1-manual.md"
 
   set +e
   TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
@@ -1021,6 +1021,107 @@ CONFIG
   else
     fail "the template must branch on titlepage and be able to disable the cover"
   fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+# The file name was the document title, spaces and accents included, and
+# output.file_prefix was a required field that did nothing. An explicit name now
+# wins, the fallback is a slug, and a name can never leave the output directory.
+run_render_output_file_name_test() {
+  local sandbox tmpbin capture out
+
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+
+  build_config() {
+    local prefix_line="$1"
+    cat >"${sandbox}/naming.config.yaml" <<CONFIG
+project:
+  name: naming
+  base_dir: ./work
+
+document:
+  title: "Project Technical Documentation"
+
+input:
+  chapters_dir: "chapters"
+  explicit_files: []
+
+output:
+  dir: "out"
+  suffix: "manual"
+${prefix_line}
+
+pandoc:
+  pdf_engine: xelatex
+CONFIG
+  }
+
+  # 1) An explicit name is honoured, not overridden by the title.
+  build_config '  file_prefix: "report"'
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
+  assert_contains "$capture" "report-manual.pdf" "output.file_prefix names the file"
+
+  # 2) Without a name, the title becomes a slug instead of a raw file name.
+  build_config ''
+  capture="$(mktemp)"
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
+  assert_contains "$capture" "project-technical-documentation-manual.pdf" "the title falls back to a slug"
+  assert_not_contains "$capture" "Project Technical Documentation-manual.pdf" "the raw title is never a file name"
+
+  # 3) A name cannot escape the output directory.
+  build_config '  file_prefix: "../../etc/passwd"'
+  capture="$(mktemp)"
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
+  # The slug keeps only [a-z0-9-], so a declared "../.." cannot survive as a path.
+  assert_contains "$capture" "out/etc-passwd-manual.pdf" "a declared name cannot traverse out of the output directory"
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}
+
+# Accents and punctuation must not survive into a file name.
+run_render_slug_accents_test() {
+  local sandbox tmpbin capture out
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+  printf '# Uno\n\ncontenido\n' >"${sandbox}/work/chapters/01-one.md"
+
+  cat >"${sandbox}/slug.config.yaml" <<'CONFIG'
+project:
+  name: slug
+  base_dir: ./work
+
+document:
+  title: "Informe Ñandú y Açúcar — 2026"
+
+input:
+  chapters_dir: "chapters"
+  explicit_files: []
+
+output:
+  dir: "out"
+  suffix: "manual"
+
+pandoc:
+  pdf_engine: xelatex
+CONFIG
+
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/slug.config.yaml" "$sandbox" >"$out" 2>&1 || true
+  assert_contains "$capture" "informe-nandu-y-acucar-2026-manual.pdf" "accents and dashes become an ascii slug"
 
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$capture" "$out"

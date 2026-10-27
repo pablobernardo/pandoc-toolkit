@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 import os
 import re
 import shutil
@@ -29,6 +30,24 @@ except Exception:
 ORDER_NATURAL = "natural"
 ORDER_ALPHABETICAL = "alphabetical"
 ORDER_CHOICES = (ORDER_NATURAL, ORDER_ALPHABETICAL)
+
+def slugify(value: str) -> str:
+    """A file name derived from a title: lowercase, ASCII, single dashes."""
+    decomposed = unicodedata.normalize("NFKD", value)
+    ascii_only = decomposed.encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_only.lower()).strip("-")
+    return slug or "document"
+
+
+def file_stem(document: dict, output: dict) -> str:
+    """One rule for both sources: a declared name, or the title, becomes a slug.
+
+    Slugging by construction is also what makes a declared name unable to escape
+    the output directory: nothing but [a-z0-9-] survives.
+    """
+    declared = str(output.get("file_prefix") or "").strip()
+    return slugify(declared or str(document.get("title") or "document"))
+
 
 DOCUMENT_VAR_FIELDS = ("title", "subtitle", "publisher", "author", "date", "rights")
 
@@ -177,7 +196,7 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
         die(t("render.error.base_dir_required", "'project.base_dir' is required"))
 
     base_dir_path = (cfg_path.parent / str(base_dir)).resolve()
-    title = document.get("title") or output.get("file_prefix") or "document"
+    stem = file_stem(document, output)
     suffix = resolve_suffix(output.get("suffix"))
 
     chapters_dir = base_dir_path / str(input_cfg.get("chapters_dir", "chapters"))
@@ -190,7 +209,7 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
 
     # Normalise: a consumer using "../out" should not see that in the report.
     output_dir = (base_dir_path / str(output.get("dir", "output"))).resolve()
-    filename_out = f"{title}-{suffix}"
+    filename_out = f"{stem}-{suffix}"
     pdf_out = output_dir / f"{filename_out}.pdf"
     md_out = output_dir / f"{filename_out}.md"
 

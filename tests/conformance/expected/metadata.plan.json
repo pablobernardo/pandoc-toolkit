@@ -16,7 +16,7 @@
   "pandoc": {
     "argv": [
       "pandoc",
-      "<CASES>/output/Conformance-recorded.md",
+      "<CASES>/output/report-recorded.md",
       "--pdf-engine=lualatex",
       "--template=<REPO>/templates/default.tex",
       "--toc",
@@ -31,12 +31,12 @@
       "--metadata",
       "titlepage=true",
       "-o",
-      "<CASES>/output/Conformance-recorded.pdf"
+      "<CASES>/output/report-recorded.pdf"
     ],
     "cwd": null,
     "target": {
-      "markdown": "<CASES>/output/Conformance-recorded.md",
-      "pdf": "<CASES>/output/Conformance-recorded.pdf"
+      "markdown": "<CASES>/output/report-recorded.md",
+      "pdf": "<CASES>/output/report-recorded.pdf"
     }
   },
   "plan_version": 1,

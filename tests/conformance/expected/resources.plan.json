@@ -16,7 +16,7 @@
   "pandoc": {
     "argv": [
       "pandoc",
-      "<CASES>/output/Conformance-recorded.md",
+      "<CASES>/output/report-recorded.md",
       "--pdf-engine=xelatex",
       "--template=<CASES>/assets/custom.tex",
       "--lua-filter=<REPO>/filters/emoji.lua",
@@ -34,12 +34,12 @@
       "--metadata",
       "titlepage=true",
       "-o",
-      "<CASES>/output/Conformance-recorded.pdf"
+      "<CASES>/output/report-recorded.pdf"
     ],
     "cwd": null,
     "target": {
-      "markdown": "<CASES>/output/Conformance-recorded.md",
-      "pdf": "<CASES>/output/Conformance-recorded.pdf"
+      "markdown": "<CASES>/output/report-recorded.md",
+      "pdf": "<CASES>/output/report-recorded.pdf"
     }
   },
   "plan_version": 1,
@@ -52,7 +52,7 @@
       "prepare_argv": [
         "python3",
         "<REPO>/scripts/prepare-emojis.py",
-        "<CASES>/output/Conformance-recorded.md",
+        "<CASES>/output/report-recorded.md",
         "<CASES>/output/emoji",
         "<REPO>/filters/emoji"
       ]
