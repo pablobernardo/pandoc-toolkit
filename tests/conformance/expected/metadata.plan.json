@@ -1,0 +1,60 @@
+{
+  "chapters": [
+    "<CASES>/chapters/chapter-2.md",
+    "<CASES>/chapters/chapter-10.md"
+  ],
+  "config": {
+    "base_dir": "<CASES>",
+    "path": "<CASE>"
+  },
+  "env": {
+    "PANDOC_EMOJI_BALLOT_ICONS": "0",
+    "PANDOC_EMOJI_DIR": "<CASES>/output/emoji",
+    "PANDOC_MERMAID_BACKGROUND": "transparent",
+    "PANDOC_MERMAID_OUTPUT_DIR": "<CASES>/output/mermaid"
+  },
+  "pandoc": {
+    "argv": [
+      "pandoc",
+      "<CASES>/output/Conformance-recorded.md",
+      "--pdf-engine=lualatex",
+      "--template=<REPO>/templates/default.tex",
+      "--toc",
+      "--toc-depth=3",
+      "--number-sections",
+      "-V",
+      "titlepage=true",
+      "-V",
+      "fig-pos=!htbp",
+      "--resource-path=<CASES>/chapters",
+      "--metadata-file=<CASES>/assets/metadata.yaml",
+      "-o",
+      "<CASES>/output/Conformance-recorded.pdf"
+    ],
+    "cwd": null,
+    "target": {
+      "markdown": "<CASES>/output/Conformance-recorded.md",
+      "pdf": "<CASES>/output/Conformance-recorded.pdf"
+    }
+  },
+  "plan_version": 1,
+  "side_effects": {
+    "clearpage_between_h1": true,
+    "emoji": {
+      "dir": "<CASES>/output/emoji",
+      "enabled": false,
+      "missing_svg": "<CASES>/output/emoji/_missing.svg",
+      "prepare_argv": null
+    },
+    "keep_merged_markdown": false,
+    "mermaid": {
+      "background": "transparent",
+      "dir": "<CASES>/output/mermaid",
+      "enabled": false
+    }
+  },
+  "toolkit": {
+    "root": "<REPO>",
+    "version": "<VERSION>"
+  }
+}

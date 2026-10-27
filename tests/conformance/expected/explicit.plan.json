@@ -1,0 +1,58 @@
+{
+  "chapters": [
+    "<CASES>/chapters/chapter-10.md",
+    "<CASES>/chapters/chapter-2.md"
+  ],
+  "config": {
+    "base_dir": "<CASES>",
+    "path": "<CASE>"
+  },
+  "env": {
+    "PANDOC_EMOJI_BALLOT_ICONS": "1",
+    "PANDOC_EMOJI_DIR": "<CASES>/output/emoji",
+    "PANDOC_MERMAID_BACKGROUND": "transparent",
+    "PANDOC_MERMAID_OUTPUT_DIR": "<CASES>/output/mermaid"
+  },
+  "pandoc": {
+    "argv": [
+      "pandoc",
+      "<CASES>/output/Conformance-recorded.md",
+      "--pdf-engine=xelatex",
+      "--template=<REPO>/templates/default.tex",
+      "-V",
+      "titlepage=true",
+      "-V",
+      "fig-pos=!htbp",
+      "--resource-path=<CASES>/chapters",
+      "-V",
+      "title=Conformance",
+      "-o",
+      "<CASES>/output/Conformance-recorded.pdf"
+    ],
+    "cwd": null,
+    "target": {
+      "markdown": "<CASES>/output/Conformance-recorded.md",
+      "pdf": "<CASES>/output/Conformance-recorded.pdf"
+    }
+  },
+  "plan_version": 1,
+  "side_effects": {
+    "clearpage_between_h1": false,
+    "emoji": {
+      "dir": "<CASES>/output/emoji",
+      "enabled": false,
+      "missing_svg": "<CASES>/output/emoji/_missing.svg",
+      "prepare_argv": null
+    },
+    "keep_merged_markdown": true,
+    "mermaid": {
+      "background": "transparent",
+      "dir": "<CASES>/output/mermaid",
+      "enabled": false
+    }
+  },
+  "toolkit": {
+    "root": "<REPO>",
+    "version": "<VERSION>"
+  }
+}

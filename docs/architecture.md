@@ -176,6 +176,15 @@ selected chapters, output targets, the exact pandoc `argv`, and the filter
 environment. `scripts/render-native.py` is split into `build_plan` (pure),
 `execute_plan` (the single point with side effects) and `print_plan`.
 
+The plan is a conformance contract: four recorded cases in `tests/conformance/`
+cover minimal settings, metadata precedence, explicit chapter order, and custom
+templates/resources/filters. Run `python3 scripts/check-plan-conformance.py` to
+compare normalized plans, or add `--update` to refresh expectations after an
+intentional contract change. Set `PANDOC_PDF_BIN` to compare another implementation;
+an optional positional root selects a different tree of cases and expectations.
+Machine-local paths are normalized as documented in the checker's docstring;
+object key order is ignored, but array order and all non-path values are checked.
+
 ## 5) Migration (executed plan)
 
 The original three-phase migration plan was executed:

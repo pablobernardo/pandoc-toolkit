@@ -73,6 +73,7 @@ main() {
   run_render_mermaid_dir_gate_test
   run_render_plan_json_test
   run_render_dry_run_human_test
+  run_plan_conformance_tests
 
   echo ""
   echo "Summary: PASS=${PASS} FAIL=${FAIL}"

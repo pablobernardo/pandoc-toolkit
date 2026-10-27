@@ -9,7 +9,7 @@
 - General state: **stable CLI with native render by default**.
 - Entry point: `bin/pandoc-pdf`. The command surface is what `--help` prints and
   `docs/usage.md` documents.
-- Local suite: **PASS=259 FAIL=0**, twelve area files under `tests/l1/` plus
+- Local suite: **PASS=271 FAIL=0**, thirteen area files under `tests/l1/` plus
   `tests/lib.sh`; `tests/run.sh` only orchestrates them.
 - Toolkit version (`VERSION`): **1.2.0**, with **no tag**. The release is
   postponed by maintainer decision (D8).
@@ -120,9 +120,10 @@ is consumed on Linux and macOS. The door is explicitly left open.
 What the door consists of:
 
 1. `render --dry-run --json`: done, and the plan shape is frozen (D6).
-2. A conformance suite over that plan, runnable against any implementation
-   (today's Python, a future Go one), to compare output without reading code.
-   **Still missing.**
+2. A conformance suite over that plan: `scripts/check-plan-conformance.py`
+   compares four recorded cases without reading renderer code. `PANDOC_PDF_BIN`
+   selects any implementation (today's Python, a future Go one), and `--update`
+   refreshes expectations. The L1 suite checks conformance and failure diagnostics.
 
 Migration triggers (any one of them):
 
@@ -133,8 +134,10 @@ Migration triggers (any one of them):
 
 ## Known follow-ups
 
-1. **A conformance suite over the render plan**, which is what makes the Go door
-   real and also catches renderer regressions today.
+1. **Render-plan conformance is implemented**: four cases and normalized JSON
+   expectations under `tests/conformance/`, checked by
+   `scripts/check-plan-conformance.py` and wired into the L1 suite, make the Go
+   door testable and catch renderer regressions today.
 2. **Artifact signing** (Sigstore/GPG) for release artifacts.
 3. **Examples that show the toolkit's capabilities**: one example and one chapter
    is the whole surface today (tracked in issue #37).

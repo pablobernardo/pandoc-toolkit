@@ -1,0 +1,27 @@
+version: 1
+project: {name: conformance, base_dir: .}
+document: {title: Conformance}
+input:
+  chapters_dir: chapters
+  glob: '*.md'
+  order: alphabetical
+  explicit_files: []
+output:
+  dir: output
+  file_prefix: report
+  suffix: recorded
+  keep_merged_markdown: true
+pandoc:
+  pdf_engine: xelatex
+  toc: true
+  toc_depth: 2
+  number_sections: false
+  template: assets/custom.tex
+  metadata_file: ''
+  resource_path: [chapters, assets]
+filters:
+  emoji: {enabled: true, emoji_dir: output/emoji, include_ballot_icons: true}
+  mermaid: {enabled: true, output_dir: output/mermaid, background: white}
+  extra_lua_filters: [assets/identity.lua]
+runtime: {required_commands: [], strict: false}
+compat: {legacy_clearpage_between_h1: false}
