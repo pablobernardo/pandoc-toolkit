@@ -26,6 +26,10 @@ after the 1.1.3 release and is **not published**.
 - The output file name is now a slug of `output.file_prefix` when declared, and a
   slug of `document.title` otherwise. It used to be the raw title, spaces and
   accents included, while `file_prefix` was ignored. See the migration guide.
+- The default typesetting language is **English**. It used to be Spanish, the
+  language of the first consumer, which made the toolkit Spanish by omission for
+  everyone else. Declare `document.language: es` to keep the previous hyphenation.
+  See the migration guide.
 
 ### Added
 

@@ -27,7 +27,7 @@
       "--resource-path=<CASES>/chapters",
       "--metadata-file=<CASES>/assets/metadata.yaml",
       "-V",
-      "babel-lang=spanish",
+      "babel-lang=english",
       "--metadata",
       "titlepage=true",
       "-o",

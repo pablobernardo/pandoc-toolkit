@@ -1010,8 +1010,15 @@ CONFIG
   else
     fail "renderer should fall back when language and titlepage are absent"
   fi
-  assert_contains "$capture" "babel-lang=spanish" "the default babel language stays what the template hardcoded"
+  assert_contains "$capture" "babel-lang=english" "the default babel language is English, not the language of one consumer"
   assert_contains "$capture" "titlepage=true" "the cover is enabled by default"
+
+  # Flipping the default must not break the mapping for other languages.
+  sed 's/  title: "Defaults"/  title: "Defaults"\n  language: es/' "${sandbox}/defaults.config.yaml" >"${sandbox}/spanish.config.yaml"
+  capture="$(mktemp)"
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/spanish.config.yaml" "$sandbox" >"$out" 2>&1 || true
+  assert_contains "$capture" "babel-lang=spanish" "document.language still selects Spanish explicitly"
   # The argv alone cannot prove the switch works: the template has to branch on
   # it. An earlier version emitted an unconditional -V titlepage=true and the
   # flag was silently powerless.

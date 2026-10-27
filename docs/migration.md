@@ -79,6 +79,22 @@ Quick wins included in the same version:
 
 `filters/emoji.lua` no longer rewraps text without emojis. If your minimal template did not load `graphicx` and `hyperref`, add them: they are needed for images and for headings with formatting. Before the change, any heading emitted `\\texorpdfstring` and the render failed even when there were no emojis.
 
+## The default language is English (ships with 1.2.0)
+
+Hyphenation and typographic conventions used to be Spanish by default, because
+that was the language of the first consuming repository. They are English now.
+
+If your documents are not in English, declare the language once:
+
+```yaml
+document:
+  language: "es"
+```
+
+Supported values are `en`, `es`, `pt` and `gl`. Without this line, a Spanish
+document hyphenates as English: the words still render, and the line breaks are
+wrong in a way that is easy to miss and unpleasant to read.
+
 ## Output file names changed (ships with 1.2.0)
 
 The PDF used to be named after `document.title`, spaces and accents included:
