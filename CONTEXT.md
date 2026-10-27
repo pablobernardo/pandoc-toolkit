@@ -6,72 +6,35 @@
 
 ## Current state
 
-- General state: **stable CLI with native render by default**.
-- Entry point: `bin/pandoc-pdf`. The command surface is what `--help` prints and
+- **Stable CLI with native render by default.** The entry point is
+  `bin/pandoc-pdf`; the command surface is what `--help` prints and
   `docs/usage.md` documents.
-- Local suite: **PASS=271 FAIL=0**, thirteen area files under `tests/l1/` plus.
-- **CI is not running**: the account has no Actions minutes left, so every job
-  fails to start. `make gate` (suite, catalogs, documentation references, plan
-  conformance) is the verification, and its output goes into the pull request.
-  `tests/lib.sh`; `tests/run.sh` only orchestrates them.
-- Toolkit version (`VERSION`): **1.2.0**, with **no tag**. The release is
-  postponed by maintainer decision (D8).
-- Local `python3` has no PyYAML, so the Ruby YAML path is the one exercised here;
-  both paths are kept in sync and the Python one runs in CI.
+- **The verification is `make gate`**: suite, catalogs, documentation references
+  and plan conformance. How many assertions that is belongs to the run, not to
+  this file.
+- **CI is not running**: the account has no Actions minutes, so every job fails to
+  start. Until it does, `make gate` output pasted into the pull request is the
+  evidence a maintainer accepts.
+- Toolkit version (`VERSION`): **1.2.0**, with **no tag**; the release is
+  postponed by decision (D8).
+- Local `python3` has no PyYAML, so the Ruby YAML path is the one exercised here,
+  and the Python one runs where PyYAML exists. Neither environment exercises both
+  (`docs/dependency-policy.md`).
 
-## State by area
+## Where each area is described
 
-### 1) CLI
+Not restated here: a second copy of a description is a second place to be wrong.
 
-- `doctor` validates the runtime through `scripts/preflight.py`; `runtime.strict:
-  false` waives auxiliary commands but never the TeX engine (D2).
-- `validate-config` enforces the contract plus functional path checks (D3).
-- `render` has a single renderer, `scripts/render-native.py`. The Ruby duplicate
-  is gone; Ruby remains only as an optional YAML parser.
-- `render --dry-run [--json]` prints a pure `plan_version: 1` plan and writes
-  nothing (D6).
-- `doctor` renders a test Mermaid diagram and, on failure, names the detected
-  `mermaid-cli` version next to the two documented fixes.
-
-### 2) Configuration and paths
-
-- `schemas/pdf-config.schema.json` is the single source of truth; there is no
-  defaults baseline to merge (D7).
-- `validate-config` checks the critical paths: `input.chapters_dir`,
-  `pandoc.template` when set, `pandoc.metadata_file` when set, and
-  `filters.extra_lua_filters`.
-- `pandoc.template` is optional: absent, the toolkit template is used; present,
-  it resolves relative to `project.base_dir`.
-
-### 3) Security
-
-- Preflight hardened against injection: no `bash -c` to resolve commands from
-  configuration.
-- Safe YAML loading on every path, including the Ruby fallback.
-- Security workflow runs Semgrep and Gitleaks from pinned container images, so it
-  no longer depends on the runner's Python.
-- Every GitHub Action is pinned to a commit SHA (D10), kept current by
-  `.github/dependabot.yml`.
-- Policy published in `.github/SECURITY.md`; the gates are in `docs/releasing.md`.
-
-### 4) Testing and CI
-
-- CI by levels: **L1** mandatory on pull request and push (macOS and Linux);
-  **L2** semi-real integration, manual; **L3** full integration, manual or
-  scheduled, including Mermaid.
-- `scripts/check-docs.py` fails the suite when a document points at something
-  that no longer exists, and every example config is validated.
-- Each commit of the 1.2.0 work passed the suite on its own, checked by
-  extracting each tree with `git archive`.
-
-### 5) Documentation and governance
-
-- The repository is English, including this file and `odd/`; the only Spanish is
-  the message catalogs and the example chapters (D9).
-- `docs/README.md` indexes every document by the question it answers;
-  `CONTRIBUTING.md` is the path for a human contributor.
-- `CHANGELOG.md` carries one honest `[Unreleased]` section stating that 1.2.0 has
-  no tag yet.
+| Area | Described in |
+| --- | --- |
+| CLI surface and behaviour | `docs/usage.md`; the command list is `--help` |
+| The contract and its rules | `docs/architecture.md` section 2, and the schema itself |
+| Render pipeline and the plan | `docs/architecture.md` sections 3 and 4 |
+| Security posture and CI gates | `docs/releasing.md`, `.github/SECURITY.md` |
+| Suite and CI levels | `CONTRIBUTING.md` |
+| Pinned dependencies and blind spots | `docs/dependency-policy.md` |
+| Internationalisation | `docs/i18n.md` |
+| How a version is cut | `docs/releasing.md` |
 
 ## Decisions taken during 1.2.0
 

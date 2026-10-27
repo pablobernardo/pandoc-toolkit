@@ -157,7 +157,3 @@ pandoc-pdf validate-config -c examples/ohmyfake/pdf.config.yaml
 Making a model use the CLI consistently is one procedure, so it lives in one
 place: see *OpenCode integration* in `docs/usage.md`. The short version is that
 `pandoc-pdf` must be on the `PATH` and the repository instructions must say so.
-
-## Note on the current state
-
-The CLI render is **native by default** and the official entrypoint for automation is `pandoc-pdf`.
