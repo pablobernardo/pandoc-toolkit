@@ -1,10 +1,13 @@
 # odd/
 
-Working records of finished work: one file per feature, holding its specs, its
-task list, the evidence collected while building it, and the decisions taken
-along the way.
+The working history of the 1.2.0 slices: what each one changed and **what it was
+measured with**.
 
-These are **not** documentation. They describe what was true while the work was
-happening, including test counts and file names that have since changed, so a
-statement here can be correctly historical and currently false at the same time.
-Current behaviour lives in `docs/`; the rules live in `AGENTS.md`.
+This is not documentation. The reasoning behind each decision lives in the
+`Decision record` of `docs/architecture.md`, and every user-visible change is in
+`CHANGELOG.md`. What only this directory holds is the evidence: suite counts as
+they were on each branch, L2 and L3 results, differential checks, artifact
+inspections.
+
+Those numbers are correct about the moment and wrong about today, on purpose. Read
+them as evidence of a verification, never as a current metric.
