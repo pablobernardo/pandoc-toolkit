@@ -46,7 +46,7 @@ With `pandoc.metadata_file` empty, the non-empty fields `title`, `subtitle`, `pu
 `docs/usage.md`, `docs/migration.md`, `CHANGELOG.md`, `CONTEXT.md` and `VERSION` reflect the new semantics. Minor toolkit bump (added behavior, no invalid configs).
 
 **S13 — The emoji filter must not alter text without emojis (L2 verification finding)**
-`filters/emoji.lua` wrapped every `Str` in a `pandoc.Span`, additionally splitting each word into one `Str` per character. Effect: any heading became "formatted" and pandoc emitted `\\texorpdfstring`, which requires `hyperref` in the template; with minimal templates the render failed with `! Undefined control sequence`. It already failed on `master` (L2 exit 43, verified in a `master` worktree). The filter must return `nil` when there was no real substitution.
+`filters/emoji.lua` wrapped every `Str` in a `pandoc.Span`, additionally splitting each word into one `Str` per character. Effect: any heading became "formatted" and pandoc emitted `\\texorpdfstring`, which requires `hyperref` in the template; with minimal templates the render failed with `! Undefined control sequence`. It already failed on the default branch (L2 exit 43, verified in a worktree of it). The filter must return `nil` when there was no real substitution.
 
 **Out of scope of S1 (approved in the plan)**
 - P2 (retire the Ruby renderer), P3 (unify i18n in bash), P5 (schema validator), P7 (split the bash suite).
@@ -104,7 +104,7 @@ Superseded in 1.2.0: the updater stopped reading that variable (`CHANGELOG.md`),
 - Process note: T1 (tests) materialized in its own feature-branch commit, after the implementation commit; it was kept in a separate commit because `tests/run.sh` is a shared monolith (see the pending slice to split it).
 
 **L9 — Finding in L2 verification: the emoji filter broke minimal templates (pre-existing)**
-L2 failed on `master` with exit 43 and `! Undefined control sequence \texorpdfstring`. Verified in a clean `master` worktree, so it was not a regression of this slice.
+L2 failed on the default branch with exit 43 and `! Undefined control sequence \texorpdfstring`. Verified in a clean worktree of the default branch, so it was not a regression of this slice.
 Root cause: `function Str(el) return pandoc.Span(...) end` in `filters/emoji.lua` wrapped every `Str` in a `Span` (and `string_to_inlines` generated one `Str` per character). Pandoc emits `\texorpdfstring` for formatted headings, and that macro is defined by `hyperref`. A minimal template without `hyperref` ⇒ broken render.
 Fix: the filter only wraps when there was a real substitution; the templates in `tests/integration/*/templates/default.tex` load `graphicx` and `hyperref` (a realistic template must load them).
 
@@ -113,4 +113,4 @@ Fix: the filter only wraps when there was a real substitution; the templates in 
 - `bash tests/l2-local.sh` → **exit 0**, `✅ L2 local integration passed` (real pandoc + pdflatex, PDF and `.md` generated, `-V title=` applied, emoji+mermaid filters active).
 - `bash tests/l3-local.sh` → **not runnable on this machine**: `❌ Chromium executable not found. Set PUPPETEER_EXECUTABLE_PATH.` Not retried.
 - `python3 scripts/check-i18n.py` → 4 locales, 151 keys.
-- Differential master↔branch: L2 executed in a `master` worktree (fmt: exit 43, same `\texorpdfstring`) and on the branch (exit 0) ⇒ the improvement is verifiable and the regression does not exist.
+- Differential baseline↔branch: L2 executed in a worktree of the default branch (fmt: exit 43, same `\texorpdfstring`) and on the branch (exit 0) ⇒ the improvement is verifiable and the regression does not exist.
