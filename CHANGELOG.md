@@ -9,6 +9,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased] — planned as 1.2.0
 
+### License
+
+The toolkit is MIT from 1.2.0 onwards. Everything published up to 1.1.3 stays
+under Apache 2.0: a license cannot be changed retroactively, so those releases
+keep the terms they shipped with.
+
 `VERSION` says `1.2.0` and no tag exists yet, so everything below was merged
 after the 1.1.3 release and is **not published**.
 

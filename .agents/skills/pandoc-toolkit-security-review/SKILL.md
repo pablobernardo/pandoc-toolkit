@@ -4,7 +4,7 @@ description: >
   Skill for reviewing security risk in changes to the pandoc-pdf toolkit,
   focused on configuration input, process execution and supply chain.
   Trigger: when modifying CLI/render/preflight/bootstrap scripts, CI or the configuration contract.
-license: Apache-2.0
+license: MIT
 metadata:
   author: pablobernardo
   version: "1.0"

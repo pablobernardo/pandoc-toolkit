@@ -99,6 +99,10 @@ The full index, with one line per document and the question it answers, is
 Setup, tests, commit conventions and the rules that keep this toolkit reusable are
 in `CONTRIBUTING.md`.
 
+## License
+
+MIT. Releases up to 1.1.3 were published under Apache 2.0; see `CHANGELOG.md`.
+
 ## Author
 
 Pablo Bernardo — https://github.com/pablobernardo
