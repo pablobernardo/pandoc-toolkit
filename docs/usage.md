@@ -23,8 +23,8 @@ together they cover it instead of repeating it:
 | Example | What it shows |
 | --- | --- |
 | `examples/ohmyfake/` | Defaults: `glob` plus `order: natural`, `toc_depth: 2`, a cover built from `document.*`, merged Markdown kept, the name as a slug of the title |
-| `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `titlepage: false`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
-| `examples/test/` | The smallest valid configuration |
+| `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
+| `examples/test/` | The smallest valid configuration, with `titlepage: false` to show the cover switch |
 
 `examples/toPDF.sh` renders all three. The content is original and released under
 CC0: it is there to exercise the toolkit, not to be read as product documentation.

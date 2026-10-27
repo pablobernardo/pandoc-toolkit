@@ -12,6 +12,9 @@ document:
   date: "2026-04-21"
   rights: "Internal Use"
   language: "en"
+  # The smallest example also shows the cover switch: no title page, the
+  # document opens on the table of contents.
+  titlepage: false
   # Arbitrary Pandoc metadata no longer needs a side file.
   metadata:
     keywords: "compliance, operations"
