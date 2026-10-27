@@ -4,7 +4,7 @@ This document describes the toolkit **as built**. The design it originated from
 was a proposal; since version 1.0.0 it is the implemented architecture, and
 this file keeps it up to date with the code.
 
-## 1) Problem solved
+## Problem solved
 
 The original pipeline (a local `.pandoc/` directory) worked but was coupled to
 local conventions (`chapters/`, `output/`, fixed paths inside the Lua
@@ -15,7 +15,7 @@ The solution, implemented and published since v1.0.0, is a **versioned global
 toolkit** with declarative configuration per consuming repository, with no
 local coupling.
 
-## 2) Configuration contract (per repository)
+## Configuration contract (per repository)
 
 Each consuming repository keeps a `pdf.config.yaml` file. The single source of
 truth for the contract is `schemas/pdf-config.schema.json`; there is no
@@ -112,7 +112,7 @@ All nine sections (`version`, `project`, `document`, `input`, `output`,
 - Avoid client- or repository-specific paths and naming.
 - Keep examples reproducible on any standard structure.
 
-## 3) Toolkit structure (as built)
+## Toolkit structure (as built)
 
 ```text
 pandoc-toolkit/
@@ -166,7 +166,7 @@ pandoc-toolkit/
 - **Explicit preflight** of dependencies before rendering (`doctor` /
   `preflight`).
 
-## 4) Render pipeline
+## Render pipeline
 
 There is exactly one renderer: `scripts/render-native.py`. YAML is read with
 PyYAML when available and otherwise through Ruby's stdlib in a subprocess.
@@ -191,22 +191,7 @@ an optional positional root selects a different tree of cases and expectations.
 Machine-local paths are normalized as documented in the checker's docstring;
 object key order is ignored, but array order and all non-path values are checked.
 
-## 5) Migration (executed plan)
-
-The original three-phase migration plan was executed:
-
-1. **Harden locally** — routes in `emoji.lua` and `mermaid.lua` were
-   parameterised (read from metadata/vars), emoji preparation was consolidated
-   in `scripts/prepare-emojis.py`, and preflight was completed.
-2. **Extract the toolkit** — scripts, filters and templates moved to this
-   repository and published by tag (v1.0.0 onwards). Each consuming repository
-   keeps a `pdf.config.yaml` and invokes the toolkit through `bin/pandoc-pdf`.
-3. **Reuse across repositories** — the toolkit is consumed by tag/version;
-   per-repository customisation is limited to `pdf.config.yaml` plus an
-   optional template, and breaking changes are governed by the `version` of
-   the config contract (see `docs/migration.md`).
-
-## 6) Decision record
+## Decision record
 
 ### Option A — Global toolkit (CHOSEN AND IMPLEMENTED)
 - ✅ Better maintainability and scalability
@@ -224,7 +209,22 @@ The original three-phase migration plan was executed:
 - ❌ Guaranteed technical drift
 - ❌ High future maintenance cost
 
-## 7) Production criteria — what must keep holding
+## How we got here
+
+The original three-phase migration plan was executed:
+
+1. **Harden locally** — routes in `emoji.lua` and `mermaid.lua` were
+   parameterised (read from metadata/vars), emoji preparation was consolidated
+   in `scripts/prepare-emojis.py`, and preflight was completed.
+2. **Extract the toolkit** — scripts, filters and templates moved to this
+   repository and published by tag (v1.0.0 onwards). Each consuming repository
+   keeps a `pdf.config.yaml` and invokes the toolkit through `bin/pandoc-pdf`.
+3. **Reuse across repositories** — the toolkit is consumed by tag/version;
+   per-repository customisation is limited to `pdf.config.yaml` plus an
+   optional template, and breaking changes are governed by the `version` of
+   the config contract (see `docs/migration.md`).
+
+## Production criteria — what must keep holding
 
 These were the "definition of done" criteria for 1.0.0. They now act as
 invariants that future changes must preserve:

@@ -28,8 +28,8 @@ Not restated here: a second copy of a description is a second place to be wrong.
 | Area | Described in |
 | --- | --- |
 | CLI surface and behaviour | `docs/usage.md`; the command list is `--help` |
-| The contract and its rules | `docs/architecture.md` section 2, and the schema itself |
-| Render pipeline and the plan | `docs/architecture.md` sections 3 and 4 |
+| The contract and its rules | 'Configuration contract' in `docs/architecture.md`, and the schema itself |
+| Render pipeline and the plan | 'Toolkit structure' and 'Render pipeline' in `docs/architecture.md` |
 | Security posture and CI gates | `docs/releasing.md`, `.github/SECURITY.md` |
 | Suite and CI levels | `CONTRIBUTING.md` |
 | Pinned dependencies and blind spots | `docs/dependency-policy.md` |

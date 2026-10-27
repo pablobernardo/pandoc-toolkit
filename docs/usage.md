@@ -4,7 +4,7 @@ This guide explains how to consume the toolkit from any repository.
 
 > Before you start: see `docs/install.md` to get `pandoc-pdf` on your PATH.
 
-## 1) Minimum requirements
+## Minimum requirements
 
 - `pandoc`
 - a TeX engine compatible with your template (for example `xelatex`)
@@ -15,7 +15,7 @@ This guide explains how to consume the toolkit from any repository.
 
 > Recommendation: always run `pandoc-pdf doctor` before `render`.
 
-## 1.1) Examples in this repository
+## Examples in this repository
 
 Each example is runnable and demonstrates a different corner of the contract, so
 together they cover it instead of repeating it:
@@ -29,7 +29,7 @@ together they cover it instead of repeating it:
 `examples/toPDF.sh` renders all three. The content is original and released under
 CC0: it is there to exercise the toolkit, not to be read as product documentation.
 
-## 2) Configuration contract
+## Configuration contract
 
 Each consumer repository defines its own `pdf.config.yaml`.
 
@@ -49,7 +49,7 @@ Expected minimum fields:
 - `runtime`
 - `compat`
 
-### 2.1) Semantics of the declarative fields
+### Semantics of the declarative fields
 
 These fields are required in `schemas/pdf-config.schema.json` and the runtime actually applies them. When they are missing, the renderer and the preflight use the defaults listed below (which match `examples/ohmyfake/pdf.config.yaml`).
 
@@ -68,7 +68,7 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 `document.*` — metadata and cover page:
 
 - With `pandoc.metadata_file` empty, the non-empty `title`, `subtitle`, `publisher`, `author`, `date` and `rights` fields are passed to pandoc as template variables (`-V field=value`) and fill the cover page of `templates/default.tex`.
-- With `pandoc.metadata_file` set, they are **not** passed: the metadata file takes precedence (see `docs/architecture.md` §2, rule 4 «Contract rules»).
+- With `pandoc.metadata_file` set, they are **not** passed: the metadata file takes precedence (see 'Contract rules' in `docs/architecture.md`).
 - The output file name is a **slug**: `output.file_prefix` when declared, otherwise `document.title`. Lowercase, ASCII, dashes; accents are transliterated (`Informe Ñandú` becomes `informe-nandu`), so a name never needs quoting and can never escape the output directory.
 - `pandoc.metadata_file` is **optional**: without it, `document.*` is what reaches the template, so a project needs no side YAML file.
 - `document.language` (`en`, `es`, `pt`, `gl`) selects the babel language and applies even when a metadata file provides the cover. The default is **English**.
@@ -85,7 +85,7 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 - `true` (default): `doctor` fails with exit 1 if a command from `runtime.required_commands` or the TeX engine is missing.
 - `false`: it reports them as warnings and exits with exit 0, **except the TeX engine**: without it there is no PDF, so its absence always fails even when `strict` is `false`.
 
-## 3) CLI commands
+## CLI commands
 
 Optional `make` shortcuts:
 
@@ -228,7 +228,7 @@ pandoc-pdf render -c pdf.config.yaml --dry-run --json
 
 The plan is the verifiable contract of the render: it is what makes it possible to compare render implementations without reading code, and it is the foundation for a future conformance suite.
 
-## 4) Recommended flow
+## Recommended flow
 
 1. Prepare/update `pdf.config.yaml`.
 2. Run `doctor` to check dependencies.
@@ -236,13 +236,13 @@ The plan is the verifiable contract of the render: it is what makes it possible 
 4. Run `render`.
 5. Run `update --check` periodically to review new stable versions.
 
-## 5) Conventions for consumer repositories
+## Conventions for consumer repositories
 
 - Resolve relative paths against `project.base_dir`.
 - Avoid hardcodes in local wrappers.
 - Keep style overrides in your own templates, not in the core.
 
-## 6) Quick troubleshooting
+## Quick troubleshooting
 
 - `doctor` fails: install the missing dependencies before retrying.
 - `validate-config` fails: fix required fields / the YAML structure.
@@ -251,13 +251,13 @@ The plan is the verifiable contract of the render: it is what makes it possible 
   - or point it at a browser you already have: `export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.
   A dropped diagram is not ignored: the merged markdown keeps the code block, `render` reports which diagrams failed and exits non-zero. To drop diagrams on purpose, set `filters.mermaid.enabled: false`. See `docs/install.md` for which of the two browser options to use and what not to hardcode.
 
-## 6.1) Configuration security
+## Configuration security
 
 - Do not run `render` or `doctor -c` with a `pdf.config.yaml` from an untrusted source.
 - Pay special attention to `runtime.required_commands` and `filters.extra_lua_filters`.
 - See the security policy in `.github/SECURITY.md`.
 
-## 7) CI integration
+## CI integration
 
 Suggested sequence:
 
@@ -269,7 +269,7 @@ If `runtime.strict: true` (default), any missing dependency must fail the pipeli
 
 With `runtime.strict: false`, `doctor` downgrades missing dependencies to warnings: it still prints them and exits with exit 0. The only exception is the TeX engine: its absence always fails, because without it the PDF cannot be generated. Use it only in pipelines where the auxiliary dependency is resolved later (for example an image that installs it in a subsequent step).
 
-## 8) OpenCode integration (agents)
+## OpenCode integration (agents)
 
 So that models use it consistently:
 
@@ -284,7 +284,7 @@ So that models use it consistently:
 5. For structural toolkit changes, use the local skill:
    - `.agents/skills/pandoc-toolkit-maintainer/SKILL.md`
 
-## 9) CLI tests and CI levels
+## CLI tests and CI levels
 
 How the suite is organised, what each level covers and how to trigger L2 or L3 by
 hand are in `CONTRIBUTING.md`: it is material for whoever changes the toolkit, not
