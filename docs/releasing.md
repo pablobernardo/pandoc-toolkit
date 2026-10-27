@@ -5,7 +5,7 @@ version: what is about to ship lives in `CHANGELOG.md`.
 
 ## Before tagging
 
-1. **Checks green on `master`**: `make gate` (suite, catalogs, documentation
+1. **Checks green on `main`**: `make gate` (suite, catalogs, documentation
    references and plan conformance), plus the security workflow with its
    thresholds at zero. When CI cannot start, `make gate` output pasted into the
    pull request is the verification a maintainer accepts.
@@ -58,7 +58,7 @@ the packaging script locally before trusting it:
 - `scripts/enforce-security-thresholds.py` fails the workflow at the configured
   thresholds; the current policy is zero errors and zero warnings.
 - SARIF upload is controlled by the repository variable `ENABLE_SARIF_UPLOAD`.
-  Enabled, findings upload on push to `master`; on `pull_request` the scans run
+  Enabled, findings upload on push to `main`; on `pull_request` the scans run
   without upload. Leaving it disabled is the supported state when Code Scanning
   is not enabled.
 - Trust model: configuration files are trusted input. The toolkit sanitises what

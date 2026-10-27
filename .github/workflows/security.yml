@@ -10,7 +10,6 @@ on:
   push:
     branches:
       - main
-      - master
   workflow_dispatch:
   schedule:
     - cron: "30 3 * * 1"
@@ -41,14 +40,14 @@ jobs:
             detect --source=/repo --no-git --redact --exit-code 0 --report-format sarif --report-path /repo/gitleaks.sarif
 
       - name: Upload Semgrep SARIF
-        if: ${{ always() && vars.ENABLE_SARIF_UPLOAD == 'true' && github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'main') }}
+        if: ${{ always() && vars.ENABLE_SARIF_UPLOAD == 'true' && github.event_name == 'push' && github.ref_name == 'main' }}
         uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           sarif_file: semgrep.sarif
           category: semgrep
 
       - name: Upload Gitleaks SARIF
-        if: ${{ always() && vars.ENABLE_SARIF_UPLOAD == 'true' && github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'main') }}
+        if: ${{ always() && vars.ENABLE_SARIF_UPLOAD == 'true' && github.event_name == 'push' && github.ref_name == 'main' }}
         uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           sarif_file: gitleaks.sarif

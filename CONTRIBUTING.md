@@ -72,7 +72,7 @@ the others are translations, not copies.
 
 ## Commits and pull requests
 
-- Branch from `master`, one branch per change.
+- Branch from `main`, one branch per change.
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `test:`, `ci:`, `refactor:`.
 - Tests and documentation belong in the same commit as the behaviour.
 - Keep a pull request reviewable, around 400 changed lines; beyond that, split it.

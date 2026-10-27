@@ -49,7 +49,7 @@ This allows progressive adoption without breaking the team's habits.
 
 ## Upgrading 1.1.x → 1.2.0
 
-1.2.0 is on `master` but not yet released (there is no tag for it yet). Minor bump. **No change to `pdf.config.yaml` is required**: the five affected fields were already required by the schema and none has been removed or renamed, so a valid 1.1.x config still validates on 1.2.0.
+1.2.0 is on `main` but not yet released (there is no tag for it yet). Minor bump. **No change to `pdf.config.yaml` is required**: the five affected fields were already required by the schema and none has been removed or renamed, so a valid 1.1.x config still validates on 1.2.0.
 
 Behavior changes you can observe when upgrading:
 
