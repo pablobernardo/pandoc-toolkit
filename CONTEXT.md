@@ -9,7 +9,10 @@
 - General state: **stable CLI with native render by default**.
 - Entry point: `bin/pandoc-pdf`. The command surface is what `--help` prints and
   `docs/usage.md` documents.
-- Local suite: **PASS=271 FAIL=0**, thirteen area files under `tests/l1/` plus
+- Local suite: **PASS=271 FAIL=0**, thirteen area files under `tests/l1/` plus.
+- **CI is not running**: the account has no Actions minutes left, so every job
+  fails to start. `make gate` (suite, catalogs, documentation references, plan
+  conformance) is the verification, and its output goes into the pull request.
   `tests/lib.sh`; `tests/run.sh` only orchestrates them.
 - Toolkit version (`VERSION`): **1.2.0**, with **no tag**. The release is
   postponed by maintainer decision (D8).
