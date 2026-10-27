@@ -53,9 +53,10 @@ DOCUMENT_VAR_FIELDS = ("title", "subtitle", "publisher", "author", "date", "righ
 
 # babel wants a language name, the contract uses the code.
 BABEL_LANGS = {"en": "english", "es": "spanish", "pt": "portuguese", "gl": "galician"}
-# Spanish is what the template hardcoded before language existed, so it stays the
-# default: nobody's output changes unless they ask for another language.
-DEFAULT_BABEL_LANGUAGE = "spanish"
+# English is the default: the toolkit is consumed across languages, so the
+# fallback cannot be the language of one of them. Declare document.language to
+# get another one.
+DEFAULT_BABEL_LANGUAGE = "english"
 
 PLAN_VERSION = 1
 
