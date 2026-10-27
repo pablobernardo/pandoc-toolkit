@@ -4,7 +4,7 @@ description: >
   Operating skill for maintaining the pandoc-pdf toolkit with consistent changes
   across contract, render, CI and documentation.
   Trigger: when changing the schema or config, render/preflight, tests, CI or technical documentation of the toolkit.
-license: Apache-2.0
+license: MIT
 metadata:
   author: pablobernardo
   version: "1.0"
