@@ -21,6 +21,25 @@ Two things hold the line: the toolkit template defines `\pandocbounded`, and
 `tests/l1/render.sh` fails if that definition disappears. If you change the
 template, render a document with an image on a current Pandoc before trusting CI.
 
+## YAML: two parsers, one tested at a time
+
+Configuration is read with PyYAML when available and otherwise through Ruby's
+standard library in a subprocess. That is deliberate (D1), and it creates a gap
+worth knowing about: **each environment exercises only one of the two paths.**
+
+- Locally, `python3` may have no PyYAML, so the Ruby path is the one the suite
+  runs. `pandoc-pdf info --json` reports which parser is active (`yaml_parser`).
+- In CI the Python path is the one that runs.
+
+The `tests/fixtures/yaml_shim/` double does not close this: it delegates to Ruby,
+so comparing a run with the shim against a run without it compares Ruby with Ruby.
+A real difference between the two parsers — `yes`/`no`, sexagesimal numbers,
+unquoted dates, octal-looking strings — would be invisible in both environments.
+
+What would close it: a parity test that loads every fixture through both parsers
+in the same environment, run where PyYAML is installed. Until then, prefer quoted
+scalars in configuration examples and fixtures.
+
 ## Pinned critical dependencies
 
 - `@mermaid-js/mermaid-cli@10.9.1`
