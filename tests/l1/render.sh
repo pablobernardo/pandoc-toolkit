@@ -890,3 +890,18 @@ MD
   rm -rf "$tmpbin" "$dir"
   rm -f "$md" "$out"
 }
+
+# Pandoc 3.2 and later emit \pandocbounded whenever an image is bounded. The
+# toolkit template must define it or every document with an image fails in LaTeX.
+# CI installs the distribution pandoc, which is older and never emits the macro,
+# so this guard is the only thing standing between a template edit and a broken
+# render for anyone on a current release.
+run_template_modern_pandoc_guard_test() {
+  local template="${ROOT_DIR}/templates/default.tex"
+
+  if grep -q '\\providecommand{\\pandocbounded}' "$template"; then
+    pass "the toolkit template defines \\pandocbounded for current Pandoc"
+  else
+    fail "the toolkit template must define \\pandocbounded: Pandoc 3.2+ emits it and the render dies without it"
+  fi
+}

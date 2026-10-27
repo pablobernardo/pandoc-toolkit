@@ -4,6 +4,23 @@
 
 Reduce supply-chain risk by pinning critical runtime versions and keeping an explicit update cadence.
 
+## Pandoc and TeX: what CI actually runs
+
+Neither is pinned by this repository: `scripts/bootstrap.sh` and CI install
+whatever the distribution provides, which lags the current release. That has a
+consequence worth stating plainly: **CI can be green while the toolkit is broken
+for anyone on a current Pandoc.**
+
+Measured: Pandoc 3.2 and later emit `\pandocbounded` when an image is bounded,
+and a template that does not define it dies with `! Undefined control sequence`.
+The distribution package in CI is older, never emits the macro, and so notices
+nothing. This is exactly how the integration fixtures shipped a template that
+failed for a year of releases.
+
+Two things hold the line: the toolkit template defines `\pandocbounded`, and
+`tests/l1/render.sh` fails if that definition disappears. If you change the
+template, render a document with an image on a current Pandoc before trusting CI.
+
 ## Pinned critical dependencies
 
 - `@mermaid-js/mermaid-cli@10.9.1`
