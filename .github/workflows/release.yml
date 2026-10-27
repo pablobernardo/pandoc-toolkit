@@ -31,9 +31,6 @@ jobs:
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Ensure packaging script is executable
-        run: chmod +x scripts/package-release.sh
-
       - name: Build release artifacts
         run: scripts/package-release.sh dist
 
