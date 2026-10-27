@@ -106,7 +106,7 @@ after the 1.1.3 release and is **not published**.
 - `filters/emoji.lua` no longer wraps text without emojis in a `Span`. Plain
   headings stop emitting `\texorpdfstring` (a macro `hyperref` defines) and the
   filter stops breaking minimal templates. The defect predates 1.2.0: the L2
-  integration job was already failing on `master` because of it.
+  integration job was already failing on the default branch because of it.
 
 ### Removed
 
