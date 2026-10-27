@@ -149,7 +149,7 @@ If it returns `Doctor OK`, the environment is ready.
 ## 6) Try it with the example config
 
 ```bash
-pandoc-pdf validate-config -c examples/pdf.config.example.yaml
+pandoc-pdf validate-config -c examples/ohmyfake/pdf.config.yaml
 ```
 
 ## 7) OpenCode integration (models)

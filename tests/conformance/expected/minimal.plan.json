@@ -20,8 +20,6 @@
       "--pdf-engine=xelatex",
       "--template=<REPO>/templates/default.tex",
       "-V",
-      "titlepage=true",
-      "-V",
       "fig-pos=!htbp",
       "--resource-path=<CASES>/chapters",
       "-V",

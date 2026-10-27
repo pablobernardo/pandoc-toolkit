@@ -12,6 +12,18 @@ The project follows semantic versioning and keeps two versioned contracts:
 `VERSION` says `1.2.0` and no tag exists yet, so everything below was merged
 after the 1.1.3 release and is **not published**.
 
+### Configuration that no longer requires a side file
+
+- `pandoc.metadata_file` and `output.file_prefix` are **optional**. Without a
+  metadata file, `document.*` reaches the template, which is what the renderer
+  already implemented. Existing configurations keep validating unchanged.
+- New `document.language` (`en`, `es`, `pt`, `gl`) selects the babel language.
+  The template no longer hardcodes Spanish; the default is unchanged.
+- New `document.titlepage` switch: the cover can now be disabled. It used to be
+  unconditional, which made the same key in a metadata file inert.
+- New `document.metadata` map for arbitrary Pandoc metadata (`keywords`,
+  `subject`, any template variable), so those no longer need a side YAML file.
+
 ### Added
 
 - The five contract fields the schema already required and the runtime never

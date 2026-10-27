@@ -23,8 +23,6 @@
       "--toc-depth=3",
       "--number-sections",
       "-V",
-      "titlepage=true",
-      "-V",
       "fig-pos=!htbp",
       "--resource-path=<CASES>/chapters",
       "--metadata-file=<CASES>/assets/metadata.yaml",

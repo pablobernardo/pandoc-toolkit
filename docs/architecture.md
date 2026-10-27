@@ -20,7 +20,7 @@ local coupling.
 Each consuming repository keeps a `pdf.config.yaml` file. The single source of
 truth for the contract is `schemas/pdf-config.schema.json`; there is no
 defaults baseline to merge. The example below mirrors
-`examples/pdf.config.example.yaml`:
+`examples/ohmyfake/pdf.config.yaml`:
 
 ```yaml
 version: 1
@@ -36,6 +36,10 @@ document:
   author: "Engineering Team"
   date: "2026-04-21"
   rights: "Internal Use"
+  language: "en"
+  titlepage: true
+  metadata:
+    keywords: "compliance, operations"
 
 input:
   chapters_dir: "chapters"
@@ -45,7 +49,6 @@ input:
 
 output:
   dir: "output"
-  file_prefix: "report"
   suffix: "${date:YYYYMMDD}"
   keep_merged_markdown: true
 
@@ -96,7 +99,8 @@ All nine sections (`version`, `project`, `document`, `input`, `output`,
 3. If `explicit_files` is not empty, it takes priority over `glob`.
 4. If `pandoc.metadata_file` is set and exists, it takes priority over the
    `document.*` fields; otherwise `document.*` values are passed as pandoc
-   variables.
+   variables. `document.language` and `document.titlepage` are typesetting
+   decisions and apply either way.
 5. Filters (`emoji`, `mermaid`) can be disabled per document via their
    `enabled` flags.
 
