@@ -186,7 +186,7 @@ after the 1.1.3 release and is **not published**.
 - Operational security policy updated for the SARIF feature flag:
   - by default, CI validates security without depending on Code Scanning;
   - once Code Scanning is enabled, set `ENABLE_SARIF_UPLOAD=true` to publish
-    SARIF on `push` to `main/master`.
+    SARIF on `push` to the default branch.
 
 ---
 
@@ -196,7 +196,7 @@ after the 1.1.3 release and is **not published**.
 
 - `Security` workflow adjusted to avoid permission failures on pull requests
   (`Resource not accessible by integration`):
-  - SARIF is published only on `push` to `main/master`;
+  - SARIF is published only on `push` to the default branch;
   - on `pull_request`, scans and thresholds run without the SARIF upload.
 - Workflow permissions tightened for uploads on protected branches
   (`actions: read`, `security-events: write`).
