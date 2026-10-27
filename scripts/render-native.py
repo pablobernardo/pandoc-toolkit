@@ -188,7 +188,8 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     if not selected_files:
         die(t("render.error.no_chapters", "No chapters found to render"))
 
-    output_dir = base_dir_path / str(output.get("dir", "output"))
+    # Normalise: a consumer using "../out" should not see that in the report.
+    output_dir = (base_dir_path / str(output.get("dir", "output"))).resolve()
     filename_out = f"{title}-{suffix}"
     pdf_out = output_dir / f"{filename_out}.pdf"
     md_out = output_dir / f"{filename_out}.md"
@@ -276,7 +277,9 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     if bool(pandoc.get("number_sections", True)):
         cmd.append("--number-sections")
 
-    cmd.extend(["-V", "titlepage=true", "-V", "fig-pos=!htbp"])
+    # The cover switch is emitted below with the rest of the document options;
+    # an unconditional -V here would make titlepage: false impossible.
+    cmd.extend(["-V", "fig-pos=!htbp"])
     if resource_path_values:
         cmd.append(f"--resource-path={os.pathsep.join(resource_path_values)}")
     uses_metadata_file = metadata_path is not None and metadata_path.exists()

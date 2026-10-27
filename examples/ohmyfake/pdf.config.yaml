@@ -1,0 +1,60 @@
+version: 1
+
+project:
+  name: ohmyfake
+  base_dir: "."
+
+# Everything the cover needs lives here: no side metadata file.
+document:
+  title: "Oh my fake"
+  subtitle: "Subtitle"
+  author: "The Author"
+  publisher: "The Publisher"
+  date: "19/05/2000"
+  rights: "© 2026 The Publisher. All rights reserved."
+  language: "en"
+  titlepage: true
+
+input:
+  chapters_dir: "chapters"
+  glob: "*.md"
+  order: natural
+  explicit_files: []
+
+output:
+  # The file name comes from document.title, so it is "Oh my fake-latest.pdf".
+  dir: "../.output/ohmyfake"
+  suffix: "latest"
+  keep_merged_markdown: true
+
+pandoc:
+  pdf_engine: xelatex
+  toc: true
+  toc_depth: 2
+  number_sections: true
+  resource_path:
+    - "chapters"
+    - "."
+
+filters:
+  emoji:
+    enabled: true
+    emoji_dir: "../.output/emoji"
+    include_ballot_icons: true
+  mermaid:
+    enabled: true
+    output_dir: "../.output/mermaid"
+    background: "transparent"
+  extra_lua_filters: []
+
+runtime:
+  required_commands:
+    - pandoc
+    - xelatex
+    - python3
+    - curl
+    - mmdc
+  strict: true
+
+compat:
+  legacy_clearpage_between_h1: true

@@ -2,7 +2,7 @@ version: 1
 
 project:
   name: sample-project
-  base_dir: .
+  base_dir: "."
 
 document:
   title: "Project Technical Documentation"
@@ -11,6 +11,11 @@ document:
   author: "Engineering Team"
   date: "2026-04-21"
   rights: "Internal Use"
+  language: "en"
+  # Arbitrary Pandoc metadata no longer needs a side file.
+  metadata:
+    keywords: "compliance, operations"
+    subject: "Quarterly report"
 
 input:
   chapters_dir: "chapters"
@@ -19,8 +24,7 @@ input:
   explicit_files: []
 
 output:
-  dir: "output"
-  file_prefix: "report"
+  dir: "../.output/test"
   suffix: "${date:YYYYMMDD}"
   keep_merged_markdown: true
 
@@ -29,27 +33,24 @@ pandoc:
   toc: true
   toc_depth: 2
   number_sections: true
-  template: "templates/default.tex"
-  metadata_file: "metadata.yaml"
   resource_path:
     - "chapters"
-    - "chapters/media"
-    - "output/emoji"
 
 filters:
   emoji:
     enabled: true
-    emoji_dir: "output/emoji"
+    emoji_dir: "../.output/emoji"
     include_ballot_icons: true
   mermaid:
     enabled: true
-    output_dir: "output/mermaid"
-    background: transparent
+    output_dir: "../.output/mermaid"
+    background: "transparent"
   extra_lua_filters: []
 
 runtime:
   required_commands:
     - pandoc
+    - xelatex
     - python3
     - curl
     - mmdc

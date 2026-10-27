@@ -1012,6 +1012,15 @@ CONFIG
   fi
   assert_contains "$capture" "babel-lang=spanish" "the default babel language stays what the template hardcoded"
   assert_contains "$capture" "titlepage=true" "the cover is enabled by default"
+  # The argv alone cannot prove the switch works: the template has to branch on
+  # it. An earlier version emitted an unconditional -V titlepage=true and the
+  # flag was silently powerless.
+  local template="${ROOT_DIR}/templates/default.tex"
+  if grep -q '\\titlepagefalse' "$template" && grep -q '\$if(titlepage)\$' "$template"; then
+    pass "the template honours titlepage instead of forcing the cover"
+  else
+    fail "the template must branch on titlepage and be able to disable the cover"
+  fi
 
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$capture" "$out"

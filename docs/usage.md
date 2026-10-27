@@ -19,7 +19,7 @@ This guide explains how to consume the toolkit from any repository.
 
 Each consumer repository defines its own `pdf.config.yaml`.
 
-There is no hidden baseline: the contract is exactly what `schemas/pdf-config.schema.json` validates. The toolkit does not merge any defaults file, so everything the render needs is declared in your `pdf.config.yaml`. Use `examples/pdf.config.example.yaml` as a starting template.
+There is no hidden baseline: the contract is exactly what `schemas/pdf-config.schema.json` validates. The toolkit does not merge any defaults file, so everything the render needs is declared in your `pdf.config.yaml`. Use `examples/ohmyfake/pdf.config.yaml` as a starting template.
 
 The only values the renderer applies on its own are historical in-code fallbacks for missing keys (engine `xelatex`, TOC enabled, template `templates/default.tex`); a valid config does not depend on them because the schema forces those keys to be declared.
 
@@ -37,7 +37,7 @@ Expected minimum fields:
 
 ### 2.1) Semantics of the declarative fields
 
-These fields are required in `schemas/pdf-config.schema.json` and the runtime actually applies them. When they are missing, the renderer and the preflight use the defaults listed below (which match `examples/pdf.config.example.yaml`).
+These fields are required in `schemas/pdf-config.schema.json` and the runtime actually applies them. When they are missing, the renderer and the preflight use the defaults listed below (which match `examples/ohmyfake/pdf.config.yaml`).
 
 `input.order` — chapter ordering:
 
@@ -55,7 +55,11 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 
 - With `pandoc.metadata_file` empty, the non-empty `title`, `subtitle`, `publisher`, `author`, `date` and `rights` fields are passed to pandoc as template variables (`-V field=value`) and fill the cover page of `templates/default.tex`.
 - With `pandoc.metadata_file` set, they are **not** passed: the metadata file takes precedence (see `docs/architecture.md` §2, rule 4 «Contract rules»).
-- `document.title` still determines the output file name (`title-<suffix>`); `output.file_prefix` is only used as a fallback when `document.title` is missing.
+- `document.title` still determines the output file name (`title-<suffix>`); `output.file_prefix` is optional and only used as a fallback when the title is missing.
+- `pandoc.metadata_file` is **optional**: without it, `document.*` is what reaches the template, so a project needs no side YAML file.
+- `document.language` (`en`, `es`, `pt`, `gl`) selects the babel language and applies even when a metadata file provides the cover. The default is the Spanish the template used to hardcode.
+- `document.titlepage` enables or disables the cover. It is a typesetting decision, so it also applies with a metadata file.
+- `document.metadata` is a free-form map of scalar keys (`keywords`, `subject`, any template variable), passed only when no metadata file wins.
 
 `filters.emoji.include_ballot_icons` — Markdown task checkboxes:
 
