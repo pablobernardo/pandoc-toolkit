@@ -933,3 +933,86 @@ run_template_modern_pandoc_guard_test() {
     fail "the toolkit template must define \\pandocbounded: Pandoc 3.2+ emits it and the render dies without it"
   fi
 }
+
+# The cover used to be unavoidable and the language fixed to Spanish, so
+# `language` and `titlepage` in a metadata file did nothing. They belong to the
+# config, and the free-form map carries the rest.
+run_render_document_metadata_test() {
+  local sandbox tmpbin capture out
+
+  sandbox="$(new_contract_sandbox)"
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+
+  cat >"${sandbox}/docmeta.config.yaml" <<'CONFIG'
+project:
+  name: docmeta
+  base_dir: ./work
+
+document:
+  title: "Doc Meta"
+  language: en
+  titlepage: false
+  metadata:
+    keywords: "compliance, operations"
+
+input:
+  chapters_dir: "chapters"
+  explicit_files: []
+
+output:
+  dir: "out"
+  suffix: "manual"
+
+pandoc:
+  pdf_engine: xelatex
+CONFIG
+
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/docmeta.config.yaml" "$sandbox" >"$out" 2>&1; then
+    pass "renderer accepts document language, titlepage and metadata"
+  else
+    fail "renderer should accept the new document fields ($(tail -2 "$out"))"
+  fi
+
+  assert_contains "$capture" "babel-lang=english" "document.language selects the babel language"
+  assert_contains "$capture" "titlepage=false" "document.titlepage reaches the template when disabled"
+  assert_contains "$capture" "keywords=compliance, operations" "the free-form metadata map reaches Pandoc"
+
+  cat >"${sandbox}/defaults.config.yaml" <<'CONFIG'
+project:
+  name: defaults
+  base_dir: ./work
+
+document:
+  title: "Defaults"
+
+input:
+  chapters_dir: "chapters"
+  explicit_files: []
+
+output:
+  dir: "out"
+  suffix: "manual"
+
+pandoc:
+  pdf_engine: xelatex
+CONFIG
+
+  capture="$(mktemp)"
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/defaults.config.yaml" "$sandbox" >"$out" 2>&1; then
+    pass "renderer accepts a config without language or titlepage"
+  else
+    fail "renderer should fall back when language and titlepage are absent"
+  fi
+  assert_contains "$capture" "babel-lang=spanish" "the default babel language stays what the template hardcoded"
+  assert_contains "$capture" "titlepage=true" "the cover is enabled by default"
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}

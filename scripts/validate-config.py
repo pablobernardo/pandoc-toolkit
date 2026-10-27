@@ -128,7 +128,13 @@ def validate_with_schema(data: Any, schema: dict[str, Any], path: list[str] | No
 
         additional_props = schema.get("additionalProperties", True)
         properties = schema.get("properties", {})
-        if additional_props is False:
+        if isinstance(additional_props, dict):
+            # JSON Schema allows a schema here: every key not declared in
+            # `properties` must satisfy it, and the failure names the key.
+            for key, value in data.items():
+                if key not in properties:
+                    validate_with_schema(value, additional_props, [*path, key])
+        elif additional_props is False:
             extra = sorted([k for k in data.keys() if k not in properties])
             if extra:
                 fail(

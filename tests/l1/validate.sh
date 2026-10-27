@@ -169,3 +169,42 @@ run_validate_order_enum_test() {
 
   rm -f "$out"
 }
+
+run_validate_metadata_contract_tests() {
+  local out code
+
+  # S1: a configuration without a metadata file is valid, and document.* is what
+  # the renderer uses instead.
+  out="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-no-metadata.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a config without pandoc.metadata_file is valid"
+  rm -f "$out"
+
+  # S4, S5, S6: language, titlepage and the free-form metadata map are part of the
+  # contract instead of being rejected as extra fields.
+  out="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-document-metadata.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "document.language, titlepage and a metadata map are accepted"
+  rm -f "$out"
+
+  # The map is a map of scalars: a nested value is a configuration error, and the
+  # message must name the offending key.
+  out="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/invalid-document-metadata.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  if [[ "$code" -ne 0 ]]; then
+    pass "a non-scalar value in document.metadata is rejected"
+  else
+    fail "a non-scalar value in document.metadata must be rejected"
+  fi
+  assert_contains "$out" "subject" "the failure names the offending metadata key"
+  rm -f "$out"
+}
