@@ -90,8 +90,10 @@ The initial proposal suggested removing `filters.emoji.include_ballot_icons` and
 - both implementations cost a few lines and remove the contract lie without breaking anything.
 Result: S1 breaks no existing config and only requires a minor bump.
 
-**L7 — Decision not to delete `.env`**
-`<repo>/.env` contains `PANDOC_PDF_UPDATE_TOKEN` and is gitignored. It is not deleted (destructive, contains a user secret). The inconsistency is documented so the decision belongs to the maintainer.
+**L7 — Decision not to delete `.env` (superseded)**
+`<repo>/.env` contained `PANDOC_PDF_UPDATE_TOKEN` and was gitignored. It was left in place because deleting a secret is the maintainer's call.
+
+Superseded in 1.2.0: the updater stopped reading that variable (`CHANGELOG.md`), and the maintainer then approved deleting the local file, which held a credential for a feature that no longer exists. Nothing in the tree reads `PANDOC_PDF_UPDATE_TOKEN` or `GH_TOKEN`.
 
 **L8 — Slice closure (measured with `git show --stat` of each feature-branch commit, all landed in #11 `9cb7211`)**
 - Implementation slice ≈ 295 authored lines: 256 insertions + 39 deletions across 10 files.
