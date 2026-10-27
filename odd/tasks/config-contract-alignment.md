@@ -91,7 +91,7 @@ The initial proposal suggested removing `filters.emoji.include_ballot_icons` and
 Result: S1 breaks no existing config and only requires a minor bump.
 
 **L7 — Decision not to delete `.env`**
-`/Users/pablo/code/pablobernardo/pandoc-toolkit/.env` contains `PANDOC_PDF_UPDATE_TOKEN` and is gitignored. It is not deleted (destructive, contains a user secret). The inconsistency is documented so the decision belongs to the maintainer.
+`<repo>/.env` contains `PANDOC_PDF_UPDATE_TOKEN` and is gitignored. It is not deleted (destructive, contains a user secret). The inconsistency is documented so the decision belongs to the maintainer.
 
 **L8 — Slice closure (measured with `git show --stat` of each feature-branch commit, all landed in #11 `9cb7211`)**
 - Implementation slice ≈ 295 authored lines: 256 insertions + 39 deletions across 10 files.

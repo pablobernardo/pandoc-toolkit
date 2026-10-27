@@ -12,3 +12,5 @@ __pycache__/
 .zed/
 .atl/
 .ruff_cache
+# Output generado por el renderer en los ejemplos (incluye su propio .gitignore)
+examples/.output/

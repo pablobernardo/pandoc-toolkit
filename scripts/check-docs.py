@@ -14,6 +14,7 @@ references. Usage: check-docs.py [root]
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -57,6 +58,47 @@ def references(text: str):
             yield number, "mention", match.group(1)
 
 
+PERSONAL_PATH = re.compile(r"/(?:Users|home)/[A-Za-z0-9._-]+/")
+TEXT_SUFFIXES = {
+    ".md", ".py", ".sh", ".lua", ".yaml", ".yml", ".json", ".tex", ".txt",
+    ".toml", ".cfg", ".ini",
+}
+
+
+def published_files(root: Path) -> list[Path]:
+    """The files that would ship: git's index, or the tree when there is no git."""
+    try:
+        listed = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        return [root / name for name in listed.split("\0") if name]
+    except (OSError, subprocess.SubprocessError):
+        skip = {".git", "node_modules", ".atl"}
+        return [
+            path for path in root.rglob("*")
+            if path.is_file() and not skip & set(path.parts)
+        ]
+
+
+def personal_paths(root: Path) -> list[str]:
+    """Absolute home paths leak a machine's layout into a published repository."""
+    problems = []
+    for path in published_files(root):
+        if path.suffix not in TEXT_SUFFIXES:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for number, line in enumerate(text.splitlines(), start=1):
+            if PERSONAL_PATH.search(line):
+                problems.append(
+                    f"{path.relative_to(root)}:{number}: absolute home path in a published file"
+                )
+    return problems
+
+
 def main() -> int:
     root = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     problems: list[str] = []
@@ -72,6 +114,8 @@ def main() -> int:
             if (path.parent / target).exists() or (root / target).exists():
                 continue
             problems.append(f"{relative}:{line}: {kind} to missing {target}")
+
+    problems.extend(personal_paths(root))
 
     for problem in problems:
         print(f"❌ {problem}")

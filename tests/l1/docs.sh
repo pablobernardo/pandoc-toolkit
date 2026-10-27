@@ -53,6 +53,18 @@ run_docs_consistency_test() {
   set -e
   assert_exit_code "0" "$code" "a history file may name what was removed"
 
+  # An absolute home path would publish a machine's layout.
+  rm -f "${tree}/CHANGELOG.md"
+  # Built at run time so this test file does not itself contain the pattern.
+  local leaky="/Users"
+  printf '# Doc\n\nSee `%s/someone/code/repo/.env`.\n' "$leaky" >"${tree}/docs/a.md"
+  set +e
+  python3 "${ROOT_DIR}/scripts/check-docs.py" "$tree" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "an absolute home path fails the check"
+  assert_contains "$out" "absolute home path" "the failure names the leak"
+
   rm -rf "$tree"
   rm -f "$out"
 }
