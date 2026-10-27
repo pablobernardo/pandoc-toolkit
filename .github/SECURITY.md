@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security support covers the main branch (`main`/`master`) and the latest state of
+Security support covers the `main` branch and the latest state of
 the code. The most recent tagged release (`1.1.3`) receives fixes through a new
 release.
 
