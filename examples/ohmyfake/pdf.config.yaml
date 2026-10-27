@@ -6,12 +6,13 @@ project:
 
 # Everything the cover needs lives here: no side metadata file.
 document:
-  title: "Oh my fake"
-  subtitle: "Subtitle"
-  author: "The Author"
-  publisher: "The Publisher"
-  date: "19/05/2000"
-  rights: "© 2026 The Publisher. All rights reserved."
+  title: "Oh My Fake"
+  subtitle: "A Field Guide to Convincing Nonsense"
+  author: "The Example Maintainers"
+  publisher: "Public Domain Press"
+  date: "2026"
+  # Original text and diagrams, no third-party material.
+  rights: "CC0 1.0 Universal — public domain dedication"
   language: "en"
   titlepage: true
 
