@@ -90,3 +90,69 @@ which exist to prove that accents and punctuation render.
 
 Maintainers cut versions. The gates, the commands and what CI does not exercise
 are in [`docs/releasing.md`](docs/releasing.md).
+
+## CLI tests and CI levels
+
+`make test` runs the suite. The integration runners, which the table above does
+not list because they need a fuller stack:
+
+```bash
+bash tests/l2-local.sh
+bash tests/l3-local.sh
+```
+
+Notes:
+- `l2-local.sh` runs semi-real integration (without the full Mermaid stack).
+- `l3-local.sh` requires `mmdc` and Chromium (`PUPPETEER_EXECUTABLE_PATH` if it is not auto-detected).
+
+Current suite coverage:
+
+- help and unknown-command handling
+- `doctor` in an OK scenario and with a missing dependency
+- `validate-config` with a valid and an invalid case
+- `render -c` in native mode (checks output/environment)
+- explicit rejection of legacy flags (`--legacy`)
+- advanced render integration (extra_lua_filters, resource_path, optional metadata)
+- render errors for non-existent `explicit_files`
+- render plan: valid JSON, no side effects, readable `--dry-run`
+- emoji filter: plain headings do not emit `\\texorpdfstring`
+- contract behavior (since 1.2.0):
+  - `input.order` with `natural` and `alphabetical` values, and rejection of an unsupported value naming the field and the supported values
+  - `output.keep_merged_markdown` set to `false` (deletes the `.md`) and `true` (keeps it), with a PDF produced in both cases
+  - `document.*` reaches pandoc as `-V` variables, and a `pandoc.metadata_file` takes precedence over them
+  - `include_ballot_icons` toggles `PANDOC_EMOJI_BALLOT_ICONS` between `1` and `0`
+  - `runtime.strict` set to `false` (warning, exit 0) and `true` (failure)
+- release artifact: the generated package contains no Python bytecode (`__pycache__`, `.pyc`)
+- locale message with no destination: names `--project`, not `--team`
+
+In addition, this suite runs automatically in CI (GitHub Actions) for PR/push on a macOS/Linux matrix as **L1**.
+
+CI levels:
+
+- **L1 (fast, mandatory on PR/push):** `tests/run.sh`.
+- **L2 (semi-real, manual):** real render on Ubuntu against integration fixtures.
+- **L3 (full, manual or scheduled):** integration with the extended stack (includes the Mermaid CLI).
+  - includes a real Mermaid fixture in `tests/integration/l3-mermaid-project/`.
+
+Workflow and manual inputs:
+
+- Workflow: `.github/workflows/ci.yml`
+- `run_render_integration=true` to run **L2**
+- `run_render_full=true` to run **L3**
+
+Run from the CLI:
+
+```bash
+gh workflow run ci.yml -f run_render_integration=true
+# or
+gh workflow run ci.yml -f run_render_full=true
+```
+
+## Repository housekeeping
+
+To keep the toolkit clean and reusable:
+
+- **Do not** add local system artifacts (`.DS_Store`, etc.).
+- **Do not** reintroduce legacy scripts coupled to the consumer repository.
+- Always use the official entrypoint: `bin/pandoc-pdf`.
+- Keep examples and docs neutral (no private data or client paths).

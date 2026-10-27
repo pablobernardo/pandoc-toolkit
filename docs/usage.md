@@ -279,67 +279,13 @@ So that models use it consistently:
    - `pandoc-pdf doctor`
    - `pandoc-pdf validate-config -c pdf.config.yaml`
    - `pandoc-pdf render -c pdf.config.yaml`
-4. For structural toolkit changes, use the local skill:
+4. Do not invoke legacy scripts directly from prompts: `pandoc-pdf` is the
+   entrypoint.
+5. For structural toolkit changes, use the local skill:
    - `.agents/skills/pandoc-toolkit-maintainer/SKILL.md`
 
-## 9) CLI tests
+## 9) CLI tests and CI levels
 
-Current smoke/contract test suite:
-
-```bash
-tests/run.sh
-```
-
-Local integration runners:
-
-```bash
-bash tests/l2-local.sh
-bash tests/l3-local.sh
-```
-
-Notes:
-- `l2-local.sh` runs semi-real integration (without the full Mermaid stack).
-- `l3-local.sh` requires `mmdc` and Chromium (`PUPPETEER_EXECUTABLE_PATH` if it is not auto-detected).
-
-Current suite coverage:
-
-- help and unknown-command handling
-- `doctor` in an OK scenario and with a missing dependency
-- `validate-config` with a valid and an invalid case
-- `render -c` in native mode (checks output/environment)
-- explicit rejection of legacy flags (`--legacy`)
-- advanced render integration (extra_lua_filters, resource_path, optional metadata)
-- render errors for non-existent `explicit_files`
-- render plan: valid JSON, no side effects, readable `--dry-run`
-- emoji filter: plain headings do not emit `\\texorpdfstring`
-- contract behavior (since 1.2.0):
-  - `input.order` with `natural` and `alphabetical` values, and rejection of an unsupported value naming the field and the supported values
-  - `output.keep_merged_markdown` set to `false` (deletes the `.md`) and `true` (keeps it), with a PDF produced in both cases
-  - `document.*` reaches pandoc as `-V` variables, and a `pandoc.metadata_file` takes precedence over them
-  - `include_ballot_icons` toggles `PANDOC_EMOJI_BALLOT_ICONS` between `1` and `0`
-  - `runtime.strict` set to `false` (warning, exit 0) and `true` (failure)
-- release artifact: the generated package contains no Python bytecode (`__pycache__`, `.pyc`)
-- locale message with no destination: names `--project`, not `--team`
-
-In addition, this suite runs automatically in CI (GitHub Actions) for PR/push on a macOS/Linux matrix as **L1**.
-
-CI levels:
-
-- **L1 (fast, mandatory on PR/push):** `tests/run.sh`.
-- **L2 (semi-real, manual):** real render on Ubuntu against integration fixtures.
-- **L3 (full, manual or scheduled):** integration with the extended stack (includes the Mermaid CLI).
-  - includes a real Mermaid fixture in `tests/integration/l3-mermaid-project/`.
-
-Workflow and manual inputs:
-
-- Workflow: `.github/workflows/ci.yml`
-- `run_render_integration=true` to run **L2**
-- `run_render_full=true` to run **L3**
-
-Run from the CLI:
-
-```bash
-gh workflow run ci.yml -f run_render_integration=true
-# or
-gh workflow run ci.yml -f run_render_full=true
-```
+How the suite is organised, what each level covers and how to trigger L2 or L3 by
+hand are in `CONTRIBUTING.md`: it is material for whoever changes the toolkit, not
+for whoever uses it.
