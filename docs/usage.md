@@ -265,11 +265,22 @@ The plan is the verifiable contract of the render: it is what makes it possible 
 
 - `doctor` fails: install the missing dependencies before retrying.
 - `validate-config` fails: fix required fields / the YAML structure.
-- **Code that will not wrap.** Long lines wrap now: a fenced block breaks inside a
-  token, and inline code gets break opportunities after `/`, `.` and `=`, never inside an identifier. One
-  caveat worth knowing: inside a fenced block the break is real, so a command
-  copied from the PDF carries a newline; inline code breaks without adding any
-  character, so it copies intact.
+- **Code that will not wrap.** Both highlighted and untagged fenced blocks wrap
+  at spaces and after `/`, `.`, `,` and `=`, rather than between arbitrary letters.
+  Inline code has break opportunities after `/`, `.` and `=`. A single identifier
+  wider than the available space can still overflow; it is not split at `_` or
+  `-`. PDF text extraction can introduce line breaks, so check copied commands
+  before running them.
+- **Words split across lines.** The default template disables automatic syllable
+  hyphenation in prose: a word such as `because` moves whole to the next line.
+- **Headings at the bottom of a page.** The default template reserves space for
+  headings and the start of their content, moving them to the next page when
+  needed. This covers H1–H5, including H4/H5's paragraph-style headings. Pandoc's
+  LaTeX writer emits H6 as plain text, not as a section heading; it does not get
+  the same protection. To exercise page boundaries with prose, consecutive
+  headings, lists, tables and code, run
+  `python3 tests/integration/check-heading-pagination.py` (requires Pandoc,
+  XeLaTeX and `pdftotext`). The review PDF stays under `examples/.output/`.
 - `render` fails with Mermaid: `mmdc` is on PATH but cannot launch a browser. `mermaid-cli` needs a Chromium that Puppeteer can find, and its own download is separate from the npm package. `pandoc-pdf doctor` renders a test diagram and reports the exact fix:
   - install the browser Puppeteer expects: `npx puppeteer browsers install chrome-headless-shell`;
   - or point it at a browser you already have: `export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.

@@ -90,7 +90,7 @@ $endif$
 
 \usepackage{fancyvrb}
 \usepackage{fvextra} % adds 'breaklines' key for Verbatim
-\RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines,breakanywhere}
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{}
 \usepackage{framed}
 % Set smaller font size for code blocks
 \fvset{fontsize=\small}
@@ -122,9 +122,12 @@ $endif$
     \newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
 }{}
 \@ifundefined{Highlighting}{
-    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
 }{}
 \makeatother
+% Apply to both Pandoc's Highlighting and ordinary verbatim, not just the
+% fallback definition. Wrap at spaces and separators, never arbitrary letters.
+\fvset{breaklines=true,breakanywhere=false,breakafter={/.,=}}
 
 % ---- Tables ----
 \usepackage{longtable,booktabs,array}
@@ -174,8 +177,21 @@ $endif$
 \titleformat{\paragraph}[block]{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
 \titlespacing*{\paragraph}{0pt}{1ex plus .2ex minus .2ex}{0.8ex plus .1ex}
 
-% Insert a float barrier before every H2 (\subsection) without redefining it
-\pretocmd{\subsection}{\FloatBarrier}{}{}
+% Reserve room for a heading and the start of its content. LaTeX's existing
+% after-heading protection keeps the first paragraph attached. Do not introduce
+% a possible page break between consecutive headings (\if@nobreak is then true).
+\makeatletter
+\newcommand{\KeepHeadingWithContent}{%
+    \par
+    \if@nobreak\else\Needspace{6\baselineskip}\fi
+}
+\makeatother
+\pretocmd{\section}{\KeepHeadingWithContent}{}{}
+% Flush pending floats before measuring the space available for H2.
+\pretocmd{\subsection}{\FloatBarrier\KeepHeadingWithContent}{}{}
+\pretocmd{\subsubsection}{\KeepHeadingWithContent}{}{}
+\pretocmd{\paragraph}{\KeepHeadingWithContent}{}{}
+\pretocmd{\subparagraph}{\KeepHeadingWithContent}{}{}
 
 % ---- Title (cover) page ----
 \newif\iftitlepage
@@ -215,6 +231,9 @@ $endif$
 % Let a paragraph stretch a little rather than send a word past the margin; the
 % break opportunities the filters insert need room to be used.
 \setlength{\emergencystretch}{3em}
+% Move whole prose words to the next line instead of inserting syllable hyphens.
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
 
 \begin{document}
 
