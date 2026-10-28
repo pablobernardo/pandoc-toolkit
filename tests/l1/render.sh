@@ -1134,6 +1134,36 @@ CONFIG
   rm -f "$capture" "$out"
 }
 
+# Structural guard; real PDF layout is checked separately with the TeX toolchain.
+run_template_wrapping_test() {
+  local out code
+  out="$(mktemp)"
+  code=0
+  "${REAL_PYTHON3}" - "${ROOT_DIR}/templates/default.tex" >"$out" 2>&1 <<'PY' || code=$?
+from pathlib import Path
+import sys
+s = Path(sys.argv[1]).read_text()
+settings = r'\fvset{breaklines=true,breakanywhere=false,breakafter={/.,=}}'
+assert settings in s and s.index(settings) > s.index('$highlighting-macros$')
+print('wrapping applies after Pandoc definitions')
+assert r'\hyphenpenalty=10000' in s and r'\exhyphenpenalty=10000' in s
+print('prose words stay whole')
+assert r'commandchars=\\\{\}' in s and r'\fvset{fontsize=\small}' in s
+print('highlighting escapes and existing code size retained')
+assert r'\Needspace{6\baselineskip}' in s and r'\if@nobreak\else' in s
+for command in ('section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph'):
+    prefix = r'\pretocmd{' + chr(92) + command + '}'
+    line = next(line for line in s.splitlines() if line.startswith(prefix))
+    assert r'\KeepHeadingWithContent' in line
+print('all supported heading levels reserve content space')
+PY
+  assert_exit_code "0" "$code" "template wrapping settings are effective"
+  assert_contains "$out" "prose words stay whole" "template disables syllable hyphenation"
+  assert_contains "$out" "highlighting escapes and existing code size retained" "template preserves code styling"
+  assert_contains "$out" "all supported heading levels reserve content space" "headings reserve room for following content"
+  rm -f "$out"
+}
+
 # Accepting a missing setting is half the job: the renderer has to use the value it
 # documents, or the relaxation only moves the surprise to render time.
 run_render_filter_defaults_test() {

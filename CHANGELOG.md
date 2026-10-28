@@ -7,6 +7,19 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Fixed
+
+- Apply code wrapping to Pandoc's actual highlighted-block environment as well as
+  untagged blocks. Wrap at spaces and separators without splitting arbitrary
+  letters. Inline code can wrap after `/`, `.` and `=`; long unbreakable
+  identifiers can still exceed the available width.
+- Disable automatic syllable hyphenation in prose so words move whole to the
+  next line.
+- Reserve space for H1–H5 and their following content to avoid headings stranded
+  at the foot of a page, while retaining consecutive-heading protection.
+
 ## [2.0.0] - released
 
 The first release since 1.1.3, and a major one because **defaults changed**: the
@@ -97,11 +110,6 @@ at `1`: no key was removed or made stricter, so existing files keep validating.
 
 ### Fixed
 
-- A long line no longer runs past the right margin. Fenced code blocks break inside
-  a token, inline code gets break opportunities after `/`, `.` and `=` through
-  `filters/inline-code-breaks.lua` (always applied), and a paragraph stretches a
-  little before sending a word outside the text block. Measured on the
-  documentation PDF: **30 overflowing lines before, none after**.
 - A dropped Mermaid diagram no longer hides behind a successful render. When
   `mmdc` is installed but cannot launch a browser, the filter records the loss and
   the render fails; `doctor` renders a test diagram and prints both remediations.
