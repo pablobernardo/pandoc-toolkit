@@ -2,8 +2,13 @@
 --
 -- Pandoc writes `code` as a single \texttt{...} box, which LaTeX will not break:
 -- a long path or flag runs past the margin. This filter splits each Code element
--- into chunks at the characters that are natural boundaries in code (/, -, _, .)
--- and puts a zero-width \allowbreak between them.
+-- at path and assignment boundaries (/ . =) and puts a zero-width \allowbreak
+-- between the chunks.
+--
+-- Deliberately NOT a break point: "-" and "_". They appear inside identifiers, so
+-- breaking there produces "PUPPETEER_" on one line and "EXECUTABLE_PATH" on the
+-- next, which reads as a typo. Knowing where the boundary is matters more than
+-- reaching zero overfull lines.
 --
 -- Two properties are deliberate:
 --
@@ -13,7 +18,7 @@
 --    unlike solutions that insert real line breaks.
 --
 -- Output is identical when the line fits: \allowbreak is only an opportunity.
-local BREAK_CHARS = { ["/"] = true, ["-"] = true, ["_"] = true, ["."] = true }
+local BREAK_CHARS = { ["/"] = true, ["."] = true, ["="] = true }
 
 local function tex_output()
   return FORMAT == "latex" or FORMAT == "beamer"
