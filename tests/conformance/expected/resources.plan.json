@@ -21,6 +21,7 @@
       "--template=<CASES>/assets/custom.tex",
       "--lua-filter=<REPO>/filters/emoji.lua",
       "--lua-filter=<REPO>/filters/mermaid.lua",
+      "--lua-filter=<REPO>/filters/inline-code-breaks.lua",
       "--lua-filter=<CASES>/assets/identity.lua",
       "--toc",
       "--toc-depth=2",

@@ -265,10 +265,11 @@ The plan is the verifiable contract of the render: it is what makes it possible 
 
 - `doctor` fails: install the missing dependencies before retrying.
 - `validate-config` fails: fix required fields / the YAML structure.
-- **A code line runs past the right margin.** Fenced code blocks break at spaces,
-  and a long command or path with no spaces inside cannot break, so it can be cut
-  at the paper edge. There is no setting for it today: shorten the line, split the
-  command, or accept it. Tracked in issue #75, with the remedies measured.
+- **Code that will not wrap.** Long lines wrap now: a fenced block breaks inside a
+  token, and inline code gets break opportunities after `/`, `-`, `_` and `.`. One
+  caveat worth knowing: inside a fenced block the break is real, so a command
+  copied from the PDF carries a newline; inline code breaks without adding any
+  character, so it copies intact.
 - `render` fails with Mermaid: `mmdc` is on PATH but cannot launch a browser. `mermaid-cli` needs a Chromium that Puppeteer can find, and its own download is separate from the npm package. `pandoc-pdf doctor` renders a test diagram and reports the exact fix:
   - install the browser Puppeteer expects: `npx puppeteer browsers install chrome-headless-shell`;
   - or point it at a browser you already have: `export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.

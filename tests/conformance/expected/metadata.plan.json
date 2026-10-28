@@ -19,6 +19,7 @@
       "<CASES>/output/report-recorded.md",
       "--pdf-engine=lualatex",
       "--template=<REPO>/templates/default.tex",
+      "--lua-filter=<REPO>/filters/inline-code-breaks.lua",
       "--toc",
       "--toc-depth=3",
       "--number-sections",

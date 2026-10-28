@@ -1162,11 +1162,13 @@ env = plan.get("env", {})
 print(env.get("PANDOC_EMOJI_DIR", ""))
 print(env.get("PANDOC_EMOJI_BALLOT_ICONS", ""))
 print(env.get("PANDOC_MERMAID_BACKGROUND", ""))
+print([a for a in plan.get("pandoc", {}).get("argv", []) if "lua-filter" in a])
 PY
 
   assert_contains "$got" "output/emoji$" "an enabled emoji filter defaults to output/emoji"
   assert_contains "$got" "^1$" "ballot icons default to on"
   assert_contains "$got" "^transparent$" "the mermaid background defaults to transparent"
+  assert_contains "$got" "inline-code-breaks.lua" "the inline code filter is always in the chain"
 
   rm -f "$plan" "$got"
 }
