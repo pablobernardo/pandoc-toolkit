@@ -25,10 +25,13 @@ run_package_release_artifact_test() {
     pass "package-release artifact excludes Python bytecode caches"
   fi
 
-  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | grep -qxE '\./bin/pandoc-pdf'; then
+  # GNU tar and BSD tar do not print the "./" prefix the same way, which made this
+  # assertion pass on macOS and fail on Ubuntu for the same artifact. Normalise it
+  # instead of trusting one implementation's formatting.
+  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | sed 's|^\./||' | grep -qx 'bin/pandoc-pdf'; then
     pass "package-release artifact contains the CLI entrypoint"
   else
-    fail "package-release artifact must contain ./bin/pandoc-pdf"
+    fail "package-release artifact must contain bin/pandoc-pdf; entries: $(tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | grep -E '^(\./)?bin/' | head -3 | tr '\n' ' ')"
   fi
 
   local expected actual
