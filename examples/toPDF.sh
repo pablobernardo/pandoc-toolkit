@@ -11,8 +11,7 @@ if [[ ! -x "$PANDOC_PDF_BIN" ]]; then
   exit 1
 fi
 
-# "$PANDOC_PDF_BIN" render -c ohmyfake/pdf.config.yaml
-# "$PANDOC_PDF_BIN" render -c test/pdf.config.yaml
-# "$PANDOC_PDF_BIN" render -c manual/pdf.config.yaml
-"$PANDOC_PDF_BIN" render -c documentation/pdf.config.yaml
+"$PANDOC_PDF_BIN" render -c ohmyfake/pdf.config.yaml
+"$PANDOC_PDF_BIN" render -c test/pdf.config.yaml
+"$PANDOC_PDF_BIN" render -c manual/pdf.config.yaml
 "$PANDOC_PDF_BIN" render -c documentation/pdf.config.yaml
