@@ -1133,3 +1133,40 @@ CONFIG
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$capture" "$out"
 }
+
+# Accepting a missing setting is half the job: the renderer has to use the value it
+# documents, or the relaxation only moves the surprise to render time.
+run_render_filter_defaults_test() {
+  local plan got
+  plan="$(mktemp)"
+  got="$(mktemp)"
+
+  # stdout only: the human-readable confirmation goes to stderr, and merging the
+  # two streams turns the plan into something json.load cannot read.
+  PANDOC_PDF_LANG=en "$CLI" render -c "${FIXTURES_DIR}/valid-filter-defaults.config.yaml" \
+    --dry-run --json >"$plan" 2>/dev/null || true
+
+  # The plan carries the environment as key/value pairs, so read it as JSON
+  # instead of grepping for "VAR=value", which is how this test first lied.
+  "${REAL_PYTHON3}" - "$plan" >"$got" 2>/dev/null <<'PY'
+import json
+import sys
+
+try:
+    plan = json.load(open(sys.argv[1]))
+except Exception:
+    print("unparseable plan")
+    raise SystemExit(0)
+
+env = plan.get("env", {})
+print(env.get("PANDOC_EMOJI_DIR", ""))
+print(env.get("PANDOC_EMOJI_BALLOT_ICONS", ""))
+print(env.get("PANDOC_MERMAID_BACKGROUND", ""))
+PY
+
+  assert_contains "$got" "output/emoji$" "an enabled emoji filter defaults to output/emoji"
+  assert_contains "$got" "^1$" "ballot icons default to on"
+  assert_contains "$got" "^transparent$" "the mermaid background defaults to transparent"
+
+  rm -f "$plan" "$got"
+}

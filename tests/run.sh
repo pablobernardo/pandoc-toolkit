@@ -62,10 +62,12 @@ main() {
   run_doctor_mermaid_smoke_test
   run_emoji_source_allowlist_test
   run_template_modern_pandoc_guard_test
+  run_render_filter_defaults_test
   run_render_output_file_name_test
   run_render_slug_accents_test
   run_render_document_metadata_test
   run_validate_metadata_contract_tests
+  run_validate_optional_inert_fields_tests
   run_documentation_example_coverage_test
   run_docs_consistency_test
   run_examples_validate_test

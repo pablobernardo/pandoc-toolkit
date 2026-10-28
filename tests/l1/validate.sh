@@ -208,3 +208,35 @@ run_validate_metadata_contract_tests() {
   assert_contains "$out" "subject" "the failure names the offending metadata key"
   rm -f "$out"
 }
+
+run_validate_optional_inert_fields_tests() {
+  local out code
+
+  # A section whose only switch is a legacy compatibility flag should not be
+  # mandatory to write down.
+  out="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-no-compat.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a config without the compat section is valid"
+  rm -f "$out"
+
+  # A disabled filter says nothing about the document, so its settings are noise.
+  out="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-disabled-filters.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a disabled filter does not need its settings"
+  rm -f "$out"
+
+  # And an enabled filter without settings falls back to what the renderer assumes.
+  out="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-filter-defaults.config.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "an enabled filter without settings is valid"
+  rm -f "$out"
+}

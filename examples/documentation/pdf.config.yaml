@@ -52,19 +52,15 @@ pandoc:
     - "."
 
 filters:
-  # Both filters are off: the documentation has no diagrams, and the few status
-  # glyphs it does contain (U+274C, U+2705) are missing from the LaTeX font, so
-  # the render warns about them and leaves a gap. Enabling the emoji filter would
-  # replace them with images at the cost of a network fetch. Their settings are
-  # still required by the schema, which is a wart worth noting.
+  # Both filters are off, and that is the whole declaration: a disabled filter no
+  # longer needs its settings. The documentation has no diagrams, and the few
+  # status glyphs it contains (U+274C, U+2705) are missing from the LaTeX font, so
+  # the render warns and leaves a gap; enabling the emoji filter would replace them
+  # with images at the cost of a network fetch.
   emoji:
     enabled: false
-    emoji_dir: "../.output/emoji"
-    include_ballot_icons: false
   mermaid:
     enabled: false
-    output_dir: "../.output/mermaid"
-    background: "transparent"
   extra_lua_filters: []
 
 runtime:

@@ -12,8 +12,7 @@
     "output",
     "pandoc",
     "filters",
-    "runtime",
-    "compat"
+    "runtime"
   ],
   "properties": {
     "version": {
@@ -105,7 +104,7 @@
         "emoji": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["enabled", "emoji_dir", "include_ballot_icons"],
+          "required": ["enabled"],
           "properties": {
             "enabled": { "type": "boolean" },
             "emoji_dir": { "type": "string", "minLength": 1 },
@@ -115,7 +114,7 @@
         "mermaid": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["enabled", "output_dir", "background"],
+          "required": ["enabled"],
           "properties": {
             "enabled": { "type": "boolean" },
             "output_dir": { "type": "string", "minLength": 1 },
