@@ -17,11 +17,22 @@ document:
 
 input:
   chapters_dir: "docs"
-  # A glob, not a hand-written list: a new document is included automatically
-  # instead of silently missing from the compilation.
   glob: "*.md"
   order: natural
-  explicit_files: []
+  # Reading order, following docs/README.md: use the toolkit, then maintain it.
+  # `explicit_files` wins over `glob`, so this list decides. A test fails if a
+  # document under docs/ is missing from it, which is what keeps a hand-written
+  # order from going stale.
+  # README.md is deliberately absent: it navigates the repository on GitHub, and
+  # its relative links lead nowhere inside a PDF that has its own numbered index.
+  explicit_files:
+    - "install.md"
+    - "usage.md"
+    - "migration.md"
+    - "architecture.md"
+    - "releasing.md"
+    - "dependency-policy.md"
+    - "i18n.md"
 
 output:
   # Paths resolve against project.base_dir, which is the repository root here, so

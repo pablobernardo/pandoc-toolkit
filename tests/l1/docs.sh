@@ -86,3 +86,31 @@ run_examples_validate_test() {
     fail "no example config was found: the test would pass without checking anything"
   fi
 }
+
+# A hand-written reading order goes stale the moment a document is added, which is
+# exactly the drift this example exists to demonstrate a guard against.
+run_documentation_example_coverage_test() {
+  local out planned expected missing
+
+  PANDOC_PDF_LANG=en "$CLI" render -c "${ROOT_DIR}/examples/documentation/pdf.config.yaml" \
+    --dry-run --json >"$out" 2>&1 || true
+
+  planned="$(PANDOC_PDF_LANG=en "$CLI" render -c "${ROOT_DIR}/examples/documentation/pdf.config.yaml" \
+    --dry-run --json 2>/dev/null \
+    | "${REAL_PYTHON3}" -c 'import json,sys; print("\n".join(sorted(p.split("/")[-1] for p in json.load(sys.stdin)["chapters"])))' 2>/dev/null)"
+
+  expected="$(cd "${ROOT_DIR}/docs" && ls -1 *.md | grep -v '^README\.md$' | sort)"
+  missing="$(comm -13 <(printf '%s\n' "$planned" | sort) <(printf '%s\n' "$expected" | sort) | tr -d ' ')"
+
+  if [[ -z "$missing" ]]; then
+    pass "the documentation example includes every document under docs/"
+  else
+    fail "the documentation example is missing: ${missing//$'\n'/, }"
+  fi
+
+  if [[ -n "$planned" ]]; then
+    pass "the documentation example plans at least one document"
+  else
+    fail "the documentation example plans nothing: the check above would pass vacuously"
+  fi
+}
