@@ -285,6 +285,10 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     if mermaid_enabled:
         cmd.append(f"--lua-filter={root_dir / 'filters/mermaid.lua'}")
 
+    # Always on: inline code cannot break in LaTeX, and a long path running past
+    # the margin is not something a consumer should have to configure away.
+    cmd.append(f"--lua-filter={root_dir / 'filters/inline-code-breaks.lua'}")
+
     for extra in filters.get("extra_lua_filters", []):
         extra_path = Path(str(extra))
         if not extra_path.is_absolute():

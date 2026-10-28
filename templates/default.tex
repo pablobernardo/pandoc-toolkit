@@ -90,6 +90,7 @@ $endif$
 
 \usepackage{fancyvrb}
 \usepackage{fvextra} % adds 'breaklines' key for Verbatim
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines,breakanywhere}
 \usepackage{framed}
 % Set smaller font size for code blocks
 \fvset{fontsize=\small}
@@ -121,7 +122,7 @@ $endif$
     \newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
 }{}
 \@ifundefined{Highlighting}{
-    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
 }{}
 \makeatother
 
@@ -211,6 +212,10 @@ $endif$
 }
 
 % ---- Document begins ----
+% Let a paragraph stretch a little rather than send a word past the margin; the
+% break opportunities the filters insert need room to be used.
+\setlength{\emergencystretch}{3em}
+
 \begin{document}
 
 $if(titlepage)$

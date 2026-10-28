@@ -97,6 +97,11 @@ at `1`: no key was removed or made stricter, so existing files keep validating.
 
 ### Fixed
 
+- A long line no longer runs past the right margin. Fenced code blocks break inside
+  a token, inline code gets break opportunities after `/`, `-`, `_` and `.` through
+  `filters/inline-code-breaks.lua` (always applied), and a paragraph stretches a
+  little before sending a word outside the text block. Measured on the
+  documentation PDF: **30 overflowing lines before, none after**.
 - A dropped Mermaid diagram no longer hides behind a successful render. When
   `mmdc` is installed but cannot launch a browser, the filter records the loss and
   the render fails; `doctor` renders a test diagram and prints both remediations.

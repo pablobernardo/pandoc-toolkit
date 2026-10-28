@@ -19,6 +19,7 @@
       "<CASES>/output/report-recorded.md",
       "--pdf-engine=xelatex",
       "--template=<REPO>/templates/default.tex",
+      "--lua-filter=<REPO>/filters/inline-code-breaks.lua",
       "-V",
       "fig-pos=!htbp",
       "--resource-path=<CASES>/chapters",
