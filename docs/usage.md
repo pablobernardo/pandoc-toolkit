@@ -86,6 +86,25 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 - `true` (default): `doctor` fails with exit 1 if a command from `runtime.required_commands` or the TeX engine is missing.
 - `false`: it reports them as warnings and exits with exit 0, **except the TeX engine**: without it there is no PDF, so its absence always fails even when `strict` is `false`.
 
+### Optional settings and their defaults
+
+A setting is required only when something reads it. These are optional, and the
+renderer applies the value in the middle column when they are absent:
+
+| Setting | Default | Matters when |
+| --- | --- | --- |
+| `compat` (whole section) | `legacy_clearpage_between_h1: true` | you want different page-break behaviour |
+| `filters.emoji.emoji_dir` | `output/emoji` under `project.base_dir` | the emoji filter is enabled |
+| `filters.emoji.include_ballot_icons` | `true` | the emoji filter is enabled |
+| `filters.mermaid.output_dir` | `output/mermaid` under `project.base_dir` | the mermaid filter is enabled |
+| `filters.mermaid.background` | `transparent` | the mermaid filter is enabled |
+| `pandoc.metadata_file` | absent: `document.*` reaches the template | always |
+| `output.file_prefix` | a slug of `document.title` | always |
+
+A filter that is disabled does not need its settings: `enabled: false` is a
+complete declaration. That is why the documentation example, which renders no
+diagrams and no emoji, says only that both filters are off.
+
 ## CLI commands
 
 Optional `make` shortcuts:
