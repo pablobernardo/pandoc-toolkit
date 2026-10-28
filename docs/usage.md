@@ -266,7 +266,7 @@ The plan is the verifiable contract of the render: it is what makes it possible 
 - `doctor` fails: install the missing dependencies before retrying.
 - `validate-config` fails: fix required fields / the YAML structure.
 - **Code that will not wrap.** Long lines wrap now: a fenced block breaks inside a
-  token, and inline code gets break opportunities after `/`, `-`, `_` and `.`. One
+  token, and inline code gets break opportunities after `/`, `.` and `=`, never inside an identifier. One
   caveat worth knowing: inside a fenced block the break is real, so a command
   copied from the PDF carries a newline; inline code breaks without adding any
   character, so it copies intact.

@@ -98,7 +98,7 @@ at `1`: no key was removed or made stricter, so existing files keep validating.
 ### Fixed
 
 - A long line no longer runs past the right margin. Fenced code blocks break inside
-  a token, inline code gets break opportunities after `/`, `-`, `_` and `.` through
+  a token, inline code gets break opportunities after `/`, `.` and `=` through
   `filters/inline-code-breaks.lua` (always applied), and a paragraph stretches a
   little before sending a word outside the text block. Measured on the
   documentation PDF: **30 overflowing lines before, none after**.
