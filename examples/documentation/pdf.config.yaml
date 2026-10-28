@@ -1,0 +1,79 @@
+version: 1
+
+project:
+  name: toolkit-documentation
+  # The example lives two levels down, so the repository root is the base.
+  base_dir: "../.."
+
+document:
+  title: "Pandoc PDF Toolkit"
+  subtitle: "Documentation"
+  author: "The Example Maintainers"
+  publisher: "Public Domain Press"
+  date: "2026"
+  rights: "Repository documentation, MIT licensed"
+  language: "en"
+  titlepage: true
+
+input:
+  chapters_dir: "docs"
+  glob: "*.md"
+  order: natural
+  # Reading order, following docs/README.md: use the toolkit, then maintain it.
+  # `explicit_files` wins over `glob`, so this list decides. A test fails if a
+  # document under docs/ is missing from it, which is what keeps a hand-written
+  # order from going stale.
+  # README.md is deliberately absent: it navigates the repository on GitHub, and
+  # its relative links lead nowhere inside a PDF that has its own numbered index.
+  explicit_files:
+    - "install.md"
+    - "usage.md"
+    - "migration.md"
+    - "architecture.md"
+    - "releasing.md"
+    - "dependency-policy.md"
+    - "i18n.md"
+
+output:
+  # Paths resolve against project.base_dir, which is the repository root here, so
+  # this points inside the repository's ignored output area.
+  dir: "examples/.output/documentation"
+  file_prefix: "toolkit-documentation"
+  suffix: "${date:YYYYMMDD}"
+  keep_merged_markdown: false
+
+pandoc:
+  pdf_engine: xelatex
+  toc: true
+  toc_depth: 2
+  number_sections: true
+  # base_dir is already the repository root, so the documents resolve from here.
+  resource_path:
+    - "."
+
+filters:
+  # Both filters are off: the documentation has no diagrams, and the few status
+  # glyphs it does contain (U+274C, U+2705) are missing from the LaTeX font, so
+  # the render warns about them and leaves a gap. Enabling the emoji filter would
+  # replace them with images at the cost of a network fetch. Their settings are
+  # still required by the schema, which is a wart worth noting.
+  emoji:
+    enabled: false
+    emoji_dir: "../.output/emoji"
+    include_ballot_icons: false
+  mermaid:
+    enabled: false
+    output_dir: "../.output/mermaid"
+    background: "transparent"
+  extra_lua_filters: []
+
+runtime:
+  required_commands:
+    - pandoc
+    - xelatex
+    - python3
+  strict: true
+
+compat:
+  # Each document starts on a fresh page, which is what a compilation wants.
+  legacy_clearpage_between_h1: true
