@@ -16,7 +16,7 @@ the actual release candidate still need to run and be recorded.
   to a published release go into a new patch version, not a replacement tag.
 - [ ] **Compatibility assessed**: toolkit version and configuration contract
   version are independent. A breaking contract change needs a contract version
-  change and migration guidance in `docs/migration.md`; breaking CLI or default
+  change and an explicit migration guide; breaking CLI or default
   behaviour also requires a major toolkit version under `AGENTS.md`.
 - [ ] **Dependencies pinned**: action SHAs and the images and tool versions in
   `docs/dependency-policy.md` match CI.

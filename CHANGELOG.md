@@ -19,6 +19,11 @@ these fixes require no consumer migration.
 
 ### Changed
 
+- Documentation now separates the user-focused README from contributor CI
+  instructions, removes obsolete migration and self-update guides, and updates
+  the documentation PDF's reading order to cover the current guides. Removes
+  unused OpenCode guidance, the duplicate operational-context summary and local
+  agent skills; contributor and security guidance now have one home each.
 - Installation guidance now leads with the no-clone, token-free release install
   and explains the managed layout and update path (#72).
 - Release documentation clarifies that the four platform tarball names are

@@ -90,10 +90,7 @@ run_examples_validate_test() {
 # A hand-written reading order goes stale the moment a document is added, which is
 # exactly the drift this example exists to demonstrate a guard against.
 run_documentation_example_coverage_test() {
-  local out planned expected missing
-
-  PANDOC_PDF_LANG=en "$CLI" render -c "${ROOT_DIR}/examples/documentation/pdf.config.yaml" \
-    --dry-run --json >"$out" 2>&1 || true
+  local planned expected missing
 
   planned="$(PANDOC_PDF_LANG=en "$CLI" render -c "${ROOT_DIR}/examples/documentation/pdf.config.yaml" \
     --dry-run --json 2>/dev/null \
