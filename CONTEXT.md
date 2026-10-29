@@ -12,15 +12,20 @@
 - **The verification is `make gate`**: suite, catalogs, documentation references
   and plan conformance. How many assertions that is belongs to the run, not to
   this file.
-- **CI is not running**: the account has no Actions minutes, so every job fails to
-  start. Until it does, `make gate` output pasted into the pull request is the
-  evidence a maintainer accepts.
-- Toolkit version (`VERSION`): **2.0.0**, with **no tag yet**. The release is
-  prepared and the tag waits for the repository to be public, because
-  `release.yml` needs Actions minutes to build the artifacts (D8).
-- Local `python3` has no PyYAML, so the Ruby YAML path is the one exercised here,
-  and the Python one runs where PyYAML exists. Neither environment exercises both
-  (`docs/dependency-policy.md`).
+- **Published release**: [v2.0.0](https://github.com/pablobernardo/pandoc-toolkit/releases/tag/v2.0.0)
+  was published on 2026-10-27 at commit `3cc751a`. `VERSION` remains **2.0.0**;
+  changes since that tag are unreleased, not a replacement for published assets.
+- **Latest implementation baseline**: `main` at `4a62292`, with PR #82 merged.
+  L1 CI passed on macOS and Ubuntu, and Security passed; L2/L3 were skipped.
+  The CLI-driven heading-pagination check and `make gate` also passed in the
+  preceding verification. These are recorded results, not checks rerun by this
+  documentation correction; assertion counts belong to their run output.
+- The configuration contract remains **1**. The optional-setting validation and
+  layout fixes need no consumer migration; a patch release is a separate
+  maintainer decision, not yet authorised by this documentation update.
+- Earlier local verification used Ruby YAML because that environment lacked
+  PyYAML. That is historical evidence, not a claim about the current environment
+  or coverage of both parser paths (`docs/dependency-policy.md`).
 
 ## Where each area is described
 
@@ -38,31 +43,16 @@ Not restated here: a second copy of a description is a second place to be wrong.
 | Internationalisation | `docs/i18n.md` |
 | How a version is cut | `docs/releasing.md` |
 
-## Native review (RDD) — a size threshold, not a broken provider
+## Native review (RDD) — keep candidates focused
 
-State: **usable, and it works on small candidates**. Four attempts with the same
-reviewer:
+Earlier review captures failed, including a small candidate; they do not
+establish a deterministic line-count cutoff or prove a universal provider limit.
+The final **165-diff-line** candidate passed readability and reliability review,
+and that result was acknowledged.
 
-| candidate | result |
-| --- | --- |
-| 1,088 lines | `review-resilience` returns an empty answer |
-| 1,159 lines | same |
-| 159 lines | same |
-| **62 lines** | **approved, 4/4 lenses, no blocking finding** |
-
-Cause: the model serving the resilience lens reasons until it hits the gateway
-guard (`420 s / 45.000 reasoning-character limit`) and then returns nothing, so
-whether it finishes depends on how much the candidate makes it think: **above
-roughly a hundred lines it fails, below it works**.
-
-Consequences:
-
-- Review a commit or a focused change, never a whole branch.
-- An approved review is not a substitute for tests, and a failed review is not a
-  reason to skip them: the gate is the suite plus human review of the pull
-  request.
-- Retrying on a large candidate wastes about ten minutes and leaves a lineage to
-  abandon.
+Keep review scope focused and judge capture quality from the observed result,
+not a presumed size threshold. Review approval does not replace tests, and a
+failed capture is not a reason to skip verification.
 
 ## Binary migration (Go) — pending decision
 
@@ -86,13 +76,11 @@ Migration triggers (any one of them):
 
 ## Known follow-ups
 
-1. **Render-plan conformance is implemented**: four cases and normalized JSON
-   expectations under `tests/conformance/`, checked by
-   `scripts/check-plan-conformance.py` and wired into the L1 suite, make the Go
-   door testable and catch renderer regressions today.
-2. **Artifact signing** (Sigstore/GPG) for release artifacts.
-3. **Examples that show the toolkit's capabilities**: one example and one chapter
-   is the whole surface today (tracked in issue #37).
+1. **Missing Unicode glyphs (#83)**: font coverage remains unresolved;
+   implementation has not begun. The layout fixes do not address it.
+2. **Figures and custom Lua filters (#64)**: open work, not implemented by the
+   current layout fixes.
+3. **Artifact signing** (Sigstore/GPG) for release artifacts.
 
 ## Risks worth keeping on the page
 

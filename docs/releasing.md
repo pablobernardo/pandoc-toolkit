@@ -1,60 +1,101 @@
 # Releasing
 
-How a version is cut. This describes the process, not the state of the next
-version: what is about to ship lives in `CHANGELOG.md`.
+Publishing requires an explicit maintainer decision. This is a checklist, not
+permission to release: proposed changes live in `CHANGELOG.md`, and checks for
+the actual release candidate still need to run and be recorded.
 
 ## Before tagging
 
-1. **Checks green on `main`**: `make gate` (suite, catalogs, documentation
-   references and plan conformance), plus the security workflow with its
-   thresholds at zero. When CI cannot start, `make gate` output pasted into the
-   pull request is the verification a maintainer accepts.
-2. **`VERSION`** holds the version to publish.
-3. **`CHANGELOG.md`** has the entry, written for the reader who upgrades.
-4. **Contract change?** `pdf.config.yaml -> version` moves only for a breaking
-   change of the configuration contract, with a migration section in
-   `docs/migration.md`. Toolkit version and contract version are independent.
-5. **Dependencies pinned**: every action uses a commit SHA, and the images and
-   tool versions in `docs/dependency-policy.md` match what CI installs.
+- [ ] **Checks green on the candidate**: `make gate` (suite, catalogs,
+  documentation references and plan conformance), plus the security workflow
+  with its thresholds at zero. Record which CI levels ran; skipped L2/L3 jobs
+  are not integration evidence. If CI cannot start, record that limitation and
+  provide local verification for the maintainer's decision.
+- [ ] **Version and notes ready**: `VERSION` holds a new, unpublished version;
+  `CHANGELOG.md` describes what upgrades change and any known limits. Corrections
+  to a published release go into a new patch version, not a replacement tag.
+- [ ] **Compatibility assessed**: toolkit version and configuration contract
+  version are independent. A breaking contract change needs a contract version
+  change and migration guidance in `docs/migration.md`; breaking CLI or default
+  behaviour also requires a major toolkit version under `AGENTS.md`.
+- [ ] **Dependencies pinned**: action SHAs and the images and tool versions in
+  `docs/dependency-policy.md` match CI.
 
-## Cutting it
+## Candidate acceptance checks
+
+Use isolated temporary output and installation directories. These are checks to
+perform for the release, not claims that a future candidate has passed:
+
+- [ ] **Package contents and checksums**: run `scripts/package-release.sh` with a
+  fresh temporary output directory; verify all four tarballs against
+  `checksums.txt`. Inspect the archive for the executable CLI, matching `VERSION`,
+  runtime scripts, schemas, templates, filters, catalogs and license; exclude
+  Python bytecode caches. The four platform names are aliases of one
+  platform-independent artifact, so identical hashes are intentional.
+- [ ] **Clean install**: install the candidate artifact in a clean managed layout,
+  confirm `pandoc-pdf --version`, and run `doctor` and `validate-config`. Follow
+  `docs/install.md`; use disposable state rather than an everyday installation.
+- [ ] **Upgrade**: from the previous published version, exercise the updater
+  against the candidate artifact; confirm checksum verification, the installed
+  version and the managed `current` pointer. Check rollback on a failed
+  post-install version check. After publication, verify the real release
+  download path as well.
+- [ ] **Smoke rendering**: render representative examples, including highlighted
+  and untagged code, inline code and heading pagination. Inspect the PDFs, not
+  just the exit status. H6 remains plain text, arbitrary unbreakable content may
+  overflow, and missing Unicode glyphs remain tracked in #83.
+- [ ] **YAML paths where feasible**: exercise both PyYAML and the Ruby stdlib
+  fallback in suitable environments. Record which ran and any gap; a run on one
+  path does not establish coverage of the other.
+
+## Tagging and publishing
+
+The following Bash commands are illustrative, not an instruction to run them
+without approval. Start at the approved commit on a clean `main`; confirm that
+`github` is the intended publishing remote. Check both local and remote tags,
+then derive the tag from `VERSION` rather than copying an old release number:
 
 ```bash
-git tag -a v2.0.0 -m "pandoc-pdf 2.0.0"
-git push github v2.0.0
+set -euo pipefail
+test "$(git branch --show-current)" = main
+test -z "$(git status --porcelain)"
+version="$(< VERSION)"
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+tag="v${version}"
+if git show-ref --verify --quiet "refs/tags/$tag"; then
+  printf 'Tag already exists locally: %s\n' "$tag" >&2
+  exit 1
+fi
+remote_tags="$(git ls-remote --tags github "refs/tags/$tag")"
+test -z "$remote_tags"
 ```
 
-The tag triggers `.github/workflows/release.yml`, which:
+Only after the acceptance evidence and explicit publishing approval:
 
-- builds `dist/pandoc-pdf_{darwin,linux}_{amd64,arm64}.tar.gz` and
-  `dist/checksums.txt` with `scripts/package-release.sh`. The artifact is bash and
-  Python, so it is platform-independent: the four names are aliases of the same
-  tarball and their checksums are identical by design, which is worth knowing
-  before treating a matching hash as a broken build;
-- creates or updates the GitHub release for that tag, with generated notes;
-- fails if any expected asset is missing.
+```bash
+git tag -a "$tag" -m "pandoc-pdf $version"
+git push github "$tag"
+```
 
-`workflow_dispatch` on the same workflow releases an existing tag, with the tag
-as input.
+The tag triggers `.github/workflows/release.yml`, which builds the four
+`dist/pandoc-pdf_{darwin,linux}_{amd64,arm64}.tar.gz` assets and
+`dist/checksums.txt`, creates or updates the GitHub release with generated notes,
+and fails if an expected asset is missing. `workflow_dispatch` can also publish
+an existing tag. A pull request does not exercise this tag/manual workflow.
 
 ## After publishing
 
-1. On a machine with the previous version: `pandoc-pdf update --check`, then
-   `pandoc-pdf update`, and confirm the installed version.
-2. The updater downloads the asset for the platform, verifies it against
-   `checksums.txt`, installs into a versioned directory behind a `current`
-   pointer, and **rolls back** when the post-install version check fails.
-3. If an asset is wrong, delete the release and the tag, fix, and tag again: the
-   workflow creates or updates, so re-running the same tag replaces the assets.
+1. Verify the release tag, notes, asset contents and checksums against the
+   approved candidate.
+2. In a disposable installation of the previous published version, run
+   `pandoc-pdf update --check`, then `pandoc-pdf update`, and confirm the version
+   and a smoke render. Also verify a clean install from the published assets.
+3. Preserve published tags and assets. If a correction is needed, document it
+   and publish a new patch release through the same checks and approval.
 
-## What CI does not exercise
-
-`release.yml` runs only on a tag or by hand, so no pull request proves it. Run
-the packaging script locally before trusting it:
-
-```bash
-./scripts/package-release.sh /tmp/dist
-```
+**Policy is not technical enforcement:** the workflow can update a release and
+replace its assets when rerun. Do not use that capability to delete/recreate a
+published tag or silently overwrite a published release.
 
 ## Security gates
 
