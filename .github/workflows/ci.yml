@@ -63,7 +63,21 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            pandoc texlive-latex-base texlive-fonts-recommended librsvg2-bin
+            pandoc texlive-latex-base texlive-latex-extra \
+            texlive-fonts-recommended librsvg2-bin
+          # Check every declared template style, not only the last missing file.
+          python3 - <<'PY'
+          import re
+          import subprocess
+          from pathlib import Path
+          template = Path("templates/default.tex").read_text()
+          packages = re.findall(
+              r"\\usepackage(?:\[[^]]*\])?{([^}]+)}", template
+          )
+          for group in packages:
+              for package in group.split(","):
+                  subprocess.run(["kpsewhich", package + ".sty"], check=True)
+          PY
 
       - name: Ensure scripts are executable
         run: |
@@ -92,8 +106,21 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            pandoc texlive-latex-base texlive-fonts-recommended \
-            librsvg2-bin texlive-xetex nodejs npm chromium-browser
+            pandoc texlive-latex-base texlive-latex-extra \
+            texlive-fonts-recommended librsvg2-bin texlive-xetex nodejs npm
+          # Check every declared template style, not only the last missing file.
+          python3 - <<'PY'
+          import re
+          import subprocess
+          from pathlib import Path
+          template = Path("templates/default.tex").read_text()
+          packages = re.findall(
+              r"\\usepackage(?:\[[^]]*\])?{([^}]+)}", template
+          )
+          for group in packages:
+              for package in group.split(","):
+                  subprocess.run(["kpsewhich", package + ".sty"], check=True)
+          PY
           # Keep in sync with MERMAID_CLI_VERSION and docs/dependency-policy.md
           sudo npm install -g @mermaid-js/mermaid-cli@10.9.1
 
@@ -109,4 +136,8 @@ jobs:
 
       - name: Run L3 local integration runner
         run: |
-          PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser bash tests/l3-local.sh
+          # Use the hosted image's Chrome, not a confined Chromium Snap.
+          chrome_path="$(command -v google-chrome)"
+          test -x "$chrome_path"
+          test -r "$(npm root -g)/@mermaid-js/mermaid-cli/dist/index.html"
+          PUPPETEER_EXECUTABLE_PATH="$chrome_path" bash tests/l3-local.sh

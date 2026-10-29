@@ -35,8 +35,10 @@ at `1`; these fixes require no consumer migration.
 
 ### Fixed
 
-- L2/L3 CI rendering jobs explicitly install the required TeX font metrics and
-  SVG converter instead of relying on incidental runner dependencies.
+- L2/L3 CI rendering jobs explicitly install the template's LaTeX prerequisites,
+  font metrics and SVG converter, and check declared styles before rendering.
+  L3 uses the hosted image's Chrome instead of a Chromium Snap, with explicit
+  browser and Mermaid HTML checks; no runtime or browser-sandbox changes.
 - Configuration validation no longer requires the `compat` section or optional
   emoji/Mermaid settings. Disabled filters need only `enabled: false`; enabled
   filters can use the renderer's existing defaults (#76).
