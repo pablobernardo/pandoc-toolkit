@@ -9,8 +9,28 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+These changes are not yet published. The configuration contract remains at `1`;
+these fixes require no consumer migration.
+
+### Added
+
+- A documentation-as-PDF example using the toolkit's own `docs/` as input, with
+  filters disabled and a numbered table of contents (#73).
+
+### Changed
+
+- Installation guidance now leads with the no-clone, token-free release install
+  and explains the managed layout and update path (#72).
+- Release documentation clarifies that the four platform tarball names are
+  aliases of one platform-independent artifact, with identical checksums (#71).
+
 ### Fixed
 
+- Configuration validation no longer requires the `compat` section or optional
+  emoji/Mermaid settings. Disabled filters need only `enabled: false`; enabled
+  filters can use the renderer's existing defaults (#76).
+- The packaging test accepts the CLI entry with or without a `./` prefix in the
+  archive listing and reports diagnostics when it is missing (#77).
 - Apply code wrapping to Pandoc's actual highlighted-block environment as well as
   untagged blocks. Wrap at spaces and separators without splitting arbitrary
   letters. Inline code can wrap after `/`, `.` and `=`; long unbreakable
@@ -19,6 +39,15 @@ The project follows semantic versioning and keeps two versioned contracts:
   next line.
 - Reserve space for H1–H5 and their following content to avoid headings stranded
   at the foot of a page, while retaining consecutive-heading protection.
+
+### Known limits
+
+- H6 is emitted as plain text by Pandoc's LaTeX writer and does not receive the
+  H1–H5 heading protection.
+- Arbitrary unbreakable content can still overflow; wrapping does not split
+  every identifier or guarantee that all content fits.
+- Missing Unicode glyphs remain tracked in #83; these layout fixes do not
+  resolve font coverage.
 
 ## [2.0.0] - released
 
