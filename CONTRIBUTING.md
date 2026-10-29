@@ -17,6 +17,12 @@ make test        # the whole suite
 `make bootstrap` installs system dependencies and is slow the first time. For
 everything except an actual render, `make test` needs no extra setup.
 
+For managed local installations, the `pandoc-pdf-dev` development symlink and
+bootstrap options (dry-run, non-interactive and CI), see
+[development installation](docs/install.md#development-installation-from-the-repo).
+`make install-release` installs the latest published release instead of the
+working copy.
+
 ## Commands you will use
 
 | Command | What it does |
@@ -48,7 +54,15 @@ with the assertions in `tests/lib.sh`:
   previous behaviour still holds;
 - observed red before the fix, green after it.
 
-Documentation needs no test, but it must keep `check-docs.py` green.
+Documentation needs no behaviour test, but it must keep `check-docs.py` green.
+When the guides change, regenerate the documentation PDF for visual review:
+
+```bash
+bin/pandoc-pdf render -c examples/documentation/pdf.config.yaml
+```
+
+For configuration input, subprocesses or dependency changes, follow the review
+guidance and trust model in [the security policy](.github/SECURITY.md).
 
 ## Messages
 
@@ -66,7 +80,7 @@ the others are translations, not copies.
 | Rendering | `scripts/render-native.py`, plus the checks in `scripts/preflight.py`; `tests/l1/render.sh` |
 | A filter | `filters/<name>.lua`; a failure must be loud, never silent |
 | Dependencies | `scripts/bootstrap.sh`, `.github/workflows/`, `docs/dependency-policy.md` |
-| A breaking change | All of the above, plus `docs/migration.md`, a `CHANGELOG.md` entry and a contract version bump |
+| A breaking change | The affected areas, an explicit migration guide, updated examples and a `CHANGELOG.md` entry; apply the toolkit and contract version rules in `AGENTS.md` |
 
 [`docs/README.md`](docs/README.md) maps every document to the question it answers.
 
@@ -105,27 +119,9 @@ Notes:
 - `l2-local.sh` runs semi-real integration (without the full Mermaid stack).
 - `l3-local.sh` requires `mmdc` and Chromium (`PUPPETEER_EXECUTABLE_PATH` if it is not auto-detected).
 
-Current suite coverage:
-
-- help and unknown-command handling
-- `doctor` in an OK scenario and with a missing dependency
-- `validate-config` with a valid and an invalid case
-- `render -c` in native mode (checks output/environment)
-- explicit rejection of legacy flags (`--legacy`)
-- advanced render integration (extra_lua_filters, resource_path, optional metadata)
-- render errors for non-existent `explicit_files`
-- render plan: valid JSON, no side effects, readable `--dry-run`
-- emoji filter: plain headings do not emit `\\texorpdfstring`
-- contract behavior (since 2.0.0):
-  - `input.order` with `natural` and `alphabetical` values, and rejection of an unsupported value naming the field and the supported values
-  - `output.keep_merged_markdown` set to `false` (deletes the `.md`) and `true` (keeps it), with a PDF produced in both cases
-  - `document.*` reaches pandoc as `-V` variables, and a `pandoc.metadata_file` takes precedence over them
-  - `include_ballot_icons` toggles `PANDOC_EMOJI_BALLOT_ICONS` between `1` and `0`
-  - `runtime.strict` set to `false` (warning, exit 0) and `true` (failure)
-- release artifact: the generated package contains no Python bytecode (`__pycache__`, `.pyc`)
-- locale message with no destination: names `--project`, not `--team`
-
-In addition, this suite runs automatically in CI (GitHub Actions) for PR/push on a macOS/Linux matrix as **L1**.
+The assertions under `tests/l1/` are the source of truth for suite coverage.
+The suite runs automatically in GitHub Actions for PR/push on a macOS/Linux
+matrix as **L1**.
 
 CI levels:
 
@@ -140,12 +136,17 @@ Workflow and manual inputs:
 - `run_render_integration=true` to run **L2**
 - `run_render_full=true` to run **L3**
 
-Run from the CLI:
+In the GitHub UI, open **Actions → CI → Run workflow** and enable the input
+for the level you need. Or run from the CLI:
 
 ```bash
 gh workflow run ci.yml -f run_render_integration=true
 # or
 gh workflow run ci.yml -f run_render_full=true
+
+# Watch the runs
+gh run list --workflow ci.yml
+gh run view --log
 ```
 
 ## Repository housekeeping
