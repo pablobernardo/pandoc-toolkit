@@ -28,7 +28,6 @@ input:
   explicit_files:
     - "install.md"
     - "usage.md"
-    - "migration.md"
     - "architecture.md"
     - "releasing.md"
     - "dependency-policy.md"
