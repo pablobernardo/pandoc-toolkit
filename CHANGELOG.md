@@ -9,8 +9,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
-These changes are not yet published. The configuration contract remains at `1`;
-these fixes require no consumer migration.
+No changes recorded after the 2.0.1 candidate.
+
+## [2.0.1] - unreleased
+
+This release candidate is not yet published. The configuration contract remains
+at `1`; these fixes require no consumer migration.
 
 ### Added
 
