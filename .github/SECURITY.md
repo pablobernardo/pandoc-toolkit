@@ -2,9 +2,9 @@
 
 ## Supported versions
 
-Security support covers the `main` branch and the latest state of
-the code. The most recent tagged release (`1.1.3`) receives fixes through a new
-release.
+Security fixes are developed on `main` and published in a new release for users
+of the latest stable release. Older releases are not maintained separately;
+upgrade to the latest stable release to receive fixes.
 
 ## How to report a vulnerability
 
@@ -49,4 +49,7 @@ Recommendations:
 
 - Avoid shell invocations interpolating untrusted input.
 - Prefer shell-free APIs (`subprocess.run([...])`, `shutil.which`, and so on).
+- Load YAML safely with `yaml.safe_load` (Python) or `YAML.safe_load` (Ruby).
+- Validate command names and filter paths before executing configuration input.
+- Review bootstrap and CI dependencies against `docs/dependency-policy.md`.
 - Add a security regression test whenever a vulnerability is fixed.

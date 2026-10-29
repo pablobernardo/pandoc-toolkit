@@ -89,8 +89,9 @@ compat:
   legacy_clearpage_between_h1: true
 ```
 
-All nine sections (`version`, `project`, `document`, `input`, `output`,
-`pandoc`, `filters`, `runtime`, `compat`) are required by the schema.
+The schema requires `version`, `project`, `document`, `input`, `output`,
+`pandoc`, `filters` and `runtime`. The `compat` section is optional; when absent,
+`legacy_clearpage_between_h1` defaults to `true`.
 
 ### Contract rules
 
@@ -137,6 +138,8 @@ pandoc-toolkit/
     i18n.sh
     i18n_runtime.py
     check-i18n.py
+    check-docs.py
+    check-plan-conformance.py
     enforce-security-thresholds.py
   schemas/
     pdf-config.schema.json
@@ -144,13 +147,19 @@ pandoc-toolkit/
     locales/                 # en.json, es.json, gl.json, pt.json
     schema/
   examples/
-    pdf.config.example.yaml
-    metadata.yaml
+    documentation/pdf.config.yaml
+    manual/                  # config + chapters
+    ohmyfake/                # config + chapters
+    test/                    # config + chapters
+    toPDF.sh
   docs/
+    README.md                # navigation index
     install.md
     usage.md
-    migration.md
-    ...
+    architecture.md
+    releasing.md
+    dependency-policy.md
+    i18n.md
   tests/
     run.sh
     l1/
@@ -160,7 +169,8 @@ pandoc-toolkit/
 ### Principles
 
 - **Stable core + config per repository.**
-- **Semantic versioning** of the toolkit (`v1.x`).
+- **Semantic versioning** of the toolkit, independent of the configuration
+  contract version.
 - **No hardcoded paths** inside filters: every path arrives from the config,
   resolved against `project.base_dir`.
 - **Explicit preflight** of dependencies before rendering (`doctor` /
@@ -190,6 +200,21 @@ intentional contract change. Set `PANDOC_PDF_BIN` to compare another implementat
 an optional positional root selects a different tree of cases and expectations.
 Machine-local paths are normalized as documented in the checker's docstring;
 object key order is ignored, but array order and all non-path values are checked.
+
+## Portability and a possible binary implementation
+
+The toolkit currently targets Linux and macOS. There is no Go migration planned;
+the Bash entry point is the blocker for native Windows support, not a reason to
+add another renderer today.
+
+Reconsider a binary implementation if Windows becomes a real requirement, a
+consumer cannot provide Python and a supported YAML parser, signed single-file
+artifacts are needed, or maintaining the Bash updater costs more than a rewrite.
+
+The frozen render plan and its conformance suite provide the comparison boundary
+for a replacement implementation. Use `PANDOC_PDF_BIN` as described above rather
+than defining a second rendering contract. Any migration must preserve the CLI
+and configuration compatibility rules in `AGENTS.md`.
 
 ## Decision record
 
@@ -238,8 +263,8 @@ The original three-phase migration plan was executed:
    keeps a `pdf.config.yaml` and invokes the toolkit through `bin/pandoc-pdf`.
 3. **Reuse across repositories** — the toolkit is consumed by tag/version;
    per-repository customisation is limited to `pdf.config.yaml` plus an
-   optional template, and breaking changes are governed by the `version` of
-   the config contract (see `docs/migration.md`).
+   optional template. The toolkit and configuration contract are versioned
+   independently; breaking changes follow the policy in `AGENTS.md`.
 
 ## Production criteria — what must keep holding
 
@@ -258,4 +283,6 @@ invariants that future changes must preserve:
       `tests/integration/l3-mermaid-project/`), and this criterion is stated
       in `AGENTS.md` as a delivery criterion, but adoption by external
       consuming repositories cannot be verified from this repository alone.
-- [x] Migration and legacy fallback documented (`docs/migration.md`).
+- [x] Consumer installation and CLI use documented (`docs/install.md`,
+      `docs/usage.md`); future breaking changes require an explicit migration
+      guide under `AGENTS.md`.

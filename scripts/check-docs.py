@@ -30,7 +30,7 @@ MENTION = re.compile(rf"`((?:{_ROOTS})/[\w./-]*\.\w+)`")
 
 # Files that record history are allowed to name what was removed: that is their
 # job. Everything else must point at something that exists today.
-HISTORY = {"CHANGELOG.md", "CONTEXT.md", "docs/migration.md"}
+HISTORY = {"CHANGELOG.md", "docs/migration.md"}
 HISTORY_PREFIXES = ("odd/",)
 
 

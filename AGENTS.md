@@ -15,13 +15,14 @@ coupling.
 
 This file defines the **stable** rules of the project.
 
-Changing state (current phase, recent decisions, open tasks) lives in
-`CONTEXT.md`, so strategy and day-to-day operation do not mix.
+Track pending work in issues and verification evidence in pull requests.
+Architecture decisions live in `docs/architecture.md`; release history lives in
+`CHANGELOG.md`. Do not duplicate that changing state in a separate summary.
 
 ## Language policy
 
 - **The repository is written in English**: code, comments, commit messages,
-  documentation, and the working notes in `CONTEXT.md` and `odd/`.
+  documentation, and working notes in `odd/`.
 - **The only Spanish in the tree is product surface**: the message catalogs in
   `i18n/locales/`, where `es.json` is a translation like any other.
 - User-facing strings never live in code. They come from the catalogs, so
@@ -65,7 +66,7 @@ YAML is read with PyYAML when available and otherwise through Ruby's stdlib in a
 subprocess; both paths must keep producing the same result.
 ## Planned additions (target)
 
-- Windows support: gated by the migration triggers recorded in `CONTEXT.md`. It
+- Windows support: gated by the migration triggers in `docs/architecture.md`. It
   cannot break the current CLI contract, and the current bash entry point is the
   blocker, not the scripts.
 
@@ -126,12 +127,12 @@ Before writing code:
 ## Where to update what
 
 - Stable toolkit rules: `AGENTS.md`
-- Current operational context: `CONTEXT.md`
+- Pending work and verification evidence: issues and pull requests
 - Architecture and trade-offs: `docs/architecture.md`
 - CLI installation and integration: `docs/install.md`
 - Examples for consumers: `examples/` and `docs/usage.md`
-- Operational skills for agents: `.agents/skills/<name>/SKILL.md`, versioned and
-  reviewed in pull requests
+- Contributor workflow and checks: `CONTRIBUTING.md`
+- Security trust model and review guidance: `.github/SECURITY.md`
 
 ### Generated directories (not versioned)
 
