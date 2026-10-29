@@ -25,10 +25,12 @@ together they cover it instead of repeating it:
 | `examples/ohmyfake/` | Defaults: `glob` plus `order: natural`, `toc_depth: 2`, a cover built from `document.*`, merged Markdown kept, the name as a slug of the title |
 | `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
 | `examples/test/` | The smallest valid configuration, with `titlepage: false` to show the cover switch |
-| `examples/documentation/` | The toolkit's own documentation: `glob` over `docs/` with `base_dir` at the repository root, no filters, and a numbered table of contents over eight documents |
+| `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
 
-`examples/toPDF.sh` renders all three. The content is original and released under
-CC0: it is there to exercise the toolkit, not to be read as product documentation.
+`examples/toPDF.sh` renders all four examples. The content examples (`ohmyfake`,
+`manual` and `test`) are original and released under CC0: they exercise the toolkit
+rather than serve as product documentation. The `documentation` example renders
+the repository documentation, which is MIT licensed.
 
 ## Configuration contract
 
@@ -48,7 +50,8 @@ Expected minimum fields:
 - `pandoc`
 - `filters`
 - `runtime`
-- `compat`
+
+`compat` is optional; its default is listed below.
 
 ### Semantics of the declarative fields
 
@@ -303,21 +306,6 @@ Suggested sequence:
 If `runtime.strict: true` (default), any missing dependency must fail the pipeline.
 
 With `runtime.strict: false`, `doctor` downgrades missing dependencies to warnings: it still prints them and exits with exit 0. The only exception is the TeX engine: its absence always fails, because without it the PDF cannot be generated. Use it only in pipelines where the auxiliary dependency is resolved later (for example an image that installs it in a subsequent step).
-
-## OpenCode integration (agents)
-
-So that models use it consistently:
-
-1. Make sure the OpenCode process has `pandoc-pdf` on PATH.
-2. State in the repository instructions that the official entrypoint is `pandoc-pdf`.
-3. Recommended sequence for agents:
-   - `pandoc-pdf doctor`
-   - `pandoc-pdf validate-config -c pdf.config.yaml`
-   - `pandoc-pdf render -c pdf.config.yaml`
-4. Do not invoke legacy scripts directly from prompts: `pandoc-pdf` is the
-   entrypoint.
-5. For structural toolkit changes, use the local skill:
-   - `.agents/skills/pandoc-toolkit-maintainer/SKILL.md`
 
 ## CLI tests and CI levels
 

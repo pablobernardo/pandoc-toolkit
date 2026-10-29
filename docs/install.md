@@ -1,6 +1,6 @@
 # Installation — Pandoc PDF Toolkit
 
-This guide gets the `pandoc-pdf` command available for humans, CI and agents (OpenCode).
+This guide makes the `pandoc-pdf` command available for people, CI and coding agents.
 
 ## Quick install from a release (recommended for end users)
 
@@ -144,9 +144,3 @@ If it returns `Doctor OK`, the environment is ready.
 ```bash
 pandoc-pdf validate-config -c examples/ohmyfake/pdf.config.yaml
 ```
-
-## OpenCode integration
-
-Making a model use the CLI consistently is one procedure, so it lives in one
-place: see *OpenCode integration* in `docs/usage.md`. The short version is that
-`pandoc-pdf` must be on the `PATH` and the repository instructions must say so.
