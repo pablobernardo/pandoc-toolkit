@@ -21,6 +21,14 @@ Two things hold the line: the toolkit template defines `\pandocbounded`, and
 `tests/l1/render.sh` fails if that definition disappears. If you change the
 template, render a document with an image on a current Pandoc before trusting CI.
 
+### CI rendering prerequisites
+
+Both L2 and L3 install `texlive-fonts-recommended` for font metrics such as
+Zapf Dingbats (`pzdr.tfm`) and `librsvg2-bin` for `rsvg-convert`. The enabled-filter
+fixture used by both jobs contains SVG images; Pandoc needs the converter to
+embed them in PDF. These are distribution-provided packages, not new version
+pins. L1 checks their declarations; real L2/L3 renders verify the environment.
+
 ## YAML: two parsers, one tested at a time
 
 Configuration is read with PyYAML when available and otherwise through Ruby's

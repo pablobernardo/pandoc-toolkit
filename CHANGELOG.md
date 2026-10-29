@@ -35,6 +35,8 @@ at `1`; these fixes require no consumer migration.
 
 ### Fixed
 
+- L2/L3 CI rendering jobs explicitly install the required TeX font metrics and
+  SVG converter instead of relying on incidental runner dependencies.
 - Configuration validation no longer requires the `compat` section or optional
   emoji/Mermaid settings. Disabled filters need only `enabled: false`; enabled
   filters can use the renderer's existing defaults (#76).

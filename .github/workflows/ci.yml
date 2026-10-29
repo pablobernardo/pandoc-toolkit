@@ -62,7 +62,8 @@ jobs:
       - name: Install runtime dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-latex-base
+          sudo apt-get install -y \
+            pandoc texlive-latex-base texlive-fonts-recommended librsvg2-bin
 
       - name: Ensure scripts are executable
         run: |
@@ -90,7 +91,9 @@ jobs:
       - name: Install full runtime dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-latex-base texlive-xetex nodejs npm chromium-browser
+          sudo apt-get install -y \
+            pandoc texlive-latex-base texlive-fonts-recommended \
+            librsvg2-bin texlive-xetex nodejs npm chromium-browser
           # Keep in sync with MERMAID_CLI_VERSION and docs/dependency-policy.md
           sudo npm install -g @mermaid-js/mermaid-cli@10.9.1
 
