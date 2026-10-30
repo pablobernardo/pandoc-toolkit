@@ -11,6 +11,8 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Added
 
+- Visible emoji compatibility samples in the ohmyfake example's heading,
+  paragraph, list and table, with regression coverage for those contexts (#93).
 - An optional installable Agent Skill for configuring, checking and reviewing PDFs
   from existing Markdown in consuming repositories, using the Agent Skills format (#86).
 
