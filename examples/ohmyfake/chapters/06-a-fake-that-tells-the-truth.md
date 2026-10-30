@@ -28,6 +28,24 @@ thing anyone checks.
 The last two boxes are the ones that get left unticked in production, and they
 are the only two that matter once the system has been running for a year.
 
+## A Visible Compatibility Check 🔍
+
+A useful fixture makes its signals visible, not merely available in the
+configuration. The 🧪 marks a synthetic sample; the 🔍 asks the reader to inspect
+its origin. Both should remain recognisable beside ordinary prose.
+
+- 🧪 Keep the sample small enough to repeat.
+- 🔍 Check the evidence rather than trusting the resemblance.
+
+| Check | Signal | What to inspect |
+|-------|--------|-----------------|
+| Synthetic sample | 🧪 | The stated purpose matches the sample. |
+| Origin review | 🔍 | Someone else can follow the evidence. |
+
+The same two signals appear in a heading, a paragraph, a list and a table. That
+is a visible compatibility sample, not a promise that every Unicode character
+works in every font or that every emoji sequence is supported.
+
 ```mermaid
 flowchart LR
     subgraph Honest["Honest fake"]
