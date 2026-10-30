@@ -13,13 +13,37 @@ for anyone on a current Pandoc.**
 
 Measured: Pandoc 3.2 and later emit `\pandocbounded` when an image is bounded,
 and a template that does not define it dies with `! Undefined control sequence`.
-The distribution package in CI is older, never emits the macro, and so notices
-nothing. This is exactly how the integration fixtures shipped a template that
-failed for a year of releases.
+An older distribution package in CI did not emit the macro and therefore missed
+the failure. That historical gap let the integration fixtures ship a template
+that failed for a year of releases; it is not a claim that today's runner still
+uses that older Pandoc.
 
 Two things hold the line: the toolkit template defines `\pandocbounded`, and
 `tests/l1/render.sh` fails if that definition disappears. If you change the
 template, render a document with an image on a current Pandoc before trusting CI.
+
+### CI rendering prerequisites
+
+Both L2 and L3 install `texlive-latex-extra` and its dependencies for the
+template's non-base styles (including `ulem`, `fvextra` and `mdframed`),
+`texlive-fonts-recommended` for font metrics such as Zapf Dingbats (`pzdr.tfm`),
+and `librsvg2-bin` for `rsvg-convert`. Both jobs check every package declared by
+`templates/default.tex` with `kpsewhich` before rendering. The enabled-filter
+fixture contains SVG images; Pandoc needs the converter to embed them in PDF.
+These are distribution-provided packages, not new version pins.
+
+L3 uses Google Chrome already provided by the hosted Ubuntu image, discovered
+with `command -v google-chrome`; it does not install or force a Chromium Snap.
+It checks the executable and the installed Mermaid HTML entry point before
+running the existing integration script. Normal browser sandbox settings and
+the Mermaid CLI pin are unchanged; no browser is installed on a contributor's
+machine. L1 checks the declarations; only the actual L2/L3 runs establish that
+the Ubuntu environment works.
+
+Ordinary PR/push CI runs L1. L2 requires the manual
+`run_render_integration=true` input; L3 runs on schedule or with
+`run_render_full=true`. A green run with L2/L3 skipped is not render-integration
+evidence. Release preparation must explicitly request and inspect both jobs.
 
 ## YAML: two parsers, one tested at a time
 

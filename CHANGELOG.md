@@ -9,8 +9,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
-These changes are not yet published. The configuration contract remains at `1`;
-these fixes require no consumer migration.
+No changes recorded yet.
+
+## [2.0.1] - 2026-10-30
+
+The configuration contract remains at `1`; these fixes require no consumer
+migration.
 
 ### Added
 
@@ -31,6 +35,10 @@ these fixes require no consumer migration.
 
 ### Fixed
 
+- L2/L3 CI rendering jobs explicitly install the template's LaTeX prerequisites,
+  font metrics and SVG converter, and check declared styles before rendering.
+  L3 uses the hosted image's Chrome instead of a Chromium Snap, with explicit
+  browser and Mermaid HTML checks; no runtime or browser-sandbox changes.
 - Configuration validation no longer requires the `compat` section or optional
   emoji/Mermaid settings. Disabled filters need only `enabled: false`; enabled
   filters can use the renderer's existing defaults (#76).

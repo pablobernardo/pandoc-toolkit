@@ -44,6 +44,7 @@ main() {
   run_doctor_rejects_invalid_required_cmd
   run_bootstrap_linux_pkg_manager_detection_tests
   run_bootstrap_mermaid_browser_warning_test
+  run_ci_render_dependencies_test
   run_validate_config_tests
   run_validate_metadata_file_test
   run_schema_keyword_support_test
