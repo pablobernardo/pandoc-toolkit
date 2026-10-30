@@ -9,7 +9,10 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
-No changes recorded yet.
+### Added
+
+- An optional installable Agent Skill for configuring, checking and reviewing PDFs
+  from existing Markdown in consuming repositories, using the Agent Skills format (#86).
 
 ## [2.0.1] - 2026-10-30
 

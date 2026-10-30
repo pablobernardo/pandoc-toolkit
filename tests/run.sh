@@ -71,6 +71,7 @@ main() {
   run_validate_metadata_contract_tests
   run_validate_optional_inert_fields_tests
   run_documentation_example_coverage_test
+  run_documentation_skill_test
   run_docs_consistency_test
   run_examples_validate_test
   run_render_mermaid_failed_test
