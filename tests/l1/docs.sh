@@ -1,3 +1,47 @@
+run_documentation_skill_test() {
+  local out err code
+  out="$(mktemp)"
+  err="$(mktemp)"
+  set +e
+  python3 - "${ROOT_DIR}" >"$out" 2>"$err" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+path = root / "skills/pandoc-pdf-documentation/SKILL.md"
+text = path.read_text(encoding="utf-8")
+frontmatter = re.match(r"\A---\n(.*?)\n---\n", text, re.S)
+assert frontmatter, "skill needs YAML frontmatter"
+fields = dict(line.split(": ", 1) for line in frontmatter[1].splitlines())
+assert fields["name"] == path.parent.name
+assert re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", fields["name"])
+assert len(fields["name"]) <= 64
+# A JSON-quoted scalar is valid YAML without requiring a YAML parser in CI.
+description = json.loads(fields["description"])
+assert isinstance(description, str) and 0 < len(description) <= 1024
+assert "Markdown" in description and "PDF" in description
+links = re.findall(r"\]\(([^)]+)\)", text[frontmatter.end():])
+assert links and all(link.startswith("https://github.com/pablobernardo/pandoc-toolkit/") for link in links), "references must survive installation outside the toolkit"
+print("skill structure OK")
+PY
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "consumer skill has portable Agent Skills metadata and references"
+  if [[ "$(<"$out")" == "skill structure OK" ]]; then
+    pass "skill structural check reports its result"
+  else
+    fail "skill structural check reports its result"
+  fi
+  if [[ ! -s "$err" ]]; then
+    pass "skill structural check has no diagnostics"
+  else
+    fail "skill structural check has no diagnostics"
+  fi
+  rm -f "$out" "$err"
+}
+
 run_docs_consistency_test() {
   local out code tree covered
   out="$(mktemp)"

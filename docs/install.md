@@ -16,6 +16,35 @@ This installs into the managed layout:
 - `~/.local/share/pandoc-pdf/current`
 - `~/.local/bin/pandoc-pdf`
 
+## Optional agent skill
+
+To guide an agent from **existing Markdown** to a reviewed PDF, run this from the
+consuming repository after reviewing the [skill instructions](https://github.com/pablobernardo/pandoc-toolkit/blob/main/skills/pandoc-pdf-documentation/SKILL.md):
+
+```bash
+npx skills add pablobernardo/pandoc-toolkit \
+  --skill pandoc-pdf-documentation
+```
+
+The installer lets you select target agents interactively or uses autodetection
+where applicable; a menu is not guaranteed in every environment. Add
+`--agent <name>` only to select a target explicitly, or `--global` for user-wide
+installation instead of the project-local default. Review the destination before
+confirming. Node/npm are needed only for this optional installer, not for the
+toolkit runtime. Installing the skill does **not** install `pandoc-pdf`, Pandoc,
+TeX or Mermaid dependencies.
+
+Start or reload your agent in the consumer repository and activate the skill using
+that agent's supported mechanism, supplying the sources, reading order and desired
+PDF location. For example, Pi supports `/skill:pandoc-pdf-documentation`; Gentle
+Shell uses Pi's project skill discovery. Their global homes may differ, so prefer
+project scope when sharing between them. These are verification targets, not a
+restriction on agents supporting the Agent Skills format.
+
+The skill uses `validate-config`, `doctor` and `render`, preserves existing content
+and disabled filters, and reports PDF warnings and any missing visual proof. It
+does not author missing documentation or fix the toolkit's known font limitations.
+
 ## Development installation (from the repo)
 
 From the repository root:

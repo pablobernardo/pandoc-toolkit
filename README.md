@@ -41,6 +41,14 @@ pandoc-pdf render -c pdf.config.yaml           # produce the PDF
 `pandoc-pdf --help` lists every command; [the usage guide](docs/usage.md)
 documents them, including CI integration for consuming repositories.
 
+## Optional agent skill
+
+The [documentation-to-PDF skill](skills/pandoc-pdf-documentation/SKILL.md) uses the
+Agent Skills format to guide compatible agents through existing Markdown,
+configuration, preflight and PDF review.
+See [skill installation](docs/install.md#optional-agent-skill); it does not install
+the toolkit or its system dependencies.
+
 ## Documentation
 
 The full index, with one line per document and the question it answers, is
