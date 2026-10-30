@@ -9,7 +9,10 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
-No changes recorded yet.
+### Added
+
+- Visible emoji compatibility samples in the ohmyfake example's heading,
+  paragraph, list and table, with regression coverage for those contexts (#93).
 
 ## [2.0.1] - 2026-10-30
 

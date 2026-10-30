@@ -111,3 +111,43 @@ run_documentation_example_coverage_test() {
     fail "the documentation example plans nothing: the check above would pass vacuously"
   fi
 }
+
+run_emoji_showcase_example_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP emoji showcase contexts (pandoc not available)"
+    return 0
+  fi
+
+  local out code context
+  out="$(mktemp)"
+  set +e
+  "${REAL_PYTHON3}" - "${ROOT_DIR}/examples/ohmyfake/chapters/06-a-fake-that-tells-the-truth.md" >"$out" 2>&1 <<'PY'
+import json
+import subprocess
+import sys
+
+parsed = subprocess.run(["pandoc", sys.argv[1], "-f", "markdown", "-t", "json"],
+                        capture_output=True, text=True, check=True)
+blocks = json.loads(parsed.stdout)["blocks"]
+glyphs = {"\U0001f9ea", "\U0001f50d"}
+
+def has_emoji(node):
+    if isinstance(node, dict):
+        if node.get("t") == "Str" and any(g in node["c"] for g in glyphs):
+            return True
+        return any(has_emoji(value) for value in node.values())
+    return isinstance(node, list) and any(has_emoji(value) for value in node)
+
+for name, kind in (("heading", "Header"), ("paragraph", "Para"),
+                   ("list", "BulletList"), ("table", "Table")):
+    present = any(block["t"] == kind and has_emoji(block) for block in blocks)
+    print(f"{name}={'PASS' if present else 'FAIL'}")
+PY
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "the public emoji example parses through Pandoc"
+  for context in heading paragraph list table; do
+    assert_contains "$out" "^${context}=PASS$" "the public example shows emoji in a ${context}"
+  done
+  rm -f "$out"
+}
