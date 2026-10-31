@@ -62,6 +62,7 @@ EOF
 new_epub_sandbox() {
   local sandbox
   sandbox="$(new_contract_sandbox)"
+  cp "${ROOT_DIR}/templates/epub-header.html" "${sandbox}/templates/epub-header.html"
   printf '# Chapter One\n\nContent one.\n' >"${sandbox}/work/chapters/chapter-1.md"
   printf '\n## Section\n\nContent two.\n' >"${sandbox}/work/chapters/chapter-2.md"
   printf '%s\n' "$sandbox"
@@ -287,6 +288,15 @@ check(all((f"{opf_dir}/{href}" if opf_dir else href) in names for href in resolv
 
 chapters = [n for n in names if "/text/ch" in n]
 check(bool(chapters), "the archive contains the chapter documents")
+# Check every spine document, including title and navigation.
+for href in resolved:
+    if not href:
+        continue
+    name = f"{opf_dir}/{href}" if opf_dir else href
+    root = ET.fromstring(archive.read(name))
+    styles = "\n".join(e.text or "" for e in root.findall(".//{http://www.w3.org/1999/xhtml}style"))
+    check("page-break-before: auto" in styles and "break-before: auto" in styles,
+          f"{href} overrides the redundant initial heading page break")
 archive.close()
 PY
 )

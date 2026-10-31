@@ -14,8 +14,8 @@ Preserve published PDF behavior and the user's four local EPUB example selection
 ## Tasks
 
 - T1 [done] S1 | parent | Actual EPUB author and metadata-file precedence, public CLI archive tests and docs. Commit: fix(epub) metadata work unit.
-- T2 [in_progress] S2 | parent | EPUB-only initial-heading pagination override; preserve split chapters and PDF plans; prepare reader comparison. Commit: pending. Visual acceptance requires Apple Books evidence.
-- T3 [pending] S3–S5 | parent | Single formats list, format-aware preflight and multi-output plans/execution; partial failures, regression tests, migration docs and example adaptation. Commit: pending. Risk: item 3 (replace unreleased config key and extend consumed plan contract).
+- T2 [done] S2 | parent | EPUB-only initial-heading header override; default CSS, split chapters and PDF plans preserved. Commit: fix(epub) pagination work unit. Visual acceptance tracked in T4, not claimed.
+- T3 [in_progress] S3–S5 | parent | Single formats list, format-aware preflight and multi-output plans/execution; partial failures, regression tests, migration docs and example adaptation. Commit: pending. Risk: item 3 (replace unreleased config key and extend consumed plan contract).
 - T4 [pending] S1–S5 | independent verify + parent | Gate, PDF differential and native assessment/review per work-unit; report visual proof separately. Commit: pending.
 
 ## Log
@@ -25,4 +25,5 @@ Preserve published PDF behavior and the user's four local EPUB example selection
 - L3 — Implementation gate: optional config selection changes from unpublished `format` to `formats` without changing contract 1 or VERSION 2.0.1. Default PDF single-plan shape and significant argv remain unchanged. Multi-output needs an explicit ordered job list; each job retains single-plan semantics. Runtime requirements are the union of requested formats. Tests must pin omission, each single format, dual output and partial failures in both orders.
 - L4 — Workload forecast: metadata ~150 lines, pagination ~100, multi-output ~350–500 including tests/docs. Keep three work-unit commits with tests/docs alongside behavior; report any overage, do not compress code to fit. Delivery shape: reviewable local work-unit chain; public PRs/merge remain separate authorization.
 - L5 — Verification: runnable public CLI tests use temporary isolated fixtures; real Pandoc for EPUB metadata and embedded CSS; deterministic Pandoc doubles only for failure scenarios. Apple Books visual acceptance cannot be inferred from ZIP inspection. Do not claim blank pages fixed visually without reader feedback.
+- L7 — T1 commit `1f7f286`, native review `review-fc0328bb8ccc6f44` approved/acknowledged. T2 GREEN30/0, gate job16 exit0:381/0, four conforming PDF plans. Only EPUB argv adds the header include; no shared filter or PDF template edits. Apple Books feedback pending.
 - L6 — T1 RED: author assertion 24/1, metadata-file precedence 1/1, both exit1. GREEN: 27/0; full gate job15 exit0, 378/0, 4 locales172 keys,140 Markdown,4 conforming PDF plans. T2 test-first probe separately observed 25/3 (title/nav/chapter missing initial-heading override) before implementation.

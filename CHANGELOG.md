@@ -11,6 +11,8 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Fixed
 
+- EPUB initial headings no longer request a redundant page break before title,
+  navigation or split chapters. PDF styling and plans are unaffected (#94).
 - EPUB publications now carry the configured author and respect metadata-file
   precedence for document text fields, instead of appearing as unknown author.
   The configured document language remains authoritative (#94).
