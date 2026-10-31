@@ -89,6 +89,7 @@ main() {
   run_epub_config_validation_test
   run_epub_plan_json_test
   run_epub_explicit_pdf_matches_default_test
+  run_epub_preflight_no_tex_test
   run_epub_render_structure_test
   run_plan_conformance_tests
 

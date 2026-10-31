@@ -73,7 +73,7 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 
 - `pdf` (default, and identical to omitting the field): the typeset PDF described in the rest of this guide.
 - `epub`: an EPUB3 publication with the same base name and an `.epub` suffix, written next to the merged Markdown.
-- `pandoc.pdf_engine` and `pandoc.template` are PDF-only and are not applied.
+- EPUB is assembled by pandoc, not typeset, so **no TeX engine is required**: `doctor` stops demanding one for these configurations, while every command declared in `runtime.required_commands` is still enforced. `pandoc.pdf_engine` and `pandoc.template` are PDF-only and are not applied.
 - The format also reaches the plan: `--dry-run --json` reports the produced artifact under its own key (`pdf` or `epub`), and an EPUB command line carries no engine, template, or LaTeX-only variable.
 - PDF-only behavior stays PDF-only: `document.*` template variables, the cover switch, `pandoc.metadata_file` and `compat.legacy_clearpage_between_h1` are not applied to EPUB. As a phase-1 limitation, an EPUB carries only the `title` and `language` metadata; broader metadata precedence, cover images and filter adaptation belong to the next phase of #94.
 

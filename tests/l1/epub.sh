@@ -292,3 +292,35 @@ PY
   rm -rf "$sandbox"
   rm -f "$out"
 }
+
+run_epub_preflight_no_tex_test() {
+  local sandbox tmpbin out code=0
+  sandbox="$(new_epub_sandbox)"
+  tmpbin="$(mktemp -d)"
+  out="$(mktemp)"
+
+  local c
+  for c in pandoc curl; do
+    printf '#!/bin/bash\nexit 0\n' >"${tmpbin}/${c}"
+    chmod +x "${tmpbin}/${c}"
+  done
+  cat >"${tmpbin}/python3" <<EOF
+#!/bin/bash
+exec "${REAL_PYTHON3}" "\$@"
+EOF
+  chmod +x "${tmpbin}/python3"
+
+  write_epub_config "${sandbox}/pdf.config.yaml" epub
+  PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "doctor passes an epub config without any TeX engine"
+  assert_contains "$out" "Doctor OK" "doctor reports OK for epub without TeX"
+
+  write_epub_config "${sandbox}/pdf.config.yaml" pdf
+  code=0
+  PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+  assert_exit_code "1" "$code" "doctor still requires a TeX engine for pdf"
+  assert_contains "$out" "xelatex" "the pdf failure names the missing engine"
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$out"
+}
