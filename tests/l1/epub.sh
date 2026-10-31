@@ -257,6 +257,8 @@ titles = [e.text for e in package.findall(".//dc:title", dc)]
 languages = [e.text for e in package.findall(".//dc:language", dc)]
 identifiers = [e.text for e in package.findall(".//dc:identifier", dc)]
 check(titles == ["EPUB Sandbox Guide"], "the package carries the configured title")
+authors = [e.text for e in package.findall(".//dc:creator", dc)]
+check(authors == ["EPUB Author"], "the package carries the configured author")
 check(bool(languages) and (languages[0] or "").startswith("es"), "the package carries the configured language")
 check(bool(identifiers) and bool(identifiers[0]), "the package carries an identifier")
 
@@ -322,5 +324,42 @@ EOF
   assert_contains "$out" "xelatex" "the pdf failure names the missing engine"
 
   rm -rf "$sandbox" "$tmpbin"
+  rm -f "$out"
+}
+
+run_epub_metadata_precedence_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP epub metadata precedence (pandoc not available)"
+    return 0
+  fi
+  local sandbox out code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  write_epub_config "${sandbox}/pdf.config.yaml" epub
+  printf '\ntitle: File Title\nauthor: File Author\nlang: pt\n' >"${sandbox}/work/metadata.yaml"
+  "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" <<'PYTEST'
+import sys
+from pathlib import Path
+p = Path(sys.argv[1])
+p.write_text(p.read_text().replace("pandoc:\n", 'pandoc:\n  metadata_file: "metadata.yaml"\n'))
+PYTEST
+  "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "EPUB renders with a metadata file"
+  if "${REAL_PYTHON3}" - "${sandbox}/work/out/epub-guide-manual.epub" <<'PYTEST'
+import sys, zipfile
+import xml.etree.ElementTree as ET
+with zipfile.ZipFile(sys.argv[1]) as z:
+    container = ET.fromstring(z.read("META-INF/container.xml"))
+    root = container.find(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile")
+    opf = ET.fromstring(z.read(root.get("full-path")))
+    ns = {"dc": "http://purl.org/dc/elements/1.1/"}
+    assert [e.text for e in opf.findall(".//dc:title", ns)] == ["File Title"]
+    assert [e.text for e in opf.findall(".//dc:creator", ns)] == ["File Author"]
+    assert [e.text for e in opf.findall(".//dc:language", ns)] == ["es"]
+PYTEST
+  then pass "EPUB metadata file wins for title/author; configured language stays authoritative"
+  else fail "EPUB metadata precedence must match the document contract"
+  fi
+  rm -rf "$sandbox"
   rm -f "$out"
 }
