@@ -1,0 +1,10 @@
+<style>
+/* A spine document already starts a new reader page. Keep Pandoc's default
+   stylesheet, but do not force another page before its initial heading. */
+body > h1:first-child,
+body > section:first-child > h1:first-child,
+body > nav:first-child > h1:first-child {
+  page-break-before: auto;
+  break-before: auto;
+}
+</style>

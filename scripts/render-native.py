@@ -333,6 +333,7 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     language = str(document.get("language") or "").strip()
 
     if format_name == FORMAT_EPUB:
+        cmd.append(f"--include-in-header={root_dir / 'templates/epub-header.html'}")
         # An EPUB3 package needs dc:title and dc:language to be a valid
         # publication; pandoc writes them from metadata, not from -V variables.
         # Match PDF precedence: a metadata file replaces document text fields;
