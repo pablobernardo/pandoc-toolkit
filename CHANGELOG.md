@@ -9,6 +9,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+### Fixed
+
+- EPUB publications now carry the configured author and respect metadata-file
+  precedence for document text fields, instead of appearing as unknown author.
+  The configured document language remains authoritative (#94).
+
 ### Added
 
 - An optional `output.format: pdf | epub`. Omitting it, or declaring `pdf`,

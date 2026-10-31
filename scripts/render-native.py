@@ -335,8 +335,17 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     if format_name == FORMAT_EPUB:
         # An EPUB3 package needs dc:title and dc:language to be a valid
         # publication; pandoc writes them from metadata, not from -V variables.
-        # Wider metadata fidelity is phase 2 of #94.
-        cmd.extend(["--metadata", f"title={document.get('title', '')}"])
+        # Match PDF precedence: a metadata file replaces document text fields;
+        # document.language remains authoritative for either format.
+        if metadata_path is not None and metadata_path.exists():
+            cmd.append(f"--metadata-file={metadata_path}")
+        else:
+            for field in DOCUMENT_VAR_FIELDS:
+                value = document.get(field)
+                if isinstance(value, str) and value.strip():
+                    cmd.extend(["--metadata", f"{field}={value}"])
+            for key, value in (document.get("metadata") or {}).items():
+                cmd.extend(["--metadata", f"{key}={value}"])
         cmd.extend(["--metadata", f"lang={EPUB_LANGS.get(language, DEFAULT_EPUB_LANGUAGE)}"])
         cmd.extend(["-o", str(artifact_out)])
     else:
