@@ -260,7 +260,10 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     keep_merged_markdown = bool(output.get("keep_merged_markdown", True))
 
     compat = cfg.get("compat", {})
-    insert_clearpage = bool(compat.get("legacy_clearpage_between_h1", True))
+    # \clearpage is a LaTeX command: an EPUB has no TeX to interpret it, and an EPUB
+    # plan carries no LaTeX-only markup. The compatibility switch is a typesetting
+    # decision, so it only ever applies to the PDF.
+    insert_clearpage = format_name == FORMAT_PDF and bool(compat.get("legacy_clearpage_between_h1", True))
 
     raw_user_pandoc = cfg_user.get("pandoc")
     user_pandoc_cfg = raw_user_pandoc if isinstance(raw_user_pandoc, dict) else {}
