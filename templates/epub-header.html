@@ -7,4 +7,60 @@ body > nav:first-child > h1:first-child {
   page-break-before: auto;
   break-before: auto;
 }
+
+/* A reflowable internal title page, separate from any future image cover.
+   Keep reader-selected fonts and colors; do not style chapter headings. */
+section.titlepage {
+  margin: 2em auto;
+  padding: 0 0.5em;
+  text-align: center;
+}
+section.titlepage p {
+  text-align: center;
+  text-indent: 0;
+}
+section.titlepage .title {
+  text-align: center;
+  margin: 0 0 0.45em;
+  font-size: 2em;
+  line-height: 1.15;
+  font-weight: bold;
+}
+section.titlepage .subtitle {
+  margin: 0 0 3em;
+  font-size: 1.15em;
+  line-height: 1.4;
+}
+section.titlepage .author {
+  margin: 0 0 1.25em;
+  font-size: 1.05em;
+}
+section.titlepage .publisher {
+  margin: 0 0 0.35em;
+  font-size: 0.9em;
+}
+section.titlepage .date {
+  margin: 0;
+  font-size: 0.9em;
+}
+section.titlepage .rights {
+  margin: 3em 0 0;
+  font-size: 0.75em;
+  line-height: 1.4;
+}
+
+/* A scrollable block cannot reliably fragment across reader pages. Restore
+   table layout and wrap long keys instead of requiring horizontal scrolling. */
+table {
+  display: table;
+  overflow: visible;
+  page-break-inside: auto;
+  break-inside: auto;
+}
+table th, table td {
+  overflow-wrap: anywhere;
+}
+table code {
+  overflow-wrap: anywhere;
+}
 </style>

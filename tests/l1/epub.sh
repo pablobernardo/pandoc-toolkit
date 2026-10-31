@@ -186,6 +186,17 @@ run_epub_render_structure_test() {
   pdf="${sandbox}/work/out/epub-guide-manual.pdf"
 
   write_epub_config "${sandbox}/pdf.config.yaml" epub
+  "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" <<'PY'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+path.write_text(path.read_text().replace('  author: "EPUB Author"',
+    '  author: "EPUB Author"\n  subtitle: "A Practical Guide"\n'
+    '  publisher: "Example Press"\n  date: "2026"\n  rights: "Example rights"'))
+chapter = path.parent / 'work/chapters/chapter-1.md'
+rows = '\n'.join(f'| `filters.example.setting_{i}` | default {i} | enabled |' for i in range(1, 9))
+chapter.write_text(chapter.read_text() + '\n| Setting | Default | When |\n|---|---|---|\n' + rows + '\n\nAfter table.\n')
+PY
   "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "render produces an EPUB from the public CLI"
 
@@ -209,6 +220,7 @@ run_epub_render_structure_test() {
   while IFS=$'\t' read -r result message; do
     if [[ "$result" == "0" ]]; then pass "$message"; else fail "$message"; fi
   done < <("${REAL_PYTHON3}" - "$epub" <<'PY'
+import re
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
@@ -297,6 +309,55 @@ for href in resolved:
     styles = "\n".join(e.text or "" for e in root.findall(".//{http://www.w3.org/1999/xhtml}style"))
     check("page-break-before: auto" in styles and "break-before: auto" in styles,
           f"{href} overrides the redundant initial heading page break")
+title_path = next((n for n in names if n.endswith('/title_page.xhtml')), None)
+check(title_path is not None, "the EPUB retains its internal title page")
+if title_path:
+    title_root = ET.fromstring(archive.read(title_path))
+    fields = {e.get('class'): ''.join(e.itertext()).strip() for e in title_root.iter() if e.get('class')}
+    check(all(fields.get(k) == v for k, v in {
+        'title': 'EPUB Sandbox Guide', 'subtitle': 'A Practical Guide',
+        'author': 'EPUB Author', 'publisher': 'Example Press',
+        'date': '2026', 'rights': 'Example rights'}.items()),
+        "the title-page layout preserves every configured text field")
+    css = '\n'.join(e.text or '' for e in title_root.findall('.//{http://www.w3.org/1999/xhtml}style'))
+    css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
+    rules = {s.strip(): dict(re.findall(r'([\w-]+)\s*:\s*([^;]+);', body))
+             for s, body in re.findall(r'([^{}]+)\{([^{}]*)\}', css)}
+    expected = {
+        'section.titlepage .title': {'font-size': '2em', 'line-height': '1.15', 'text-align': 'center'},
+        'section.titlepage .subtitle': {'margin': '0 0 3em', 'font-size': '1.15em'},
+        'section.titlepage .author': {'margin': '0 0 1.25em'},
+        'section.titlepage .publisher': {'margin': '0 0 0.35em'},
+        'section.titlepage .date': {'margin': '0'},
+        'section.titlepage .rights': {'margin': '3em 0 0', 'font-size': '0.75em'},
+    }
+    check(all(all(rules.get(selector, {}).get(k) == v for k, v in props.items())
+              for selector, props in expected.items()),
+          "EPUB title-page typography separates subtitle, credits and rights")
+    title_rules = {s: props for s, props in rules.items() if 'section.titlepage' in s}
+    check(bool(title_rules) and all(
+        all(part.strip().startswith('section.titlepage') for part in selector.split(','))
+        and not any(k in props for k in ('height', 'min-height', 'position'))
+        for selector, props in title_rules.items()),
+        "title-page styles stay scoped and use reflowable layout")
+chapter_root = ET.fromstring(archive.read(next(n for n in chapters if n.endswith('ch001.xhtml'))))
+ns = {'h': 'http://www.w3.org/1999/xhtml'}
+rows = chapter_root.findall('.//h:table/h:tbody/h:tr', ns)
+check(len(rows) == 8 and all(
+    [''.join(cell.itertext()) for cell in row.findall('h:td', ns)]
+    == [f'filters.example.setting_{i}', f'default {i}', 'enabled']
+    for i, row in enumerate(rows, 1)),
+    "EPUB preserves all eight table rows and every cell")
+check(rules.get('table', {}).get('display') == 'table'
+      and rules.get('table', {}).get('overflow') == 'visible'
+      and rules.get('table', {}).get('break-inside') == 'auto'
+      and rules.get('table', {}).get('page-break-inside') == 'auto',
+      "EPUB tables remain fragmentable tables rather than scroll containers")
+check(rules.get('table th, table td', {}).get('overflow-wrap') == 'anywhere'
+      and rules.get('table code', {}).get('overflow-wrap') == 'anywhere',
+      "EPUB table cells and code can wrap long settings without horizontal scrolling")
+check('After table.' in ''.join(chapter_root.itertext()),
+      "EPUB retains the paragraph following a table")
 archive.close()
 PY
 )
