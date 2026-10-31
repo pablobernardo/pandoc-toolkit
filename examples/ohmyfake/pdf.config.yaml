@@ -23,6 +23,7 @@ input:
   explicit_files: []
 
 output:
+  formats: [epub]
   # No file_prefix: the name is a slug of document.title, "oh-my-fake-latest.pdf".
   dir: "../.output/ohmyfake"
   suffix: "latest"

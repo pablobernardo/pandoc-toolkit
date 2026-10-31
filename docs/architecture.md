@@ -192,12 +192,23 @@ selected chapters, output targets, the exact pandoc `argv`, and the filter
 environment. `scripts/render-native.py` is split into `build_plan` (pure),
 `execute_plan` (the single point with side effects) and `print_plan`.
 
-The plan is format-aware. `output.format` selects the produced artifact, and
-`pandoc.target` names it with the format as the key: `{markdown, pdf}` for the
-default PDF plan and `{markdown, epub}` for an EPUB plan. A PDF plan keeps the
-exact shape recorded in this contract; the EPUB variant only replaces the
-artifact, drops the engine, template and LaTeX-only variables, and adds the
-title and language metadata an EPUB3 package needs to be valid.
+`output.formats` selects an ordered list of artifacts (default `[pdf]`),
+with duplicate formats rendered once. A single unique format retains the
+version-1 plan: `pandoc.target` is `{markdown, pdf}` or `{markdown, epub}`.
+Multiple formats use a version-2 envelope: `{"plan_version": 2, "jobs": [...]}`.
+Each job is a full version-1 single-format plan, executed sequentially by the
+same renderer. Preflight checks the union of requirements. Every job is
+attempted; successful artifacts survive another job's failure, the overall
+exit is nonzero on any failure, and intermediate Markdown is then retained.
+There is no atomic multi-file transaction. Default PDF plans remain unchanged.
+
+EPUB jobs omit TeX/template variables, use actual document metadata with
+metadata-file precedence, and keep document.language authoritative. An
+EPUB-only header overrides forced page breaks on initial headings without
+replacing Pandoc's default CSS or affecting PDF. Visual Apple Books acceptance
+is separate from structural archive verification. The singular `output.format`
+was an unreleased prototype and is replaced, not supported as a second alias;
+see [migration](migration.md).
 
 The plan is a conformance contract: four recorded cases in `tests/conformance/`
 cover minimal settings, metadata precedence, explicit chapter order, and custom
