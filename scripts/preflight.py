@@ -76,8 +76,9 @@ def load_yaml_minimal_for_preflight(path: Path):
     """
     Minimal fallback parser to extract ONLY:
       - pandoc.pdf_engine
-      - runtime.required_commands
-    Evita depender de PyYAML/Ruby en entornos con PATH aislado.
+      - runtime.required_commands / strict
+      - output.formats (inline or block list)
+    Avoid depending on PyYAML/Ruby in isolated PATH environments.
     """
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
@@ -94,7 +95,9 @@ def load_yaml_minimal_for_preflight(path: Path):
     pdf_engine: str | None = None
     required_commands: list[str] = []
     strict_value: bool | None = None
-    output_format: str | None = None
+    output_formats: list[str] | None = None
+    in_formats = False
+    formats_indent = -1
 
     for raw_line in lines:
         line = raw_line.split("#", 1)[0].rstrip()
@@ -103,6 +106,9 @@ def load_yaml_minimal_for_preflight(path: Path):
 
         indent = len(line) - len(line.lstrip(" "))
         stripped = line.strip()
+
+        if in_formats and indent <= formats_indent and not stripped.startswith("-"):
+            in_formats = False
 
         if in_required_commands and indent <= required_indent and not stripped.startswith("-"):
             in_required_commands = False
@@ -137,10 +143,17 @@ def load_yaml_minimal_for_preflight(path: Path):
                 output_indent = indent
                 continue
 
-            if in_output and key == "format":
-                raw_format = value.strip().strip("\"'")
-                if raw_format:
-                    output_format = raw_format
+            if in_output and key == "formats":
+                # Multiline flow syntax (and other nontrivial YAML) needs the
+                # full parser. Never turn an unparsed selection into no PDF.
+                if value and not (value.startswith("[") and value.endswith("]")):
+                    return None
+                output_formats = []
+                formats_indent = indent
+                in_formats = True
+                if value.startswith("[") and value.endswith("]"):
+                    output_formats = [v.strip().strip("\"'") for v in value[1:-1].split(",") if v.strip()]
+                    in_formats = False
                 continue
 
             if in_runtime and key == "required_commands":
@@ -164,12 +177,15 @@ def load_yaml_minimal_for_preflight(path: Path):
                     pdf_engine = v
                 continue
 
+        if in_formats and stripped.startswith("-") and output_formats is not None:
+            output_formats.append(stripped[1:].strip().strip("\"'"))
+
         if in_required_commands and stripped.startswith("-"):
             item = stripped[1:].strip().strip('"\'')
             if item:
                 required_commands.append(item)
 
-    if not required_commands and pdf_engine is None and strict_value is None and output_format is None:
+    if not required_commands and pdf_engine is None and strict_value is None and output_formats is None:
         return None
 
     data: dict[str, object] = {}
@@ -182,8 +198,8 @@ def load_yaml_minimal_for_preflight(path: Path):
         data["runtime"] = runtime_data
     if pdf_engine is not None:
         data["pandoc"] = {"pdf_engine": pdf_engine}
-    if output_format is not None:
-        data["output"] = {"format": output_format}
+    if output_formats is not None:
+        data["output"] = {"formats": output_formats}
     return data
 
 
@@ -278,7 +294,7 @@ def main() -> None:
     preferred_engine = None
     strict = True
     mermaid_enabled = True
-    output_format = FORMAT_PDF
+    output_formats = [FORMAT_PDF]
 
     if config_path:
         if not config_path.exists():
@@ -318,11 +334,11 @@ def main() -> None:
 
             output = cfg.get("output")
             if isinstance(output, dict):
-                declared_format = output.get("format")
-                if isinstance(declared_format, str) and declared_format.strip().lower() == FORMAT_EPUB:
-                    output_format = FORMAT_EPUB
+                declared_formats = output.get("formats")
+                if isinstance(declared_formats, list):
+                    output_formats = declared_formats
 
-    needs_tex = output_format == FORMAT_PDF
+    needs_tex = FORMAT_PDF in output_formats
     missing: list[str] = []
     missing_engine: list[str] = []
     for cmd in required:

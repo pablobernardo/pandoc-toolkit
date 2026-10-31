@@ -186,7 +186,18 @@ def toolkit_version(root_dir: Path) -> str:
 
 
 def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
-    """Compute the render plan. Pure: no writes, no directory creation, no subprocess."""
+    """Preserve single-format plans; use an ordered v2 job list for multiple outputs."""
+    formats = cfg_user.get("output", {}).get("formats", [FORMAT_PDF])
+    if not isinstance(formats, list) or not formats or any(f not in FORMAT_CHOICES for f in formats):
+        die(t("render.error.format_invalid", "Invalid 'output.formats' value: {value}. Supported values: {supported}",
+              value=formats, supported=", ".join(FORMAT_CHOICES)))
+    formats = list(dict.fromkeys(formats))
+    jobs = [build_single_plan(cfg_user, cfg_path, root_dir, name) for name in formats]
+    return jobs[0] if len(jobs) == 1 else {"plan_version": 2, "jobs": jobs}
+
+
+def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_name: str) -> dict:
+    """Compute one render job without writing files or launching processes."""
     cfg = cfg_user
 
     required = ["project", "document", "input", "output", "pandoc"]
@@ -219,17 +230,6 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     # Normalise: a consumer using "../out" should not see that in the report.
     output_dir = (base_dir_path / str(output.get("dir", "output"))).resolve()
     filename_out = f"{stem}-{suffix}"
-
-    format_name = str(output.get("format") or FORMAT_PDF).strip().lower()
-    if format_name not in FORMAT_CHOICES:
-        die(
-            t(
-                "render.error.format_invalid",
-                "Invalid 'output.format' value: {value}. Supported values: {supported}",
-                value=format_name,
-                supported=", ".join(FORMAT_CHOICES),
-            )
-        )
 
     artifact_out = output_dir / f"{filename_out}.{format_name}"
     md_out = output_dir / f"{filename_out}.md"
@@ -440,7 +440,33 @@ def output_label_key(format_name: str) -> str:
 
 
 def execute_plan(plan: dict) -> int:
-    """Materialise and run the plan. This is the only function with side effects."""
+    """Attempt every format; keep successful artifacts and diagnostics on failure."""
+    if "jobs" not in plan:
+        return execute_single_plan(plan)
+    failed = False
+    for job in plan["jobs"]:
+        # Keep Markdown until every job succeeds, including failures before a
+        # later successful job which would otherwise delete diagnostic input.
+        retained = {**job, "side_effects": {**job["side_effects"], "keep_merged_markdown": True}}
+        try:
+            code = execute_single_plan(retained)
+        except OSError as error:
+            print(str(error), file=sys.stderr)
+            code = 1
+        if code:
+            failed = True
+            name, _ = artifact_target(job)
+            print(t("render.error.format_failed",
+                    "Export failed ({format}); successful outputs are kept.", format=name))
+    if not failed:
+        for job in plan["jobs"]:
+            if not job["side_effects"]["keep_merged_markdown"]:
+                Path(job["pandoc"]["target"]["markdown"]).unlink(missing_ok=True)
+    return 1 if failed else 0
+
+
+def execute_single_plan(plan: dict) -> int:
+    """Materialise and run one job; PDF behavior is unchanged."""
     target = plan["pandoc"]["target"]
     format_name, artifact_raw = artifact_target(plan)
     md_out = Path(target["markdown"])
@@ -513,6 +539,10 @@ def execute_plan(plan: dict) -> int:
 
 
 def print_plan(plan: dict) -> None:
+    if "jobs" in plan:
+        for job in plan["jobs"]:
+            print_plan(job)
+        return
     target = plan["pandoc"]["target"]
     format_name, artifact_raw = artifact_target(plan)
     print(t("render.plan.title", "Render plan (dry run, nothing written)"))

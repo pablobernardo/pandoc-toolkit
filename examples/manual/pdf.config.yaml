@@ -32,6 +32,7 @@ input:
     - "06-appendix.md"
 
 output:
+  formats: [epub]
   dir: "../.output/manual"
   # An explicit name instead of the slug of the title.
   file_prefix: "honest-machine-manual"

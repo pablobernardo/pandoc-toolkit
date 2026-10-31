@@ -1,5 +1,5 @@
 #!/bin/bash
-# EPUB export, phase 1 of issue #94: an optional output.format, a format-aware
+# EPUB export, phase 1 of issue #94: an optional output.formats, a format-aware
 # plan and preflight, and EPUB3 output from the existing renderer.
 # All mutations stay inside a temporary sandbox.
 
@@ -32,7 +32,7 @@ output:
   file_prefix: "epub-guide"
   suffix: "manual"
   keep_merged_markdown: ${keep_md}
-  format: ${format}
+  formats: [${format}]
 
 pandoc:
   pdf_engine: xelatex
@@ -75,22 +75,22 @@ run_epub_config_validation_test() {
 
   write_epub_config "${sandbox}/pdf.config.yaml" epub
   if "${sandbox}/bin/pandoc-pdf" validate-config -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
-    pass "config accepts output.format=epub"
+    pass "config accepts output.formats=epub"
   else
-    fail "config should accept output.format=epub ($(tail -2 "$out"))"
+    fail "config should accept output.formats=epub ($(tail -2 "$out"))"
   fi
 
   write_epub_config "${sandbox}/pdf.config.yaml" pdf
   if "${sandbox}/bin/pandoc-pdf" validate-config -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
-    pass "config accepts output.format=pdf"
+    pass "config accepts output.formats=pdf"
   else
-    fail "config should accept output.format=pdf ($(tail -2 "$out"))"
+    fail "config should accept output.formats=pdf ($(tail -2 "$out"))"
   fi
 
   write_epub_config "${sandbox}/pdf.config.yaml" mobi
   local code=0
   "${sandbox}/bin/pandoc-pdf" validate-config -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
-  assert_exit_code "1" "$code" "config rejects an unsupported output.format"
+  assert_exit_code "1" "$code" "config rejects an unsupported output.formats"
   assert_contains "$out" "must be one of: pdf, epub" "rejection names the supported formats"
 
   rm -rf "$sandbox"
@@ -105,9 +105,9 @@ run_epub_plan_json_test() {
 
   write_epub_config "${sandbox}/pdf.config.yaml" epub
   if "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$plan" 2>"$out"; then
-    pass "render --dry-run --json exits 0 for output.format=epub"
+    pass "render --dry-run --json exits 0 for output.formats=epub"
   else
-    fail "render --dry-run --json should support output.format=epub ($(tail -2 "$out"))"
+    fail "render --dry-run --json should support output.formats=epub ($(tail -2 "$out"))"
   fi
 
   assert_json_expr "$plan" 'd["pandoc"]["target"]["epub"].endswith("epub-guide-manual.epub")' "plan targets an epub file"
@@ -146,11 +146,11 @@ from pathlib import Path
 
 path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8")
-path.write_text(text.replace("  format: epub\n", ""), encoding="utf-8")
+path.write_text(text.replace("  formats: [epub]\n", ""), encoding="utf-8")
 PY
   "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$without_format" 2>"$out" || code=$?
 
-  assert_exit_code "0" "$code" "an omitted output.format still plans a PDF"
+  assert_exit_code "0" "$code" "an omitted output.formats still plans a PDF"
   if "${REAL_PYTHON3}" - "$with_format" "$without_format" <<'PY'
 import json
 import sys
@@ -160,9 +160,9 @@ without_format = json.load(open(sys.argv[2], encoding="utf-8"))
 sys.exit(0 if with_format == without_format else 1)
 PY
   then
-    pass "output.format=pdf is identical to omitting it"
+    pass "output.formats=pdf is identical to omitting it"
   else
-    fail "output.format=pdf must be identical to omitting it"
+    fail "output.formats=pdf must be identical to omitting it"
   fi
 
   assert_json_expr "$without_format" 'd["pandoc"]["target"]["pdf"].endswith("epub-guide-manual.pdf")' "an omitted format keeps the pdf target"
@@ -333,6 +333,27 @@ EOF
   assert_exit_code "1" "$code" "doctor still requires a TeX engine for pdf"
   assert_contains "$out" "xelatex" "the pdf failure names the missing engine"
 
+  local formats
+  for formats in epub 'epub, pdf'; do
+    write_epub_config "${sandbox}/pdf.config.yaml" "$formats"
+    "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" "$formats" <<'PY'
+import sys
+from pathlib import Path
+p = Path(sys.argv[1])
+formats = sys.argv[2].split(", ")
+p.write_text(p.read_text().replace("formats: [" + sys.argv[2] + "]",
+                                  "formats:\n" + "\n".join("    - " + f for f in formats)))
+PY
+    code=0
+    PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+    if [[ "$formats" == epub ]]; then
+      assert_exit_code "0" "$code" "doctor reads a block EPUB formats list without TeX"
+    else
+      assert_exit_code "1" "$code" "doctor requires TeX for a block EPUB/PDF formats list"
+      assert_contains "$out" "xelatex" "multi-format preflight names the missing engine"
+    fi
+  done
+
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$out"
 }
@@ -371,5 +392,16 @@ PYTEST
   else fail "EPUB metadata precedence must match the document contract"
   fi
   rm -rf "$sandbox"
+  rm -f "$out"
+}
+
+run_multi_format_export_test() {
+  local out code=0
+  out="$(mktemp)"
+  "${REAL_PYTHON3}" "${ROOT_DIR}/tests/integration/check-multi-format.py" >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "public multi-format selection, ordering and partial failure checks"
+  if [[ "$code" != "0" ]]; then
+    tail -60 "$out"
+  fi
   rm -f "$out"
 }

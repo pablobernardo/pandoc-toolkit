@@ -27,6 +27,7 @@ input:
   explicit_files: []
 
 output:
+  formats: [epub]
   dir: "../.output/test"
   suffix: "${date:YYYYMMDD}"
   keep_merged_markdown: true

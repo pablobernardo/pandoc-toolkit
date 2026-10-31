@@ -23,19 +23,21 @@ input:
   # `explicit_files` wins over `glob`, so this list decides. A test fails if a
   # document under docs/ is missing from it, which is what keeps a hand-written
   # order from going stale.
-  # README.md is deliberately absent: it navigates the repository on GitHub, and
-  # its relative links lead nowhere inside a PDF that has its own numbered index.
+  # README.md is absent: it navigates the repository on GitHub, and its
+  # relative links lead nowhere inside a PDF with its own numbered index.
   explicit_files:
     - "install.md"
     - "usage.md"
+    - "migration.md"
     - "architecture.md"
     - "releasing.md"
     - "dependency-policy.md"
     - "i18n.md"
 
 output:
-  # Paths resolve against project.base_dir, which is the repository root here, so
-  # this points inside the repository's ignored output area.
+  formats: [epub]
+  # Paths resolve against project.base_dir (the repository root here),
+  # so this points inside the repository's ignored output area.
   dir: "examples/.output/documentation"
   file_prefix: "toolkit-documentation"
   suffix: "${date:YYYYMMDD}"
@@ -51,11 +53,11 @@ pandoc:
     - "."
 
 filters:
-  # Both filters are off, and that is the whole declaration: a disabled filter no
-  # longer needs its settings. The documentation has no diagrams, and the few
-  # status glyphs it contains (U+274C, U+2705) are missing from the LaTeX font, so
-  # the render warns and leaves a gap; enabling the emoji filter would replace them
-  # with images at the cost of a network fetch.
+  # Both filters are off: a disabled filter needs no other settings.
+  # The documentation has no diagrams. Its status glyphs (U+274C, U+2705)
+  # are missing from the LaTeX font, so PDF rendering warns and leaves gaps.
+  # Enabling the emoji filter would replace them with images at the cost
+  # of a network fetch.
   emoji:
     enabled: false
   mermaid:

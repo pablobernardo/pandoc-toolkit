@@ -67,14 +67,24 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 `output.keep_merged_markdown` — fate of the merged Markdown:
 
 - `true` (default): keeps the intermediate `.md` next to the PDF.
-- `false`: deletes it after a successful pandoc render. If pandoc fails, the `.md` is kept for diagnosis.
+- `false`: deletes it only after all requested formats succeed. If any format fails, the `.md` is kept for diagnosis.
 
-`output.format` — what the renderer produces:
+`output.formats` — what the renderer produces:
 
-- `pdf` (default, and identical to omitting the field): the typeset PDF described in the rest of this guide.
-- `epub`: an EPUB3 publication with the same base name and an `.epub` suffix, written next to the merged Markdown.
+```yaml
+output:
+  # Keep your other output fields.
+  formats: [pdf, epub]
+```
+
+- Omitted, or `[pdf]`: the typeset PDF described in the rest of this guide.
+- `[epub]`: an EPUB3 publication with the same base name and an `.epub` suffix.
+- `[pdf, epub]` (or the reverse order): both files in one invocation. Formats run in declared order; repeated formats run only once.
+- The list must be nonempty and contain only `pdf` and `epub`. The unreleased singular `format` field is rejected; replace `format: epub` with `formats: [epub]`.
+- Preflight checks the union of requirements before rendering: any selection containing PDF requires its TeX engine. Explicit `runtime.required_commands` always apply.
+- After preflight, all formats are attempted even if one fails. Successful files are retained; any failure returns exit 1 and identifies the failed format. This is not an atomic multi-file transaction.
 - EPUB is assembled by pandoc, not typeset, so **no TeX engine is required**: `doctor` stops demanding one for these configurations, while every command declared in `runtime.required_commands` is still enforced. `pandoc.pdf_engine` and `pandoc.template` are PDF-only and are not applied.
-- The format also reaches the plan: `--dry-run --json` reports the produced artifact under its own key (`pdf` or `epub`), and an EPUB command line carries no engine, template, or LaTeX-only variable.
+- `--dry-run --json` keeps the existing version-1 plan for one unique format. Multiple formats use `{"plan_version": 2, "jobs": [...]}` with ordered version-1 jobs. Each job names its own artifact (`pdf` or `epub`); an EPUB command carries no engine, template or LaTeX-only variable.
 - EPUB keeps Pandoc's default styling and split chapters, but overrides the forced page break on each document's initial heading (including title and navigation). This targets redundant blank pages in Apple Books; reader acceptance remains a manual check.
 - EPUB uses real metadata: title, author and the other document text fields reach the publication, or `pandoc.metadata_file` takes precedence when configured. `document.language` remains authoritative in either case. PDF template variables and the cover switch remain PDF-only; cover images and filter adaptation are separate work under #94.
 
@@ -112,7 +122,7 @@ renderer applies the value in the middle column when they are absent:
 | `filters.mermaid.background` | `transparent` | the mermaid filter is enabled |
 | `pandoc.metadata_file` | absent: `document.*` reaches the template | always |
 | `output.file_prefix` | a slug of `document.title` | always |
-| `output.format` | `pdf` | you also want an EPUB3 publication |
+| `output.formats` | `[pdf]` | you want EPUB or multiple formats |
 
 A filter that is disabled does not need its settings: `enabled: false` is a
 complete declaration. That is why the documentation example, which renders no
