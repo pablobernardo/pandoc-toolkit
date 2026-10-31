@@ -11,6 +11,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Fixed
 
+- EPUB tables retain table layout with visible overflow and wrapping cell text,
+  instead of scrollable blocks that can interfere with reader pagination. PDF
+  table styling is unchanged (#94).
+- EPUB internal title pages now separate title/subtitle, credits and rights with
+  relative spacing and typographic hierarchy, without changing chapter or PDF
+  styling (#94).
 - EPUB initial headings no longer request a redundant page break before title,
   navigation or split chapters. PDF styling and plans are unaffected (#94).
 - EPUB publications now carry the configured author and respect metadata-file
