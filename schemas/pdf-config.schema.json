@@ -69,6 +69,7 @@
         "dir": { "type": "string", "minLength": 1 },
         "file_prefix": { "type": "string", "minLength": 1 },
         "suffix": { "type": "string", "minLength": 1 },
+        "format": { "type": "string", "enum": ["pdf", "epub"] },
         "keep_merged_markdown": { "type": "boolean" }
       }
     },

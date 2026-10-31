@@ -192,6 +192,13 @@ selected chapters, output targets, the exact pandoc `argv`, and the filter
 environment. `scripts/render-native.py` is split into `build_plan` (pure),
 `execute_plan` (the single point with side effects) and `print_plan`.
 
+The plan is format-aware. `output.format` selects the produced artifact, and
+`pandoc.target` names it with the format as the key: `{markdown, pdf}` for the
+default PDF plan and `{markdown, epub}` for an EPUB plan. A PDF plan keeps the
+exact shape recorded in this contract; the EPUB variant only replaces the
+artifact, drops the engine, template and LaTeX-only variables, and adds the
+title and language metadata an EPUB3 package needs to be valid.
+
 The plan is a conformance contract: four recorded cases in `tests/conformance/`
 cover minimal settings, metadata precedence, explicit chapter order, and custom
 templates/resources/filters. Run `python3 scripts/check-plan-conformance.py` to

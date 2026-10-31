@@ -69,6 +69,7 @@
   "render.mode.native": "Native mode enabled",
   "render.output.markdown": "Merged markdown: {path}",
   "render.output.pdf": "Output PDF: {path}",
+  "render.output.epub": "Output EPUB: {path}",
   "render.command.exec": "Running: {command}",
   "render.plan.title": "Render plan (dry run, nothing written)",
   "render.plan.command": "Command: {command}",
@@ -127,6 +128,8 @@
   ,"render.error.explicit_file_missing": "Explicit file not found: {path}"
   ,"render.error.no_chapters": "No chapters found to render"
   ,"render.error.order_invalid": "Invalid 'input.order' value: {value}. Supported values: {supported}"
+  ,"render.error.format_invalid": "Invalid 'output.format' value: {value}. Supported values: {supported}"
+  ,"render.error.plan_target_missing": "Render plan declares no output artifact"
   ,"validate.error.yaml_invalid": "Invalid YAML: {error}"
   ,"validate.error.yaml_invalid_generic": "Invalid YAML"
   ,"validate.error.ruby_json_parse": "Could not parse JSON converted from Ruby: {error}"

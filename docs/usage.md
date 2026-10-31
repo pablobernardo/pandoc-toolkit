@@ -69,6 +69,14 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 - `true` (default): keeps the intermediate `.md` next to the PDF.
 - `false`: deletes it after a successful pandoc render. If pandoc fails, the `.md` is kept for diagnosis.
 
+`output.format` — what the renderer produces:
+
+- `pdf` (default, and identical to omitting the field): the typeset PDF described in the rest of this guide.
+- `epub`: an EPUB3 publication with the same base name and an `.epub` suffix, written next to the merged Markdown.
+- `pandoc.pdf_engine` and `pandoc.template` are PDF-only and are not applied.
+- The format also reaches the plan: `--dry-run --json` reports the produced artifact under its own key (`pdf` or `epub`), and an EPUB command line carries no engine, template, or LaTeX-only variable.
+- PDF-only behavior stays PDF-only: `document.*` template variables, the cover switch, `pandoc.metadata_file` and `compat.legacy_clearpage_between_h1` are not applied to EPUB. As a phase-1 limitation, an EPUB carries only the `title` and `language` metadata; broader metadata precedence, cover images and filter adaptation belong to the next phase of #94.
+
 `document.*` — metadata and cover page:
 
 - With `pandoc.metadata_file` empty, the non-empty `title`, `subtitle`, `publisher`, `author`, `date` and `rights` fields are passed to pandoc as template variables (`-V field=value`) and fill the cover page of `templates/default.tex`.
@@ -103,6 +111,7 @@ renderer applies the value in the middle column when they are absent:
 | `filters.mermaid.background` | `transparent` | the mermaid filter is enabled |
 | `pandoc.metadata_file` | absent: `document.*` reaches the template | always |
 | `output.file_prefix` | a slug of `document.title` | always |
+| `output.format` | `pdf` | you also want an EPUB3 publication |
 
 A filter that is disabled does not need its settings: `enabled: false` is a
 complete declaration. That is why the documentation example, which renders no
