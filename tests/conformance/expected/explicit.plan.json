@@ -22,7 +22,7 @@
       "--lua-filter=<REPO>/filters/inline-code-breaks.lua",
       "-V",
       "fig-pos=!htbp",
-      "--resource-path=<CASES>/chapters",
+      "--resource-path=<CASES>/chapters:<CASES>",
       "-V",
       "title=Conformance",
       "-V",

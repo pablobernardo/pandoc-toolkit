@@ -25,7 +25,7 @@
       "--number-sections",
       "-V",
       "fig-pos=!htbp",
-      "--resource-path=<CASES>/chapters",
+      "--resource-path=<CASES>/chapters:<CASES>",
       "--metadata-file=<CASES>/assets/metadata.yaml",
       "-V",
       "babel-lang=english",

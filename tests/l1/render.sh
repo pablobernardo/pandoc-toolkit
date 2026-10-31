@@ -264,6 +264,13 @@ EOF
   assert_contains "$capture" "PANDOC_MERMAID_BACKGROUND=white" "advanced render respects mermaid background"
   assert_contains "$capture" "--resource-path=.*/chapters:.*/assets/media" "advanced render composes resource_path"
 
+  # The project base is always the last search entry: a declared resource_path
+  # keeps priority, and a relative asset declared against the project resolves
+  # even when the command runs from somewhere else.
+  local base_path
+  base_path="$(cd "${sandbox}" && pwd -P)"
+  assert_contains "$capture" "--resource-path=[^ ]*:${base_path}( |$)" "advanced render appends the project base to resource_path"
+
   if grep -q -- "--metadata-file=" "$capture"; then
     fail "advanced render should not pass metadata-file when empty"
   else
@@ -329,7 +336,11 @@ EOF
     fail "renderer should accept a config without the optional sections ($(tail -2 "$out"))"
   fi
 
-  assert_not_contains "$capture" "--resource-path" "a config without resource_path gets no hidden default resource path"
+  # The project base is the only search entry a configuration gets: it is not a
+  # hidden default resource directory, it is where the project says it lives.
+  local base_path
+  base_path="$(cd "${sandbox}/work" && pwd -P)"
+  assert_contains "$capture" "--resource-path=${base_path}( |$)" "a config without resource_path searches only its project base"
 
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$capture" "$out"

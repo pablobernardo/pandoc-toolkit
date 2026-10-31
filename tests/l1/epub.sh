@@ -456,6 +456,217 @@ PYTEST
   rm -f "$out"
 }
 
+# A phase-2 fixture: an existing cover image in the metadata file, a content
+# image referenced from the chapter, and two Markdown task boxes whose SVGs are
+# already versioned, so the fixture needs no network access.
+write_epub_resource_config() {
+  local path="$1"
+  cat >"$path" <<'EOF'
+version: 1
+
+project:
+  name: epub-resources
+  base_dir: ./work
+
+document:
+  title: "EPUB Resource Guide"
+  author: "Resource Author"
+  language: "en"
+
+input:
+  chapters_dir: "chapters"
+  glob: "*.md"
+  order: natural
+  explicit_files: []
+
+output:
+  dir: "out"
+  file_prefix: "epub-resources"
+  suffix: "manual"
+  keep_merged_markdown: true
+  formats: [epub]
+
+pandoc:
+  pdf_engine: xelatex
+  toc: false
+  toc_depth: 2
+  number_sections: false
+  metadata_file: "metadata.yaml"
+  resource_path:
+    - "chapters"
+
+filters:
+  emoji:
+    enabled: true
+    emoji_dir: "out/emoji"
+    include_ballot_icons: true
+  mermaid:
+    enabled: false
+  extra_lua_filters: []
+
+runtime:
+  required_commands:
+    - pandoc
+  strict: true
+
+compat:
+  legacy_clearpage_between_h1: true
+EOF
+}
+
+new_epub_resource_sandbox() {
+  local sandbox
+  sandbox="$(new_epub_sandbox)"
+  mkdir -p "${sandbox}/work/assets"
+
+  "${REAL_PYTHON3}" - "${sandbox}/work/assets" <<'PY'
+import struct
+import sys
+import zlib
+from pathlib import Path
+
+
+def png(path, width, height, rgb):
+    def chunk(kind, payload):
+        body = kind + payload
+        return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+
+    rows = b"".join(b"\x00" + bytes(rgb) * width for _ in range(height))
+    Path(path).write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(rows))
+        + chunk(b"IEND", b"")
+    )
+
+
+assets = Path(sys.argv[1])
+png(assets / "cover.png", 60, 80, (200, 60, 30))
+png(assets / "figure.png", 40, 20, (30, 120, 200))
+PY
+
+  cat >"${sandbox}/work/metadata.yaml" <<'EOF'
+title: "EPUB Resource Guide"
+author: "Resource Author"
+lang: en
+cover-image: assets/cover.png
+EOF
+
+  cat >"${sandbox}/work/chapters/chapter-1.md" <<'EOF'
+# Resource Chapter
+
+![A blue rectangle](assets/figure.png)
+
+- [ ] pending task
+- [x] finished task
+EOF
+
+  cat >"${sandbox}/work/chapters/chapter-2.md" <<'EOF'
+# Second Chapter
+
+Text only.
+EOF
+
+  write_epub_resource_config "${sandbox}/pdf.config.yaml"
+  printf '%s\n' "$sandbox"
+}
+
+run_epub_resource_path_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP epub resources (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox elsewhere out epub code=0
+  sandbox="$(new_epub_resource_sandbox)"
+  elsewhere="$(mktemp -d)"
+  out="$(mktemp)"
+  epub="${sandbox}/work/out/epub-resources-manual.epub"
+
+  # The cover image and the content image are declared relative to the project,
+  # so the command must not depend on where it is invoked.
+  (
+    cd "$elsewhere" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "EPUB resources resolve when the command runs outside the project"
+
+  if [[ -s "$epub" ]]; then
+    pass "render writes the epub from an unrelated working directory"
+  else
+    fail "render must write the epub from an unrelated working directory ($(tail -3 "$out"))"
+  fi
+
+  while IFS=$'\t' read -r result message; do
+    if [[ "$result" == "0" ]]; then pass "$message"; else fail "$message"; fi
+  done < <("${REAL_PYTHON3}" - "$epub" "${sandbox}/work/assets" "${sandbox}/filters/emoji/2610.svg" <<'PY'
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+import zipfile
+
+epub = pathlib.Path(sys.argv[1])
+assets = pathlib.Path(sys.argv[2])
+ballot = pathlib.Path(sys.argv[3])
+
+
+def check(ok, message):
+    print(f"{0 if ok else 1}\t{message}")
+
+
+try:
+    archive = zipfile.ZipFile(epub)
+except Exception as error:  # noqa: BLE001 - a broken archive is a test result
+    check(False, "the epub is a readable zip archive")
+    print(f"1\tdetail: {error}")
+    sys.exit(0)
+
+check(True, "the epub is a readable zip archive")
+names = set(archive.namelist())
+container = ET.fromstring(archive.read("META-INF/container.xml"))
+rootfile = container.find(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile")
+opf_path = rootfile.get("full-path")
+opf_dir = opf_path.rsplit("/", 1)[0] if "/" in opf_path else ""
+package = ET.fromstring(archive.read(opf_path))
+opf = {"o": "http://www.idpf.org/2007/opf"}
+
+items = package.findall(".//o:manifest/o:item", opf)
+covers = [item for item in items if "cover-image" in (item.get("properties") or "").split()]
+check(len(covers) == 1, "the manifest declares exactly one cover-image item")
+cover_id = covers[0].get("id") if covers else ""
+metas = package.findall(".//o:metadata/o:meta", opf)
+check([m.get("content") for m in metas if m.get("name") == "cover"] == [cover_id],
+      "the package points its cover meta at the cover-image item")
+
+spine = package.findall(".//o:spine/o:itemref", opf)
+first = spine[0].get("idref") if spine else ""
+check(first == "cover_xhtml", "the image cover opens the spine")
+by_id = {item.get("id"): item.get("href") for item in items}
+cover_href = by_id.get(first) or ""
+cover_path = f"{opf_dir}/{cover_href}" if opf_dir else cover_href
+check(bool(cover_href) and cover_path in names, "the cover document exists in the archive")
+
+media = {archive.read(name) for name in names if name.startswith(f"{opf_dir}/media/")}
+check(assets.joinpath("figure.png").read_bytes() in media,
+      "the content image is embedded byte for byte")
+check(ballot.read_bytes() in media,
+      "the emoji SVG comes from the versioned emoji directory")
+
+chapter = next(name for name in names if name.endswith("ch001.xhtml"))
+chapter_root = ET.fromstring(archive.read(chapter))
+html = {"h": "http://www.w3.org/1999/xhtml"}
+images = chapter_root.findall(".//h:img", html)
+check(len([i for i in images if "emoji" in (i.get("class") or "").split()]) == 2,
+      "each task-list box becomes an emoji image")
+check(all(opf_dir + "/" + (image.get("src") or "").removeprefix("../") in names for image in images),
+      "every chapter image resolves to an archive entry")
+archive.close()
+PY
+)
+
+  rm -rf "$sandbox" "$elsewhere"
+  rm -f "$out"
+}
+
 run_multi_format_export_test() {
   local out code=0
   out="$(mktemp)"

@@ -27,7 +27,7 @@
       "--toc-depth=2",
       "-V",
       "fig-pos=!htbp",
-      "--resource-path=<CASES>/chapters:<CASES>/assets",
+      "--resource-path=<CASES>/chapters:<CASES>/assets:<CASES>",
       "-V",
       "title=Conformance",
       "-V",
