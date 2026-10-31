@@ -11,7 +11,7 @@ from pathlib import Path
 try:
     from i18n_runtime import t
 except Exception:
-    def t(_key: str, fallback: str, **kwargs: object) -> str:
+    def t(key: str, fallback: str, **kwargs: object) -> str:
         try:
             return fallback.format(**kwargs)
         except Exception:
@@ -20,6 +20,8 @@ except Exception:
 
 DEFAULT_REQUIRED = ["pandoc", "python3", "curl", "mmdc"]
 TEX_ENGINES = ["xelatex", "lualatex", "pdflatex"]
+FORMAT_PDF = "pdf"
+FORMAT_EPUB = "epub"
 
 
 def fail(msg: str) -> None:
@@ -82,14 +84,17 @@ def load_yaml_minimal_for_preflight(path: Path):
 
     in_runtime = False
     in_pandoc = False
+    in_output = False
     in_required_commands = False
     runtime_indent = -1
     pandoc_indent = -1
+    output_indent = -1
     required_indent = -1
 
     pdf_engine: str | None = None
     required_commands: list[str] = []
     strict_value: bool | None = None
+    output_format: str | None = None
 
     for raw_line in lines:
         line = raw_line.split("#", 1)[0].rstrip()
@@ -109,6 +114,9 @@ def load_yaml_minimal_for_preflight(path: Path):
         if in_pandoc and indent <= pandoc_indent and stripped and not stripped.startswith("-"):
             in_pandoc = False
 
+        if in_output and indent <= output_indent and stripped and not stripped.startswith("-"):
+            in_output = False
+
         key_match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$", stripped)
         if key_match:
             key, value = key_match.group(1), key_match.group(2)
@@ -122,6 +130,17 @@ def load_yaml_minimal_for_preflight(path: Path):
             if key == "pandoc":
                 in_pandoc = True
                 pandoc_indent = indent
+                continue
+
+            if key == "output":
+                in_output = True
+                output_indent = indent
+                continue
+
+            if in_output and key == "format":
+                raw_format = value.strip().strip("\"'")
+                if raw_format:
+                    output_format = raw_format
                 continue
 
             if in_runtime and key == "required_commands":
@@ -150,7 +169,7 @@ def load_yaml_minimal_for_preflight(path: Path):
             if item:
                 required_commands.append(item)
 
-    if not required_commands and pdf_engine is None and strict_value is None:
+    if not required_commands and pdf_engine is None and strict_value is None and output_format is None:
         return None
 
     data: dict[str, object] = {}
@@ -163,6 +182,8 @@ def load_yaml_minimal_for_preflight(path: Path):
         data["runtime"] = runtime_data
     if pdf_engine is not None:
         data["pandoc"] = {"pdf_engine": pdf_engine}
+    if output_format is not None:
+        data["output"] = {"format": output_format}
     return data
 
 
@@ -257,6 +278,7 @@ def main() -> None:
     preferred_engine = None
     strict = True
     mermaid_enabled = True
+    output_format = FORMAT_PDF
 
     if config_path:
         if not config_path.exists():
@@ -294,26 +316,37 @@ def main() -> None:
                 if isinstance(engine, str) and engine.strip():
                     preferred_engine = engine.strip()
 
+            output = cfg.get("output")
+            if isinstance(output, dict):
+                declared_format = output.get("format")
+                if isinstance(declared_format, str) and declared_format.strip().lower() == FORMAT_EPUB:
+                    output_format = FORMAT_EPUB
+
+    needs_tex = output_format == FORMAT_PDF
     missing: list[str] = []
     missing_engine: list[str] = []
     for cmd in required:
-        if cmd in TEX_ENGINES:
-            continue
         if not is_valid_command_name(cmd):
             fail(
                 f"❌ {t('preflight.error.invalid_required_command', 'Invalid command name in runtime.required_commands: {cmd}', cmd=cmd)}"
             )
+        # A PDF is typeset, so engine names are resolved as one requirement below.
+        # An EPUB needs no TeX engine implicitly, but a command the consumer
+        # declares explicitly is still enforced.
+        if needs_tex and cmd in TEX_ENGINES:
+            continue
         if not command_exists(cmd):
             missing.append(cmd)
 
-    required_has_tex = any(cmd in TEX_ENGINES for cmd in required)
-    if preferred_engine:
-        if not command_exists(preferred_engine):
-            missing_engine.append(preferred_engine)
-    elif required_has_tex:
-        found = any(command_exists(tex) for tex in TEX_ENGINES)
-        if not found:
-            missing_engine.append("xelatex|lualatex|pdflatex")
+    if needs_tex:
+        required_has_tex = any(cmd in TEX_ENGINES for cmd in required)
+        if preferred_engine:
+            if not command_exists(preferred_engine):
+                missing_engine.append(preferred_engine)
+        elif required_has_tex:
+            found = any(command_exists(tex) for tex in TEX_ENGINES)
+            if not found:
+                missing_engine.append("xelatex|lualatex|pdflatex")
 
     # Without a TeX engine there is no PDF, so runtime.strict=false cannot waive it.
     if missing_engine and not strict:
