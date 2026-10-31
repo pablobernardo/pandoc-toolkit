@@ -11,6 +11,10 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Added
 
+- An optional `output.format: pdf | epub`. Omitting it, or declaring `pdf`,
+  keeps the previous behavior and the recorded PDF plans; `epub` produces an
+  EPUB3 publication with the existing renderer, requires no TeX engine, and
+  still enforces the commands declared in `runtime.required_commands` (#94).
 - Visible emoji compatibility samples in the ohmyfake example's heading,
   paragraph, list and table, with regression coverage for those contexts (#93).
 - An optional installable Agent Skill for configuring, checking and reviewing PDFs

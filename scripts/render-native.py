@@ -60,6 +60,14 @@ DEFAULT_BABEL_LANGUAGE = "english"
 
 PLAN_VERSION = 1
 
+FORMAT_PDF = "pdf"
+FORMAT_EPUB = "epub"
+FORMAT_CHOICES = (FORMAT_PDF, FORMAT_EPUB)
+
+# EPUB records BCP 47 language tags, not babel names.
+EPUB_LANGS = {"en": "en", "es": "es", "pt": "pt", "gl": "gl"}
+DEFAULT_EPUB_LANGUAGE = "en"
+
 MISSING_SVG = (
     """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n"
     "  <rect width=\"16\" height=\"16\" rx=\"2\" ry=\"2\" fill=\"#ddd\" stroke=\"#999\"/>\n"
@@ -211,7 +219,19 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     # Normalise: a consumer using "../out" should not see that in the report.
     output_dir = (base_dir_path / str(output.get("dir", "output"))).resolve()
     filename_out = f"{stem}-{suffix}"
-    pdf_out = output_dir / f"{filename_out}.pdf"
+
+    format_name = str(output.get("format") or FORMAT_PDF).strip().lower()
+    if format_name not in FORMAT_CHOICES:
+        die(
+            t(
+                "render.error.format_invalid",
+                "Invalid 'output.format' value: {value}. Supported values: {supported}",
+                value=format_name,
+                supported=", ".join(FORMAT_CHOICES),
+            )
+        )
+
+    artifact_out = output_dir / f"{filename_out}.{format_name}"
     md_out = output_dir / f"{filename_out}.md"
 
     keep_merged_markdown = bool(output.get("keep_merged_markdown", True))
@@ -273,12 +293,14 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
             str(root_dir / "filters/emoji"),
         ]
 
-    cmd = [
-        "pandoc",
-        str(md_out),
-        f"--pdf-engine={pandoc.get('pdf_engine', 'xelatex')}",
-        f"--template={template_path}",
-    ]
+    cmd = ["pandoc", str(md_out)]
+    # EPUB is not typeset: a TeX engine and the LaTeX template are PDF-only, and
+    # pandoc leaves pdf_engine unused for it (the field stays required for now).
+    if format_name == FORMAT_PDF:
+        cmd.extend([
+            f"--pdf-engine={pandoc.get('pdf_engine', 'xelatex')}",
+            f"--template={template_path}",
+        ])
 
     if emoji_enabled:
         cmd.append(f"--lua-filter={root_dir / 'filters/emoji.lua'}")
@@ -301,33 +323,44 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     if bool(pandoc.get("number_sections", True)):
         cmd.append("--number-sections")
 
-    # The cover switch is emitted below with the rest of the document options;
-    # an unconditional -V here would make titlepage: false impossible.
-    cmd.extend(["-V", "fig-pos=!htbp"])
+    if format_name == FORMAT_PDF:
+        # The cover switch is emitted below with the rest of the document options;
+        # an unconditional -V here would make titlepage: false impossible.
+        cmd.extend(["-V", "fig-pos=!htbp"])
     if resource_path_values:
         cmd.append(f"--resource-path={os.pathsep.join(resource_path_values)}")
-    uses_metadata_file = metadata_path is not None and metadata_path.exists()
-    if uses_metadata_file:
-        cmd.append(f"--metadata-file={metadata_path}")
-    else:
-        for field in DOCUMENT_VAR_FIELDS:
-            value = document.get(field)
-            if isinstance(value, str) and value.strip():
-                cmd.extend(["-V", f"{field}={value}"])
 
-        # Free-form metadata is only meaningful when no metadata file wins (D5).
-        extra_metadata = document.get("metadata")
-        if isinstance(extra_metadata, dict):
-            for key, value in extra_metadata.items():
-                cmd.extend(["--metadata", f"{key}={value}"])
-
-    # Language and the cover switch are typesetting decisions, not cover text, so
-    # they apply even when a metadata file provides the title page.
     language = str(document.get("language") or "").strip()
-    cmd.extend(["-V", f"babel-lang={BABEL_LANGS.get(language, DEFAULT_BABEL_LANGUAGE)}"])
-    titlepage = document.get("titlepage", True)
-    cmd.extend(["--metadata", "titlepage=true" if titlepage is not False else "titlepage=false"])
-    cmd.extend(["-o", str(pdf_out)])
+
+    if format_name == FORMAT_EPUB:
+        # An EPUB3 package needs dc:title and dc:language to be a valid
+        # publication; pandoc writes them from metadata, not from -V variables.
+        # Wider metadata fidelity is phase 2 of #94.
+        cmd.extend(["--metadata", f"title={document.get('title', '')}"])
+        cmd.extend(["--metadata", f"lang={EPUB_LANGS.get(language, DEFAULT_EPUB_LANGUAGE)}"])
+        cmd.extend(["-o", str(artifact_out)])
+    else:
+        uses_metadata_file = metadata_path is not None and metadata_path.exists()
+        if uses_metadata_file:
+            cmd.append(f"--metadata-file={metadata_path}")
+        else:
+            for field in DOCUMENT_VAR_FIELDS:
+                value = document.get(field)
+                if isinstance(value, str) and value.strip():
+                    cmd.extend(["-V", f"{field}={value}"])
+
+            # Free-form metadata is only meaningful when no metadata file wins (D5).
+            extra_metadata = document.get("metadata")
+            if isinstance(extra_metadata, dict):
+                for key, value in extra_metadata.items():
+                    cmd.extend(["--metadata", f"{key}={value}"])
+
+        # Language and the cover switch are typesetting decisions, not cover text, so
+        # they apply even when a metadata file provides the title page.
+        cmd.extend(["-V", f"babel-lang={BABEL_LANGS.get(language, DEFAULT_BABEL_LANGUAGE)}"])
+        titlepage = document.get("titlepage", True)
+        cmd.extend(["--metadata", "titlepage=true" if titlepage is not False else "titlepage=false"])
+        cmd.extend(["-o", str(artifact_out)])
 
     return {
         "plan_version": PLAN_VERSION,
@@ -335,7 +368,9 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
         "config": {"path": str(cfg_path), "base_dir": str(base_dir_path)},
         "chapters": [str(p) for p in selected_files],
         "pandoc": {
-            "target": {"markdown": str(md_out), "pdf": str(pdf_out)},
+            # The produced artifact is named after the format, so a PDF plan keeps
+            # its recorded shape and an EPUB plan cannot claim to produce a PDF.
+            "target": {"markdown": str(md_out), format_name: str(artifact_out)},
             "argv": cmd,
             "cwd": None,
         },
@@ -381,11 +416,25 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
     return "".join(parts)
 
 
+def artifact_target(plan: dict) -> tuple[str, str]:
+    """The artifact the plan produces: the single target that is not the merged markdown."""
+    target = plan["pandoc"]["target"]
+    for name in FORMAT_CHOICES:
+        if name in target:
+            return name, target[name]
+    die(t("render.error.plan_target_missing", "Render plan declares no output artifact"))
+
+
+def output_label_key(format_name: str) -> str:
+    return "render.output.epub" if format_name == FORMAT_EPUB else "render.output.pdf"
+
+
 def execute_plan(plan: dict) -> int:
     """Materialise and run the plan. This is the only function with side effects."""
     target = plan["pandoc"]["target"]
+    format_name, artifact_raw = artifact_target(plan)
     md_out = Path(target["markdown"])
-    pdf_out = Path(target["pdf"])
+    artifact_out = Path(artifact_raw)
     side_effects = plan["side_effects"]
 
     md_out.parent.mkdir(parents=True, exist_ok=True)
@@ -420,7 +469,7 @@ def execute_plan(plan: dict) -> int:
 
     print(f"✅ {t('render.mode.native', 'Native mode enabled')}")
     print(f"📄 {t('render.output.markdown', 'Merged markdown: {path}', path=md_out)}")
-    print(f"🖨️  {t('render.output.pdf', 'Output PDF: {path}', path=pdf_out)}")
+    print(f"🖨️  {t(output_label_key(format_name), 'Output: {path}', path=artifact_out)}")
     print(f"▶ {t('render.command.exec', 'Running: {command}', command=' '.join(plan['pandoc']['argv']))}")
 
     result = subprocess.run(plan["pandoc"]["argv"], env=env)
@@ -455,9 +504,10 @@ def execute_plan(plan: dict) -> int:
 
 def print_plan(plan: dict) -> None:
     target = plan["pandoc"]["target"]
+    format_name, artifact_raw = artifact_target(plan)
     print(t("render.plan.title", "Render plan (dry run, nothing written)"))
     print(f"📄 {t('render.output.markdown', 'Merged markdown: {path}', path=target['markdown'])}")
-    print(f"🖨️  {t('render.output.pdf', 'Output PDF: {path}', path=target['pdf'])}")
+    print(f"🖨️  {t(output_label_key(format_name), 'Output: {path}', path=artifact_raw)}")
     print(
         f"▶ {t('render.plan.command', 'Command: {command}', command=' '.join(plan['pandoc']['argv']))}"
     )
