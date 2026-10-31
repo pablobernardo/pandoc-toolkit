@@ -365,6 +365,10 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
 
     if format_name == FORMAT_EPUB:
         cmd.append(f"--include-in-header={root_dir / 'templates/epub-header.html'}")
+        # A relative cover is resolved once, below. Pandoc's EPUB writer opens the
+        # cover image directly and ignores the resource path, so a relative value
+        # only resolves when the command happens to run from the project directory.
+        cover_image = relative_cover_image(metadata_path, document, base_dir_path)
         # An EPUB3 package needs dc:title and dc:language to be a valid
         # publication; pandoc writes them from metadata, not from -V variables.
         # Match PDF precedence: a metadata file replaces document text fields;
@@ -377,14 +381,15 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
                 if isinstance(value, str) and value.strip():
                     cmd.extend(["--metadata", f"{field}={value}"])
             for key, value in (document.get("metadata") or {}).items():
+                # Two --metadata values for one key arrive at pandoc as a MetaList,
+                # and the EPUB writer then rejects the cover, so the resolved value
+                # below is the only one emitted.
+                if key == "cover-image" and cover_image is not None:
+                    continue
                 cmd.extend(["--metadata", f"{key}={value}"])
         cmd.extend(["--metadata", f"lang={EPUB_LANGS.get(language, DEFAULT_EPUB_LANGUAGE)}"])
-        # Pandoc's EPUB writer opens the cover image directly and ignores the
-        # resource path, so a relative cover-image only resolves when the command
-        # happens to run from the project directory. CLI metadata outranks the
-        # metadata file, so this corrects the location of the declared value
-        # without ever inventing a cover.
-        cover_image = relative_cover_image(metadata_path, document, base_dir_path)
+        # CLI metadata outranks the metadata file, so this corrects the location of
+        # the declared value without ever inventing a cover.
         if cover_image is not None:
             cmd.extend(["--metadata", f"cover-image={cover_image}"])
         cmd.extend(["-o", str(artifact_out)])
