@@ -31,6 +31,7 @@ working copy.
 | `make gate` | Everything a pull request is verified with: suite, catalogs, docs, plan conformance |
 | `make validate CONFIG=path/to/pdf.config.yaml` | Validates a configuration against the schema |
 | `make doctor` | Checks the local toolchain |
+| `make epubcheck FILE=path/to/publication.epub` | Validates a finished publication with EPUBCheck. Optional, needs a JVM; see [dependency policy](docs/dependency-policy.md) |
 | `make install-local-dev` | Puts the working copy on `PATH` for manual testing |
 | `python3 scripts/check-i18n.py` | Catalog parity and placeholders |
 | `python3 scripts/check-docs.py` | No document points at something missing |

@@ -1,4 +1,4 @@
-.PHONY: bootstrap bootstrap-dry bootstrap-yes bootstrap-ci install-release install-local install-local-dev package-release doctor validate render test
+.PHONY: bootstrap bootstrap-dry bootstrap-yes bootstrap-ci install-release install-local install-local-dev package-release doctor validate render test epubcheck
 
 bootstrap:
 	bash scripts/bootstrap.sh
@@ -50,3 +50,20 @@ gate:
 	python3 scripts/check-i18n.py
 	python3 scripts/check-docs.py
 	python3 scripts/check-plan-conformance.py
+
+# Validating a finished publication is an acceptance step, not a runtime
+# dependency: EPUBCheck needs a JVM, and `make gate` must stay runnable without
+# one. Install it as documented in docs/dependency-policy.md.
+epubcheck:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make epubcheck FILE=path/to/publication.epub"; \
+		echo "Install EPUBCheck first: see docs/dependency-policy.md."; \
+		exit 1; \
+	fi
+	@command -v epubcheck >/dev/null 2>&1 || { \
+		echo "epubcheck is not installed: see docs/dependency-policy.md"; \
+		echo "  macOS with an existing JDK: unpack the official release and put a wrapper on PATH"; \
+		echo "  macOS without one: brew install epubcheck (it installs its own openjdk)"; \
+		exit 1; \
+	}
+	epubcheck "$(FILE)" --locale en
