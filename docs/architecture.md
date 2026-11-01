@@ -205,10 +205,17 @@ There is no atomic multi-file transaction. Default PDF plans remain unchanged.
 EPUB jobs omit TeX/template variables, use actual document metadata with
 metadata-file precedence, and keep document.language authoritative. An
 EPUB-only header overrides forced page breaks on initial headings without
-replacing Pandoc's default CSS or affecting PDF. Visual Apple Books acceptance
-is separate from structural archive verification. The singular `output.format`
-was an unreleased prototype and is replaced, not supported as a second alias;
-see [migration](migration.md).
+replacing Pandoc's default CSS or affecting PDF. An existing cover image is
+supported through `cover-image` in the metadata file or `document.metadata`;
+Pandoc writes the image cover and keeps its typographic title page after it.
+Relative assets resolve from `project.base_dir`, which every job appends last to
+the resource path, and a relative `cover-image` is resolved the same way because
+the EPUB writer reads the cover directly and ignores the resource path. No EPUB
+plan carries `\clearpage`: the compatibility switch is a typesetting decision,
+so it only applies to the PDF. Visual Apple Books acceptance is separate from
+structural archive verification. The singular `output.format` was an unreleased
+prototype and is replaced, not supported as a second alias; see
+[migration](migration.md).
 
 The plan is a conformance contract: four recorded cases in `tests/conformance/`
 cover minimal settings, metadata precedence, explicit chapter order, and custom
@@ -268,6 +275,7 @@ and configuration compatibility rules in `AGENTS.md`.
 | D10 | Every action is pinned to a commit SHA with its tag in a comment. Dependabot tracks the `github-actions` ecosystem weekly, so the pins do not rot; a tag is a mutable pointer, and these workflows handle the token that publishes releases. |
 | D11 | `mermaid-cli` is a **tested** version, not an enforced one: 10.9.1 is what the toolkit installs and CI renders with, any other version is accepted when `doctor` renders its test diagram, and this repository never pins a user's system-wide install. See `docs/dependency-policy.md`. |
 | D12 | `pandoc.metadata_file` is optional: the legacy side file stays supported and wins when present, but a configuration can now carry the cover through `document.*`, plus `document.language`, `document.titlepage` and a free-form `document.metadata` map. The file name still comes from `document.title`, so no consumer's output is renamed. |
+| D13 | Relative assets resolve from `project.base_dir`, never from the directory the command was invoked in. Every job appends `base_dir` **last** to the pandoc resource path, so a declared `pandoc.resource_path` keeps its priority and existing resolution is only widened. A relative `cover-image` is resolved against `base_dir` before Pandoc sees it, because the EPUB writer opens the cover directly and ignores the resource path. The plan keeps `cwd: null` as D6 requires: this is a resolution rule, not a plan shape change. No EPUB plan carries the generated `\clearpage`, which is LaTeX-only markup. |
 
 ## How we got here
 

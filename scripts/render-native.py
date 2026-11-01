@@ -196,6 +196,29 @@ def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     return jobs[0] if len(jobs) == 1 else {"plan_version": 2, "jobs": jobs}
 
 
+def relative_cover_image(metadata_path: Path | None, document: dict, base_dir_path: Path) -> str | None:
+    """The declared cover image when its value needs the project base to resolve.
+
+    Precedence matches the rest of the contract: a metadata file wins and the
+    free-form document map is only read when no file is configured. An already
+    absolute value needs no help and is left to pandoc.
+    """
+    raw = ""
+    if metadata_path is not None and metadata_path.exists():
+        value = load_yaml_map(metadata_path).get("cover-image")
+        raw = value if isinstance(value, str) else ""
+    else:
+        metadata_map = document.get("metadata")
+        if isinstance(metadata_map, dict):
+            value = metadata_map.get("cover-image")
+            raw = value if isinstance(value, str) else ""
+
+    raw = raw.strip()
+    if not raw or Path(raw).is_absolute():
+        return None
+    return str((base_dir_path / raw).resolve())
+
+
 def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_name: str) -> dict:
     """Compute one render job without writing files or launching processes."""
     cfg = cfg_user
@@ -237,7 +260,10 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     keep_merged_markdown = bool(output.get("keep_merged_markdown", True))
 
     compat = cfg.get("compat", {})
-    insert_clearpage = bool(compat.get("legacy_clearpage_between_h1", True))
+    # \clearpage is a LaTeX command: an EPUB has no TeX to interpret it, and an EPUB
+    # plan carries no LaTeX-only markup. The compatibility switch is a typesetting
+    # decision, so it only ever applies to the PDF.
+    insert_clearpage = format_name == FORMAT_PDF and bool(compat.get("legacy_clearpage_between_h1", True))
 
     raw_user_pandoc = cfg_user.get("pandoc")
     user_pandoc_cfg = raw_user_pandoc if isinstance(raw_user_pandoc, dict) else {}
@@ -327,13 +353,22 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
         # The cover switch is emitted below with the rest of the document options;
         # an unconditional -V here would make titlepage: false impossible.
         cmd.extend(["-V", "fig-pos=!htbp"])
-    if resource_path_values:
-        cmd.append(f"--resource-path={os.pathsep.join(resource_path_values)}")
+    # Pandoc resolves a relative asset against the working directory and then the
+    # resource path. The project base is appended last, so a declared resource_path
+    # keeps its priority and a project-relative asset resolves no matter where the
+    # command was invoked. It is the directory the project declares as its own, not
+    # a hidden default asset folder.
+    resource_search = list(dict.fromkeys([*resource_path_values, str(base_dir_path)]))
+    cmd.append(f"--resource-path={os.pathsep.join(resource_search)}")
 
     language = str(document.get("language") or "").strip()
 
     if format_name == FORMAT_EPUB:
         cmd.append(f"--include-in-header={root_dir / 'templates/epub-header.html'}")
+        # A relative cover is resolved once, below. Pandoc's EPUB writer opens the
+        # cover image directly and ignores the resource path, so a relative value
+        # only resolves when the command happens to run from the project directory.
+        cover_image = relative_cover_image(metadata_path, document, base_dir_path)
         # An EPUB3 package needs dc:title and dc:language to be a valid
         # publication; pandoc writes them from metadata, not from -V variables.
         # Match PDF precedence: a metadata file replaces document text fields;
@@ -346,8 +381,17 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
                 if isinstance(value, str) and value.strip():
                     cmd.extend(["--metadata", f"{field}={value}"])
             for key, value in (document.get("metadata") or {}).items():
+                # Two --metadata values for one key arrive at pandoc as a MetaList,
+                # and the EPUB writer then rejects the cover, so the resolved value
+                # below is the only one emitted.
+                if key == "cover-image" and cover_image is not None:
+                    continue
                 cmd.extend(["--metadata", f"{key}={value}"])
         cmd.extend(["--metadata", f"lang={EPUB_LANGS.get(language, DEFAULT_EPUB_LANGUAGE)}"])
+        # CLI metadata outranks the metadata file, so this corrects the location of
+        # the declared value without ever inventing a cover.
+        if cover_image is not None:
+            cmd.extend(["--metadata", f"cover-image={cover_image}"])
         cmd.extend(["-o", str(artifact_out)])
     else:
         uses_metadata_file = metadata_path is not None and metadata_path.exists()
