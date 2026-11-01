@@ -45,6 +45,70 @@ Ordinary PR/push CI runs L1. L2 requires the manual
 `run_render_full=true`. A green run with L2/L3 skipped is not render-integration
 evidence. Release preparation must explicitly request and inspect both jobs.
 
+## EPUBCheck: acceptance, not a runtime dependency
+
+EPUBCheck is the W3C conformance checker for EPUB publications. It is the only
+authoritative validator for the standard, and it is written in Java: there is no
+official non-Java equivalent.
+
+It is **never** a runtime requirement. A consumer that only wants to produce an
+EPUB must not install a JVM, so `epubcheck` is not part of
+`runtime.required_commands` and `doctor` never asks for it. The same reasoning
+that keeps Chrome and the Mermaid CLI out of a contributor's machine applies
+here: it is installed where a publication is accepted, not where one is
+authored.
+
+Tested version: **5.4.0**. Any recent 5.x is expected to work; the release checks
+below record what was actually run.
+
+### Installing it
+
+With a JDK already on the machine, use the official release and do not duplicate
+the JVM:
+
+```bash
+# ~/.local is a convention, not a requirement
+mkdir -p ~/.local/lib ~/.local/bin
+curl -LO https://github.com/w3c/epubcheck/releases/download/v5.4.0/epubcheck-5.4.0.zip
+unzip -q epubcheck-5.4.0.zip -d ~/.local/lib
+printf '#!/bin/sh\nexec java -jar "%s/.local/lib/epubcheck-5.4.0/epubcheck.jar" "$@"\n' "$HOME" > ~/.local/bin/epubcheck
+chmod +x ~/.local/bin/epubcheck
+```
+
+Without a JDK, Homebrew installs one for you: `brew install epubcheck`. Be aware
+that the formula declares `openjdk` as a required dependency, so on a machine
+that already has a JDK it installs a second one.
+
+### Running it
+
+```bash
+make epubcheck FILE=examples/.output/test/project-technical-documentation-20261101.epub
+```
+
+Exit codes: `0` no errors, `1` errors found, `2` fatal. **Errors fail, warnings
+are reported.** Add `--failonwarnings` only after the warnings have been read
+once; today they include accessibility metadata this toolkit does not emit.
+
+Never send a consumer's publication to an online validator. Validation runs
+locally or in CI, and the file does not leave the machine.
+
+### Why it is not part of `make gate`
+
+`make gate` runs on every pull request and must stay runnable with no extra
+setup. EPUBCheck validates a *finished* publication, needs a JVM, and says
+nothing in a pull request that the dependency-free structural checks in
+`tests/l1/epub.sh` do not already say. It belongs to release acceptance, where
+the question is "is this publication conformant", not "is this diff correct".
+
+### Current state
+
+Run against the four shipped examples, as of the first adoption: `manual`, `test`
+and a cover fixture pass with no messages; `documentation` and `ohmyfake` report
+two distinct defects that the structural checks do not catch — an inter-chapter
+link to a file that the merged single-document publication does not contain, and
+an emoji image inside a table-of-contents entry. Both are tracked in #94 phase 3.
+Until they are fixed, a green EPUBCheck run is a release target, not a gate.
+
 ## YAML: two parsers, one tested at a time
 
 Configuration is read with PyYAML when available and otherwise through Ruby's
