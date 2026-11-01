@@ -110,11 +110,13 @@ the question is "is this publication conformant", not "is this diff correct".
 
 ### Current state
 
-Run against the four shipped examples: `manual`, `test`, `ohmyfake` and a cover
-fixture pass with no messages. `documentation` reports one defect the
-dependency-free structural checks do not catch — an inter-chapter link to a file
-that the merged single-document publication does not contain. It is tracked in
-#94 phase 3, so a green EPUBCheck run is still a release target and not a gate.
+For the published 2.1.0 candidate (`6b45317`), the four shipped examples —
+`documentation`, `manual`, `test` and `ohmyfake` — passed EPUBCheck 5.4.0 with no
+errors and no warnings in [CI run 41308070176](https://github.com/pablobernardo/pandoc-toolkit/actions/runs/41308070176). The inter-chapter link defect
+that `documentation` used to report no longer occurs: links between selected
+chapters are rewritten to internal anchors that resolve inside the merged
+publication (#94). EPUBCheck remains acceptance, not a gate: it runs only
+through the manual `run_epub_acceptance` job described above.
 
 ## YAML: two parsers, one tested at a time
 
