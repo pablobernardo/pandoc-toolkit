@@ -212,8 +212,10 @@ Relative assets resolve from `project.base_dir`, which every job appends last to
 the resource path, and a relative `cover-image` is resolved the same way because
 the EPUB writer reads the cover directly and ignores the resource path. No EPUB
 plan carries `\clearpage`: the compatibility switch is a typesetting decision,
-so it only applies to the PDF. Visual Apple Books acceptance is separate from
-structural archive verification. The singular `output.format` was an unreleased
+so it only applies to the PDF. The emoji filter keeps heading emoji as characters
+in EPUB as well: the navigation document reuses headings, and a link there must
+carry text. Visual Apple Books acceptance is separate from structural archive
+verification. The singular `output.format` was an unreleased
 prototype and is replaced, not supported as a second alias; see
 [migration](migration.md).
 

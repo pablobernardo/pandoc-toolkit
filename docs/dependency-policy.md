@@ -102,12 +102,11 @@ the question is "is this publication conformant", not "is this diff correct".
 
 ### Current state
 
-Run against the four shipped examples, as of the first adoption: `manual`, `test`
-and a cover fixture pass with no messages; `documentation` and `ohmyfake` report
-two distinct defects that the structural checks do not catch — an inter-chapter
-link to a file that the merged single-document publication does not contain, and
-an emoji image inside a table-of-contents entry. Both are tracked in #94 phase 3.
-Until they are fixed, a green EPUBCheck run is a release target, not a gate.
+Run against the four shipped examples: `manual`, `test`, `ohmyfake` and a cover
+fixture pass with no messages. `documentation` reports one defect the
+dependency-free structural checks do not catch — an inter-chapter link to a file
+that the merged single-document publication does not contain. It is tracked in
+#94 phase 3, so a green EPUBCheck run is still a release target and not a gate.
 
 ## YAML: two parsers, one tested at a time
 

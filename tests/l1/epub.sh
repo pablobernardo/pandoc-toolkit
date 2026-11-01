@@ -810,6 +810,81 @@ PY
   rm -f "$plan" "$out"
 }
 
+run_epub_heading_emoji_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP epub heading emoji (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out epub nav chapter sandbox_emoji code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  epub="${sandbox}/work/out/epub-guide-manual.epub"
+  sandbox_emoji="${sandbox}/work/out/emoji"
+
+  # Seeded so the fixture never needs the network: the preparation step only
+  # fetches what is missing.
+  mkdir -p "$sandbox_emoji"
+  cat >"${sandbox_emoji}/2705.svg" <<'EOF'
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="#090"/></svg>
+EOF
+
+  cat >"${sandbox}/work/chapters/chapter-1.md" <<'EOF'
+# Compatibility Check ✅
+
+Inline emoji in a paragraph ✅ stays an image.
+EOF
+  printf '# Second Chapter\n\nText only.\n' >"${sandbox}/work/chapters/chapter-2.md"
+
+  write_epub_config "${sandbox}/pdf.config.yaml" epub
+  "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+text = text.replace('  emoji:\n    enabled: false',
+                    '  emoji:\n    enabled: true\n    emoji_dir: "out/emoji"\n    include_ballot_icons: false')
+path.write_text(text)
+PY
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "EPUB renders with an emoji in a heading"
+
+  if [[ -s "$epub" ]]; then
+    pass "render writes the epub with an emoji in a heading"
+  else
+    fail "render must write the epub with an emoji in a heading ($(tail -3 "$out"))"
+  fi
+
+  nav="${sandbox}/nav.xhtml"
+  chapter="${sandbox}/chapter.xhtml"
+  if [[ -s "$epub" ]]; then
+    unzip -p "$epub" EPUB/nav.xhtml >"$nav" 2>/dev/null
+    unzip -p "$epub" EPUB/text/ch001.xhtml >"$chapter" 2>/dev/null
+  fi
+
+  assert_not_contains "$nav" '<img' "the navigation document carries no image, which EPUB rejects as link text"
+  assert_not_contains "$nav" '\.\./media' "the navigation document resolves no path outside the package"
+  assert_contains "$nav" 'Compatibility Check ✅' "the navigation entry keeps the heading text including the emoji"
+  assert_contains "$chapter" 'class="emoji"' "an inline emoji in a paragraph is still replaced by an image"
+
+  # The filter is shared by both formats, so the PDF side must keep its images.
+  printf '# Heading ✅\n' >"${sandbox}/heading.md"
+  if PANDOC_EMOJI_DIR="$sandbox_emoji" pandoc "${sandbox}/heading.md" -t latex \
+    --lua-filter="${ROOT_DIR}/filters/emoji.lua" >"${sandbox}/heading.tex" 2>/dev/null; then
+    pass "the emoji filter runs for latex output"
+  else
+    fail "the emoji filter must run for latex output"
+  fi
+  assert_contains "${sandbox}/heading.tex" 'includesvg|includegraphics' "a heading emoji stays an image in PDF output"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 run_multi_format_export_test() {
   local out code=0
   out="$(mktemp)"

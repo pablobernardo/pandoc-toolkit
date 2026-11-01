@@ -147,12 +147,25 @@ end
 function Code(el) return nil end
 function CodeBlock(el) return nil end
 
+-- The EPUB writer reuses headings in the navigation document, where a link must
+-- contain text and Pandoc writes an image path relative to the text directory
+-- that escapes the package from the navigation root. A reader renders emoji
+-- natively, so EPUB keeps the characters in headings instead of the images the
+-- PDF needs to cover its font gap.
+local epub_output = tostring(FORMAT) == "epub"
+
 -- Replaces emojis inside words and strings.
 -- Wraps in a Span only when something was actually substituted: wrapping plain
 -- text makes any heading count as formatted and makes pandoc emit
 -- \texorpdfstring, which requires hyperref in the template (it broke minimal
 -- templates without hyperref).
 function Str(el)
+  -- This hook cannot tell whether it is inside a heading, and filters run
+  -- bottom-up, so it would transform the heading before Header could skip it.
+  -- EPUB relies on the block handlers below, which are scoped by construction.
+  if epub_output then
+    return nil
+  end
   local inlines = string_to_inlines(el.text)
   local replaced = false
   for _, inline in ipairs(inlines) do
@@ -196,6 +209,9 @@ function Plain(el)
 end
 
 function Header(el)
+  if epub_output then
+    return nil
+  end
   el.content = map_inlines(el.content)
   return el
 end

@@ -11,6 +11,10 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Fixed
 
+- EPUB keeps emoji as characters inside headings. The generated navigation
+  document reused them as images, which is not valid link text, with a path that
+  escaped the package. Emoji in paragraph text stay images, and PDF output is
+  unchanged (#94).
 - Relative assets resolve from `project.base_dir` in both formats, so a content
   image or a cover declared against the project no longer breaks when the
   command runs from another directory. The project base is appended last to the
