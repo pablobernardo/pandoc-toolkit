@@ -96,6 +96,13 @@ Install at least:
 - YAML parser: **PyYAML** for Python or **Ruby's stdlib YAML**
 - `curl`
 - `mmdc` (Mermaid CLI)
+- Optional: **GNU FreeSerif**, so the six ballot/warning symbols (`☐ ☑ ☒ ✅ ❌ ⚠`)
+  appear in PDF prose and inline code. A full TeX Live/MacTeX install already
+  ships it; on Debian/Ubuntu: `sudo apt install fonts-freefont-ttf`. Without it
+  (or without the `newunicodechar` package, guarded the same way and shipped by
+  standard TeX distributions), rendering still succeeds and those glyphs are
+  dropped with the usual Missing-character warnings; see
+  `docs/dependency-policy.md`.
 
 Quick reference for the Mermaid CLI:
 

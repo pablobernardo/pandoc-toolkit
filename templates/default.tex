@@ -15,6 +15,12 @@ $endif$
 % ---- Math symbols (for \boxtimes, etc.) ----
 \usepackage{amsmath,amssymb}
 
+% D14: set inside the XeLaTeX/LuaLaTeX branch when the optional glyph fallback
+% font exists. It is declared and cleared here so every engine branch can test
+% it; pdfLaTeX never sets it and keeps its historical behavior.
+\newif\ifSymbolFontFound
+\SymbolFontFoundfalse
+
 % Detectar motor: XeLaTeX/LuaLaTeX vs pdfLaTeX
 \newif\ifxetexorlua
 \ifdefined\luatexversion
@@ -44,6 +50,83 @@ $endif$
             \setmainfont{Latin Modern Roman}
         }
     }
+
+    % Optional glyph fallback font (D14): GNU FreeSerif covers the six symbols
+    % of #83. Looked up by standard file name first (TeX Live), then by family
+    % name (fontconfig/luaotfload, Debian fonts-freefont-ttf); without it the
+    % block below degrades to the previous behavior.
+    \IfFontExistsTF{FreeSerif.ttf}{%
+        \SymbolFontFoundtrue
+        \newfontfamily\SymbolSerifFont{FreeSerif.ttf}%
+    }{%
+        \IfFontExistsTF{FreeSerif}{%
+            \SymbolFontFoundtrue
+            \newfontfamily\SymbolSerifFont{FreeSerif}%
+        }{%
+            \SymbolFontFoundfalse
+        }%
+    }
+
+    % ---- Glyph-only symbol fallback (D14) --------------------------------
+    % The six symbols of #83 (☐ ☑ ☒ ✅ ❌ ⚠) are missing from the default
+    % prose and mono faces, so every PDF dropped them. When GNU FreeSerif is
+    % available, only these six glyphs are mapped to it, in prose and inline
+    % code: the prose and code fonts are untouched, code stays textual, no
+    % image is produced and the emoji filter is not needed. Fenced code blocks
+    % keep their existing behavior. The emoji presentation selector (U+FE0F)
+    % trailing a mapped glyph, as in the issue's ⚠️, is swallowed there and only
+    % there, never globally. Without the font, or without the newunicodechar
+    % package, the block degrades to the previous behavior, Missing-character
+    % warnings included. XeLaTeX and LuaLaTeX only: pdfLaTeX has no fontspec
+    % and keeps its historical behavior.
+    \ifSymbolFontFound
+        \makeatletter
+        % After a base glyph the engines hand over a trailing U+FE0F as a
+        % character token (letter catcode in prose, other catcode in inline
+        % code) instead of through its active definition, so it cannot be
+        % mapped with \newunicodechar in that position; the mapped glyph looks
+        % ahead and gobbles it there. A selector anywhere else keeps its
+        % baseline behavior. Both catcodes are covered. These macros are
+        % defined outside the package guard below: a macro definition with a
+        % parameter cannot live inside an \IfFileExists argument.
+        \begingroup
+          \lccode`\X="FE0F\relax
+          \lowercase{\endgroup\let\SymbolSel@FeZeroFLetter X}%
+        \begingroup
+          \catcode`\X=12\relax
+          \lccode`\X="FE0F\relax
+          \lowercase{\endgroup\global\let\SymbolSel@FeZeroFOther X}%
+        \def\SymbolSel@Nothing{}%
+        \def\SymbolMaybeEatSelector{\futurelet\SymbolNextToken\SymbolMaybeEatSelector@i}%
+        \def\SymbolMaybeEatSelector@i{%
+          \ifx\SymbolNextToken\SymbolSel@FeZeroFLetter
+            \let\SymbolNextAction\@gobble
+          \else
+            \ifx\SymbolNextToken\SymbolSel@FeZeroFOther
+              \let\SymbolNextAction\@gobble
+            \else
+              \let\SymbolNextAction\SymbolSel@Nothing
+            \fi
+          \fi
+          \SymbolNextAction
+        }
+        % Only these six glyphs switch to FreeSerif, and only their glyph: the
+        % macro changes the font for the single \char and nothing else.
+        \def\SymbolGlyph#1{{\SymbolSerifFont\char"#1}\SymbolMaybeEatSelector}%
+        \makeatother
+        \IfFileExists{newunicodechar.sty}{%
+            \usepackage{newunicodechar}
+            \newunicodechar{☐}{\SymbolGlyph{2610}}%
+            \newunicodechar{☑}{\SymbolGlyph{2611}}%
+            \newunicodechar{☒}{\SymbolGlyph{2612}}%
+            \newunicodechar{✅}{\SymbolGlyph{2705}}%
+            \newunicodechar{❌}{\SymbolGlyph{274C}}%
+            \newunicodechar{⚠}{\SymbolGlyph{26A0}}%
+        }{%
+            \SymbolFontFoundfalse
+        }%
+    \fi
+    % ---- END glyph-only symbol fallback ----------------------------------
 
 \else
     \usepackage[T1]{fontenc}

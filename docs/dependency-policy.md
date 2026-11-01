@@ -45,6 +45,33 @@ Ordinary PR/push CI runs L1. L2 requires the manual
 `run_render_full=true`. A green run with L2/L3 skipped is not render-integration
 evidence. Release preparation must explicitly request and inspect both jobs.
 
+### Optional PDF symbol font (GNU FreeSerif)
+
+The template's default prose and mono faces do not contain the six ballot and
+warning symbols of #83 (`☐ ☑ ☒ ✅ ❌ ⚠`). The template maps exactly those glyphs,
+and only those glyphs, to GNU FreeSerif when the font exists (D14 in
+`docs/architecture.md`). This font is an **optional** dependency: nothing in the
+toolkit, `bootstrap.sh` or CI installs or downloads it.
+
+Where it comes from:
+
+| Source | Lookup |
+| --- | --- |
+| A full TeX Live / MacTeX install (ships `gnu-freefont`) | file name, `FreeSerif.ttf`, through the normal TeX file search |
+| Debian/Ubuntu package `fonts-freefont-ttf` | family name, `FreeSerif`, through fontconfig/luaotfload |
+
+Neither `texlive-fonts-recommended` nor any CI job decides this: a distribution
+without the font still renders, with the previous behavior and the
+Missing-character warnings retained. Minimal CI may exercise that degradation
+instead of installing the font. The template maps through the `newunicodechar`
+package, guarded together with the font: it ships with every standard TeX
+distribution, and a TeX installation without it degrades the same way instead
+of failing the render.
+
+Supported engines for the mapping are XeLaTeX and LuaLaTeX, the branches that
+already use fontspec. pdfLaTeX keeps its historical behavior, degraded
+appearance included.
+
 ## EPUBCheck: acceptance, not a runtime dependency
 
 EPUBCheck is the W3C conformance checker for EPUB publications. It is the only

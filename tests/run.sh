@@ -65,6 +65,7 @@ main() {
   run_emoji_source_allowlist_test
   run_template_modern_pandoc_guard_test
   run_template_wrapping_test
+  run_template_unicode_symbol_fallback_test
   run_render_filter_defaults_test
   run_render_output_file_name_test
   run_render_slug_accents_test
