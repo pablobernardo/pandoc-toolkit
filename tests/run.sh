@@ -95,6 +95,7 @@ main() {
   run_epub_resource_path_test
   run_epub_latex_markup_test
   run_epub_document_metadata_cover_test
+  run_epub_heading_emoji_test
   run_multi_format_export_test
   run_plan_conformance_tests
 
