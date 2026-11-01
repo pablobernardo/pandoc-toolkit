@@ -11,6 +11,9 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Fixed
 
+- A link between selected chapters becomes an internal anchor instead of a
+  reference to a file the merged publication does not contain. It resolves in the PDF and in the EPUB, and a project without
+  cross-references keeps a byte-identical merged document (#94).
 - EPUB keeps emoji as characters inside headings. The generated navigation
   document reused them as images, which is not valid link text, with a path that
   escaped the package. Emoji in paragraph text stay images, and PDF output is

@@ -64,6 +64,12 @@ These fields are required in `schemas/pdf-config.schema.json` and the runtime ac
 - Any other value is rejected in `render` with a localized message listing the accepted values (`natural`, `alphabetical`); it does not sort silently.
 - It only applies when `input.explicit_files` is empty: an explicit list is respected as-is.
 
+Cross-references between chapters — `[migration](migration.md)`:
+
+- Chapters become sections of one document, so a link to another selected chapter file is rewritten to an internal anchor instead of pointing at a file the publication does not contain. It works in the PDF and in the EPUB, where the link resolves to the right spine document.
+- Only the chapters something actually links to get an anchor, and a project with no cross-references produces exactly the same merged Markdown as before.
+- A link to a file that is not part of the selection is left as written, and a fenced code block is never rewritten, so a chapter documenting the link syntax keeps its example.
+
 `output.keep_merged_markdown` — fate of the merged Markdown:
 
 - `true` (default): keeps the intermediate `.md` next to the PDF.

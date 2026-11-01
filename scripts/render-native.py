@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import json
-import unicodedata
 import os
 import re
 import shutil
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import NoReturn
@@ -452,10 +452,79 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     }
 
 
+# A Markdown link to one of the selected chapter files. Absolute URLs and paths
+# rooted at the filesystem are never siblings.
+SIBLING_LINK = re.compile(r"\]\((?!https?://|/)([^)\s#]+?\.md)(#[^)\s]*)?\)")
+
+
+def sibling_link_markers(chapters: list[str], texts: list[str]) -> dict[str, str]:
+    """One anchor per chapter file that another chapter links to.
+
+    Empty for a project with no cross-references, which keeps its merged Markdown
+    byte-identical: nothing is injected when nothing needs it.
+    """
+    names = {Path(path).name for path in chapters}
+    targets = set()
+    for text in texts:
+        for match in SIBLING_LINK.finditer(text):
+            name = Path(match.group(1)).name
+            if name in names:
+                targets.add(name)
+    return {name: f"ch-{slugify(Path(name).stem)}" for name in sorted(targets)}
+
+
+def rewrite_sibling_links(text: str, markers: dict[str, str]) -> str:
+    """Point a link at an in-document anchor instead of a file the merge removes.
+
+    Fenced code is left alone: a chapter that documents the link syntax must not
+    have its example rewritten.
+    """
+
+    def replace(match: re.Match[str]) -> str:
+        marker = markers.get(Path(match.group(1)).name)
+        return f"](#{marker})" if marker else match.group(0)
+
+    rewritten = []
+    fence = ""
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if stripped.startswith(("```", "~~~")):
+            fence = "" if fence else stripped[:3]
+            rewritten.append(line)
+            continue
+        rewritten.append(line if fence else SIBLING_LINK.sub(replace, line))
+    return "".join(rewritten)
+
+
+def with_marker(text: str, marker: str) -> str:
+    """Place the anchor inside the chapter's own spine document.
+
+    Pandoc splits the merged document at top-level headings, so an anchor written
+    before the heading would belong to the previous section. A chapter without a
+    heading is not a split point, so its content stays with the previous document
+    and the anchor belongs at its start.
+    """
+    lines = text.splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        if not line.strip():
+            continue
+        if line.lstrip().startswith("#"):
+            lines.insert(index + 1, f"\n\n[]{{#{marker}}}\n\n")
+            return "".join(lines)
+        break
+    return "[]{#" + marker + "}\n\n" + text
+
+
 def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
+    texts = [Path(raw_path).read_text(encoding="utf-8", errors="ignore") for raw_path in chapters]
+    # Chapters become sections of one document, so a link to a sibling file would
+    # point at a file the publication does not contain. Anchors are injected only
+    # for chapters something actually links to.
+    markers = sibling_link_markers(chapters, texts)
     parts = []
-    for index, raw_path in enumerate(chapters):
-        text = Path(raw_path).read_text(encoding="utf-8", errors="ignore")
+    for index, (raw_path, text) in enumerate(zip(chapters, texts, strict=True)):
+        if markers:
+            text = rewrite_sibling_links(text, markers)
         if index > 0 and insert_clearpage:
             first_nonempty = ""
             for line in text.splitlines():
@@ -464,6 +533,11 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
                     break
             if first_nonempty.startswith("# "):
                 parts.append("\n\n\\clearpage\n\n")
+        marker = markers.get(Path(raw_path).name)
+        if marker:
+            # An empty span with an id is \phantomsection\label in LaTeX and a
+            # <span id> in HTML and EPUB, so one anchor serves both formats.
+            text = with_marker(text, marker)
         parts.append("\n")
         parts.append(text)
         parts.append("\n\n")
