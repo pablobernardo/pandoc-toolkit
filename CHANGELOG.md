@@ -11,6 +11,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Fixed
 
+- Relative assets resolve from `project.base_dir` in both formats, so a content
+  image or a cover declared against the project no longer breaks when the
+  command runs from another directory. The project base is appended last to the
+  resource path, so a declared `pandoc.resource_path` keeps its priority (#94).
+- EPUB output no longer carries the generated `\clearpage` between chapters. The
+  compatibility switch still applies to the PDF, which is unchanged (#94).
 - EPUB tables retain table layout with visible overflow and wrapping cell text,
   instead of scrollable blocks that can interfere with reader pagination. PDF
   table styling is unchanged (#94).
@@ -25,6 +31,9 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Added
 
+- EPUB publications carry an existing cover image declared through `cover-image`
+  in the metadata file, or through `document.metadata` when no file is
+  configured. Nothing generates a cover, and PDF styling is unchanged (#94).
 - Optional `output.formats: [pdf, epub]` selects one or both artifacts in one
   invocation. Omitted means `[pdf]`, preserving recorded PDF plans. Successful
   files remain if another format fails; the command returns nonzero. EPUB-only
