@@ -1,12 +1,31 @@
-# Unreleased EPUB configuration migration
+# Migrating to 2.1.0
 
-Published 2.0.1 configurations need no changes. EPUB has not been released yet;
-this migration concerns only configurations used with development `main`.
-Toolkit VERSION stays 2.0.1 until release preparation is explicitly authorized.
+2.1.0 adds EPUB output and changes where relative assets are resolved. Published
+2.0.1 configurations need no edits: `output.formats` is optional, omitting it
+keeps the PDF behaviour, and configuration contract `version: 1` is unchanged.
 
-## Replace the prototype format key
+## EPUB output
 
-Before:
+`output.formats: [epub]` produces an EPUB3 publication. It carries an existing
+cover image declared through `cover-image` in the metadata file or in
+`document.metadata`, embeds emoji and Mermaid resources, keeps cross-references
+between chapters working as internal anchors, and drops LaTeX-only markup such
+as the generated `\clearpage`. Nothing generates a cover, and PDF output is
+unchanged.
+
+## Relative assets resolve from the project base
+
+`project.base_dir` is now appended last to the Pandoc resource path, so a
+relative image or cover resolves regardless of the directory the command runs
+from; a declared `pandoc.resource_path` keeps its priority, so anything that
+resolved before still resolves. A project that relied on being invoked from a
+particular directory should either run from the project base or declare that
+entry explicitly.
+
+## If you used the prototype format key
+
+The singular `output.format` was a prototype on `main` and never shipped in a
+release. If you used it, replace it. Before:
 
 ```yaml
 output:
