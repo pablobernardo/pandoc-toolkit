@@ -49,8 +49,10 @@ _LANG = _resolve_lang()
 _CATALOG = _load_catalog(_LANG)
 
 
-def t(key: str, fallback: str, **kwargs: object) -> str:
-    template = _CATALOG.get(key)
+def t(_key: str, fallback: str, **kwargs: object) -> str:
+    # The parameter is `_key`, not `key`: a message may use a `{key}` placeholder,
+    # and t(_key, fallback, key=...) would pass the same argument twice.
+    template = _CATALOG.get(_key)
     if not isinstance(template, str) or not template.strip():
         template = fallback
     try:

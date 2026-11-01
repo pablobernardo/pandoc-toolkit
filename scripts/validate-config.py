@@ -5,7 +5,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 try:
     from i18n_runtime import t
@@ -17,7 +17,7 @@ except Exception:
             return fallback
 
 
-def fail(msg: str) -> None:
+def fail(msg: str) -> NoReturn:
     print(f"❌ {msg}")
     raise SystemExit(1)
 

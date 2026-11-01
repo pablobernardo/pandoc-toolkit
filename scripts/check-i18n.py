@@ -5,6 +5,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 try:
     from i18n_runtime import t
@@ -18,7 +19,7 @@ except Exception:
 PLACEHOLDER_RE = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
 
 
-def fail(msg: str) -> None:
+def fail(msg: str) -> NoReturn:
     print(t("check_i18n.error.prefix", "❌ i18n check: {msg}", msg=msg))
     raise SystemExit(1)
 

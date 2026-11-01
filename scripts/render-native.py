@@ -20,7 +20,7 @@ except Exception:  # PyYAML is optional: Ruby's stdlib YAML is the fallback.
 try:
     from i18n_runtime import t
 except Exception:
-    def t(key: str, fallback: str, **kwargs: object) -> str:
+    def t(_key: str, fallback: str, **kwargs: object) -> str:
         try:
             return fallback.format(**kwargs)
         except Exception:

@@ -11,7 +11,7 @@ from pathlib import Path
 try:
     from i18n_runtime import t
 except Exception:
-    def t(key: str, fallback: str, **kwargs: object) -> str:
+    def t(_key: str, fallback: str, **kwargs: object) -> str:
         try:
             return fallback.format(**kwargs)
         except Exception:

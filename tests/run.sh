@@ -27,6 +27,7 @@ main() {
   run_version_tests
   run_info_tests
   run_i18n_catalog_consistency_test
+  run_i18n_catalog_error_path_test
   run_shared_i18n_runtime_test
   run_unknown_command_test
   run_i18n_default_fallback_english_test
