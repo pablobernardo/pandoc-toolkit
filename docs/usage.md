@@ -318,6 +318,17 @@ The plan is the verifiable contract of the render: it is what makes it possible 
   headings, lists, tables and code, run
   `python3 tests/integration/check-heading-pagination.py` (requires Pandoc,
   XeLaTeX and `pdftotext`). The review PDF stays under `examples/.output/`.
+- **Symbols like ☐ ☑ ☒ ✅ ❌ ⚠ are blank in the PDF.** The default prose and mono
+  faces do not contain those glyphs. The template maps exactly those six, and
+  only those six, to GNU FreeSerif when it exists, in prose and inline code:
+  prose and code stay in their usual fonts, code remains textual, and the emoji
+  filter is not needed. The symbols appear as monochrome text glyphs, not as
+  color emoji. Install the font to get them (Debian/Ubuntu:
+  `fonts-freefont-ttf`; TeX Live/MacTeX normally ship it); without it — or
+  without the `newunicodechar` package — the PDF degrades to the previous
+  behavior and keeps the Missing-character warnings. Fenced code blocks keep
+  their existing behavior. Text extraction keeps the base symbols but not the
+  invisible presentation selector: an input `⚠️` extracts as `⚠`.
 - `render` fails with Mermaid: `mmdc` is on PATH but cannot launch a browser. `mermaid-cli` needs a Chromium that Puppeteer can find, and its own download is separate from the npm package. `pandoc-pdf doctor` renders a test diagram and reports the exact fix:
   - install the browser Puppeteer expects: `npx puppeteer browsers install chrome-headless-shell`;
   - or point it at a browser you already have: `export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.
