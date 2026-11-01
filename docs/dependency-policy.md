@@ -92,6 +92,14 @@ once; today they include accessibility metadata this toolkit does not emit.
 Never send a consumer's publication to an online validator. Validation runs
 locally or in CI, and the file does not leave the machine.
 
+### Where CI pins it
+
+`.github/workflows/ci.yml` has a manual **EPUB acceptance** job that installs
+EPUBCheck 5.4.0 and validates every publication the examples produce. It runs
+only on `workflow_dispatch` with `run_epub_acceptance: true`, so it is the single
+place where the version lives: a pull request never pays for it, and two
+maintainers never validate with different versions.
+
 ### Why it is not part of `make gate`
 
 `make gate` runs on every pull request and must stay runnable with no extra

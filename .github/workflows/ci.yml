@@ -20,6 +20,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_epub_acceptance:
+        description: "Run EPUB acceptance: EPUBCheck over the shipped examples"
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: "0 3 * * 1"
 
@@ -141,3 +146,48 @@ jobs:
           test -x "$chrome_path"
           test -r "$(npm root -g)/@mermaid-js/mermaid-cli/dist/index.html"
           PUPPETEER_EXECUTABLE_PATH="$chrome_path" bash tests/l3-local.sh
+
+  epub-acceptance:
+    name: EPUB acceptance (ubuntu, manual)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_epub_acceptance == true }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install publication dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc nodejs npm
+          # Keep in sync with MERMAID_CLI_VERSION and docs/dependency-policy.md
+          sudo npm install -g @mermaid-js/mermaid-cli@10.9.1
+
+      - name: Render the shipped examples
+        run: |
+          # The hosted image's Chrome, not a confined Chromium Snap; both the L3
+          # job and this one rely on what the image already provides.
+          chrome_path="$(command -v google-chrome)"
+          test -x "$chrome_path"
+          PUPPETEER_EXECUTABLE_PATH="$chrome_path" bash examples/toPDF.sh
+
+      - name: Install the pinned EPUBCheck
+        # Acceptance only. A consumer producing a publication never needs a JVM,
+        # which is why this lives here and not in runtime.required_commands.
+        # Keep the version in sync with docs/dependency-policy.md.
+        run: |
+          curl -fsSL -o epubcheck.zip \
+            https://github.com/w3c/epubcheck/releases/download/v5.4.0/epubcheck-5.4.0.zip
+          unzip -q epubcheck.zip
+          java -version
+
+      - name: Validate every publication
+        run: |
+          # Errors fail the run; warnings are reported and shown in the log.
+          status=0
+          for publication in examples/.output/*/*.epub; do
+            echo "::group::$(basename "$publication")"
+            java -jar epubcheck-5.4.0/epubcheck.jar "$publication" --locale en || status=1
+            echo "::endgroup::"
+          done
+          exit "$status"
