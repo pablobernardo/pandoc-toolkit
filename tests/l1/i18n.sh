@@ -1,6 +1,34 @@
 #!/bin/bash
 # i18n area tests. Sourced by tests/run.sh (not run standalone).
 
+run_i18n_catalog_error_path_test() {
+  local tmp out code=0
+  tmp="$(mktemp -d)"
+  out="$(mktemp)"
+  cp -R "${ROOT_DIR}/i18n" "${tmp}/i18n"
+
+  # An empty key is invalid. Reporting it must not fail first: the message uses a
+  # {key} placeholder, and a runtime that names its first parameter `key` raises
+  # "got multiple values" exactly while trying to explain the problem.
+  "${REAL_PYTHON3}" - "${tmp}/i18n/locales/es.json" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+data = json.load(open(path, encoding="utf-8"))
+data[""] = data.pop(next(iter(data)))
+json.dump(data, open(path, "w", encoding="utf-8"))
+PY
+
+  "${REAL_PYTHON3}" "${ROOT_DIR}/scripts/check-i18n.py" "$tmp" >"$out" 2>&1 || code=$?
+  assert_exit_code "1" "$code" "the i18n check fails on an invalid catalog key"
+  assert_contains "$out" "invalid key" "the failure names the invalid key"
+  assert_not_contains "$out" "Traceback" "the failure reports the problem instead of crashing"
+
+  rm -rf "$tmp"
+  rm -f "$out"
+}
+
 run_i18n_catalog_consistency_test() {
   local out
   out="$(mktemp)"
