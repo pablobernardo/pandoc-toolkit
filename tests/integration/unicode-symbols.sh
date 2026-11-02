@@ -1,23 +1,26 @@
 #!/usr/bin/env bash
 # Functional verification for the D14 glyph-only symbol fallback (#83).
 #
-# First slice: prose and inline code only. Fenced code blocks keep the
-# baseline behavior in this slice; the verbatim reactivation and the
-# all-four-context matrix belong to the second slice.
+# Full matrix: prose, inline code, untagged fenced code and highlighted fenced
+# code. Fenced code obeys the same six glyph mappings because the six characters
+# stay active inside fancyvrb's `Verbatim`/`Highlighting` environments — nothing
+# is reactivated explicitly — and without the font the code degrades with the
+# rest.
 #
 # This script is OPTIONAL and is not part of `make gate`: it needs a real
 # Pandoc, a TeX engine, pdftotext and pdffonts. It renders through the public
 # CLI (`bin/pandoc-pdf render`) and checks the observed effects:
 #
-#   1. all six symbols (☐ ☑ ☒ ✅ ❌ ⚠) appear in prose and inline code, with the
-#      emoji filter disabled, and the text surrounding each glyph is intact
-#      (exact expected sentences survive extraction, nothing is swallowed);
+#   1. all six symbols (☐ ☑ ☒ ✅ ❌ ⚠) appear in prose, inline code, untagged
+#      fenced code and highlighted fenced code, with the emoji filter disabled,
+#      and the text surrounding each glyph is intact (exact expected sentences
+#      survive extraction, nothing is swallowed);
 #   2. the emoji presentation sequence ⚠️ renders in prose and inline code as
 #      its base symbol; a failing selector lookahead would surface as a
 #      U+FE0F Missing-character warning, which is rejected;
 #   3. no Missing-character warning exists for any covered glyph or for FE0F
-#      anywhere in the render (the fixture keeps covered glyphs out of fenced
-#      code in this slice, so any such warning is a failure), while the
+#      anywhere in the render (the covered glyphs now appear in every context,
+#      fenced code included, so any such warning is a failure), while the
 #      unsupported control 🔍 still warns: warnings are never suppressed;
 #   4. FreeSerif is embedded and the ordinary prose/mono fonts are unchanged,
 #      and nothing is rasterized (no image XObjects in the PDF);
@@ -27,6 +30,9 @@
 #      and when the caller provides a pre-change template snapshot through
 #      UNICODE_SYMBOLS_BASE_TEMPLATE, every EPUB member is compared against a
 #      baseline-template render, allowing only generated UUID/timestamps.
+#   7. hard edges inside code: a fenced block whose first character is a mapped
+#      symbol, the adjacency ☑☐, a mapped symbol followed by a backslash or a
+#      brace, string literals and comments ending with the ⚠️ sequence.
 #
 # Engine selection is the caller's choice via UNICODE_SYMBOLS_ENGINE (default
 # xelatex); any engine environment (HOME, TMPDIR, TEXMFVAR) is honored as set
@@ -75,14 +81,14 @@ RUN_DIR="${OUT}/run-${RUN_ID}"
 FIXTURE="${RUN_DIR}/fixture"
 mkdir -p "${FIXTURE}/chapters" "${FIXTURE}/templates"
 
-printf '== Unicode symbol fallback, first slice: prose and inline (%s) ==\n' "$ENGINE"
+printf '== Unicode symbol fallback: all four contexts (%s) ==\n' "$ENGINE"
 printf 'run directory: %s\n' "$RUN_DIR"
 
-# The fixture exercises the six symbols in the two contexts this slice covers,
-# keeps ordinary letters adjacent so the surrounding fonts stay visible, keeps
-# covered glyphs out of fenced code (so a covered-glyph warning is always a
-# failure), and carries 🔍 (U+1F50D) only as an unsupported-character
-# diagnostic control (S3): no font covers it and its warning must survive.
+# The fixture exercises the six symbols in all four contexts: prose, inline
+# code, untagged fenced code and highlighted fenced code. Ordinary letters stay
+# adjacent so the surrounding fonts stay visible, and 🔍 (U+1F50D) is carried
+# only as an unsupported-character diagnostic control (S3): no font covers it
+# and its warning must survive.
 cat >"${FIXTURE}/chapters/01-symbols.md" <<'EOF'
 # Symbol fallback verification
 
@@ -95,14 +101,27 @@ SECTION-INLINE The command `run ☐☑☒✅❌⚠ now` stays monospaced, and
 SECTION-UNTAGGED
 
 ```
-fenced block keeps baseline ascii-only content a=b, c.d, e/f
+untagged code ☐☑☒✅❌⚠ and ⚠️ a=b
 ```
 
 SECTION-HIGHLIGHTED
 
 ```python
-# highlighted block keeps baseline ascii-only content
+# highlighted code ☐☑☒✅❌⚠ and ⚠️
 print("hello")
+```
+
+SECTION-HARD
+
+```
+☐ first character of the fenced block
+untagged line ends with the warning sequence ⚠️
+☑\path and ☒{x} with the adjacency ☑☐
+```
+
+```python
+# highlighted comment ends with the warning sequence ⚠️
+print("string literal ☐ ☑ ✅ end")
 ```
 
 SECTION-END A control character no font covers for diagnostics: 🔍.
@@ -237,7 +256,7 @@ import sys
 
 text = " ".join(open(sys.argv[1], encoding="utf-8").read().split())
 symbols = ["☐", "☑", "☒", "✅", "❌", "⚠"]
-markers = ["SECTION-PROSE", "SECTION-INLINE", "SECTION-UNTAGGED", "SECTION-HIGHLIGHTED", "SECTION-END"]
+markers = ["SECTION-PROSE", "SECTION-INLINE", "SECTION-UNTAGGED", "SECTION-HIGHLIGHTED", "SECTION-HARD", "SECTION-END"]
 positions = []
 for marker in markers:
     index = text.find(marker)
@@ -257,6 +276,10 @@ expected_sentences = {
     "SECTION-INLINE":
         "The command run ☐☑☒✅❌⚠ now stays monospaced, and report ⚠ here "
         "keeps the warning sequence inline too.",
+    "SECTION-UNTAGGED":
+        "untagged code ☐☑☒✅❌⚠ and ⚠ a=b",
+    "SECTION-HIGHLIGHTED":
+        "# highlighted code ☐☑☒✅❌⚠ and ⚠ print(\"hello\")",
 }
 for context, sentence in expected_sentences.items():
     assert sentence in text, f"{context}: expected sentence lost or altered"
@@ -264,20 +287,35 @@ for context, sentence in expected_sentences.items():
     missing = [s for s in symbols if s not in region]
     assert not missing, f"{context}: missing symbols {missing}"
 
-# Baseline fenced-code behavior in this slice: the blocks are ASCII-only, so
-# they must extract unchanged.
-untagged = text[regions["SECTION-UNTAGGED"][0]:regions["SECTION-UNTAGGED"][1]]
-assert "fenced block keeps baseline ascii-only content a=b, c.d, e/f" in untagged, \
-    "untagged fenced block content changed"
-highlighted = text[regions["SECTION-HIGHLIGHTED"][0]:regions["SECTION-HIGHLIGHTED"][1]]
-assert 'print("hello")' in highlighted, "highlighted fenced block content changed"
-print(f"all six symbols intact in prose and inline; fenced blocks unchanged")
+# Fenced code stays code: the surrounding ASCII of both blocks survives verbatim,
+# so reactivation never turns the block into prose.
+assert "a=b" in text[regions["SECTION-UNTAGGED"][0]:regions["SECTION-UNTAGGED"][1]], \
+    "untagged fenced block lost its ASCII content"
+assert 'print("hello")' in text, "highlighted fenced block lost its code content"
+
+# Hard edges inside code, asserted on the normalized extraction: a fenced block
+# whose first character is ☐, the adjacency ☑☐, a mapped symbol followed by a
+# backslash or a brace, a python string literal with symbols, and comments and
+# lines ending with the ⚠️ sequence (which extracts as its base symbol ⚠).
+hard = text[regions["SECTION-HARD"][0]:regions["SECTION-HARD"][1]]
+for fragment in [
+    "☐ first character of the fenced block",
+    "warning sequence ⚠",
+    "☑\\path",
+    "☒{x}",
+    "☑☐",
+    'print("string literal ☐ ☑ ✅ end")',
+    "highlighted comment ends with the warning sequence ⚠",
+]:
+    assert fragment in hard, f"hard edge lost or altered: {fragment}"
+print("all six symbols intact in prose, inline and both fenced-code contexts")
+print("hard edges intact: first-char symbol, adjacency, backslash, brace, string literal, trailing ⚠")
 PY
 
-# Warnings are never suppressed, and no covered glyph may warn in this slice:
-# the fixture keeps the six symbols and ⚠️ out of fenced code, so any
-# Missing-character diagnostic for them (or for FE0F, which would mean the
-# selector lookahead failed) is a regression, while 🔍 must still warn.
+# Warnings are never suppressed, and no covered glyph may warn: the six
+# symbols and the ⚠️ sequence now appear in every context, fenced code included,
+# so any Missing-character diagnostic for them (or for FE0F, which would mean
+# the selector lookahead failed) is a regression, while 🔍 must still warn.
 covered_warning_re='☐|☑|☒|✅|❌|⚠|FE0F'
 if grep "Missing character" "${RUN_DIR}/render-symbols.log" | grep -qE "${covered_warning_re}"; then
   fail "a covered glyph or FE0F produced a Missing-character warning (log: ${RUN_DIR}/render-symbols.log)"
@@ -288,18 +326,14 @@ grep -qE "🔍|1F50D" "${RUN_DIR}/render-symbols.log" \
   || fail "the Missing-character warning does not identify 🔍 (U+1F50D)"
 
 # Nothing may be rasterized: the fallback maps glyphs, it never substitutes
-# images. Checked at the PDF level (no image XObjects) and at the merged
-# markdown level (the emoji filter stayed off, raw characters remain).
+# images. Checked at the PDF level (no image XObjects), and the pandoc argv
+# recorded in the render log must not contain an emoji lua filter.
 if command -v pdfimages >/dev/null 2>&1; then
   image_rows="$(pdfimages -list "$local_pdf" | tail -n +3 | wc -l | tr -d ' ')"
   [[ "$image_rows" == "0" ]] || fail "the PDF contains ${image_rows} image objects; the fallback must not rasterize"
 fi
-merged_md="${FIXTURE}/out/symbols-u1.md"
-if ! grep -q "☐" "$merged_md" || ! grep -q "⚠️" "$merged_md"; then
-  fail "the merged markdown lost the raw sequences (emoji filter ran?)"
-fi
-if grep -qE "\.svg|includesvg|includegraphics" "$merged_md"; then
-  fail "an image substitution appeared although the emoji filter is disabled"
+if grep -qE -- "--lua-filter=[^ ]*emoji" "${RUN_DIR}/render-symbols.log"; then
+  fail "the render log's pandoc invocation contains an emoji lua filter"
 fi
 
 grep -q "FreeSerif" "${RUN_DIR}/symbols.pdffonts.txt" \

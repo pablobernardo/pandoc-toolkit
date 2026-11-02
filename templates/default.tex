@@ -70,10 +70,12 @@ $endif$
     % ---- Glyph-only symbol fallback (D14) --------------------------------
     % The six symbols of #83 (☐ ☑ ☒ ✅ ❌ ⚠) are missing from the default
     % prose and mono faces, so every PDF dropped them. When GNU FreeSerif is
-    % available, only these six glyphs are mapped to it, in prose and inline
-    % code: the prose and code fonts are untouched, code stays textual, no
-    % image is produced and the emoji filter is not needed. Fenced code blocks
-    % keep their existing behavior. The emoji presentation selector (U+FE0F)
+    % available, only these six glyphs are mapped to it, in prose, inline code
+    % and fenced code: the prose and code fonts are untouched, code stays
+    % textual, no image is produced and the emoji filter is not needed. The
+    % mapping reaches fenced code because the six characters stay active
+    % inside fancyvrb's `Verbatim`/`Highlighting` environments. The emoji
+    % presentation selector (U+FE0F)
     % trailing a mapped glyph, as in the issue's ⚠️, is swallowed there and only
     % there, never globally. Without the font, or without the newunicodechar
     % package, the block degrades to the previous behavior, Missing-character

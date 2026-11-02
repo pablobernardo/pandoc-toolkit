@@ -11,14 +11,15 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Fixed
 
-- PDFs render the six ballot and warning symbols (`☐ ☑ ☒ ✅ ❌ ⚠`) in prose and
-  inline code, with the emoji filter enabled or disabled. The shared template
-  maps exactly those glyphs to GNU FreeSerif when the font exists, leaving the
-  surrounding prose and mono fonts, the pdfLaTeX branch and the code-as-text
-  behavior untouched; the emoji presentation selector of `⚠️` is consumed only
-  right after a mapped glyph. Fenced code blocks keep their existing behavior.
-  Without the font — or the `newunicodechar` package — rendering degrades to
-  the previous behavior and keeps the Missing-character diagnostics (#83).
+- PDFs render the six ballot and warning symbols (`☐ ☑ ☒ ✅ ❌ ⚠`) in prose,
+  inline code, untagged fenced code and highlighted fenced code. The shared
+  template maps exactly those glyphs to GNU FreeSerif when the font exists,
+  leaving the surrounding prose and mono fonts, the pdfLaTeX branch and the
+  code-as-text behavior untouched; the emoji presentation selector of `⚠️` is
+  consumed only right after a mapped glyph. The fallback does not depend on
+  the emoji filter. Without the font — or the `newunicodechar` package —
+  rendering degrades to the previous behavior and keeps the Missing-character
+  diagnostics (#83).
 
 ## [2.1.0] - 2026-11-01
 
