@@ -55,9 +55,9 @@ pandoc:
 filters:
   # Both filters are off: a disabled filter needs no other settings.
   # The documentation has no diagrams. Its status glyphs (U+274C, U+2705)
-  # are missing from the LaTeX font, so PDF rendering warns and leaves gaps.
-  # Enabling the emoji filter would replace them with images at the cost
-  # of a network fetch.
+  # are mapped to GNU FreeSerif by the template when that font exists; without
+  # it the PDF warns and leaves gaps. Enabling the emoji filter would replace
+  # them with images at the cost of a network fetch.
   emoji:
     enabled: false
   mermaid:

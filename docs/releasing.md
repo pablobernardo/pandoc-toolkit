@@ -43,7 +43,10 @@ perform for the release, not claims that a future candidate has passed:
 - [ ] **Smoke rendering**: render representative examples, including highlighted
   and untagged code, inline code and heading pagination. Inspect the PDFs, not
   just the exit status. H6 remains plain text, arbitrary unbreakable content may
-  overflow, and missing Unicode glyphs remain tracked in #83.
+  overflow, and the six symbols of #83 render only when GNU FreeSerif (Debian's
+  `fonts-freefont-ttf`, normally shipped by TeX Live) is installed: check them
+  against the target machine's fonts, and confirm the same run still shows the
+  Missing-character warning for an unsupported character.
 - [ ] **YAML paths where feasible**: exercise both PyYAML and the Ruby stdlib
   fallback in suitable environments. Record which ran and any gap; a run on one
   path does not establish coverage of the other.
