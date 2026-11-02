@@ -26,11 +26,15 @@ the actual release candidate still need to run and be recorded.
 Use isolated temporary output and installation directories. These are checks to
 perform for the release, not claims that a future candidate has passed:
 
-- [ ] **Package contents and checksums**: run `scripts/package-release.sh` with a
-  fresh temporary output directory; verify all four tarballs against
-  `checksums.txt`. Inspect the archive for the executable CLI, matching `VERSION`,
-  runtime scripts, schemas, templates, filters, catalogs and license; exclude
-  Python bytecode caches. The four platform names are aliases of one
+- [ ] **Package contents and checksums**: run `scripts/package-release.sh` from a
+  **clean checkout of the approved commit**, never from a working tree: the
+  script copies `templates/` wholesale, so an untracked local template would
+  ship. Verify all four tarballs against `checksums.txt`, and rebuild the same
+  commit once more to confirm the archive hash does not change, so a published
+  checksum can be compared with the approved candidate. Inspect the archive for
+  the executable CLI, matching `VERSION`, runtime scripts, schemas, templates,
+  filters, catalogs and license; exclude Python bytecode caches and any file
+  that is not part of the commit. The four platform names are aliases of one
   platform-independent artifact, so identical hashes are intentional.
 - [ ] **Clean install**: install the candidate artifact in a clean managed layout,
   confirm `pandoc-pdf --version`, and run `doctor` and `validate-config`. Follow

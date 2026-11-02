@@ -1,8 +1,7 @@
 #!/bin/bash
 # release area tests. Sourced by tests/run.sh (not run standalone).
 
-run_package_release_artifact_test() {
-  local out_dir artifact
+run_package_release_artifact_test() {  local out_dir artifact
   out_dir="$(mktemp -d)"
 
   if bash "${ROOT_DIR}/scripts/package-release.sh" "$out_dir" >/dev/null 2>&1; then
@@ -48,4 +47,44 @@ run_package_release_artifact_test() {
   fi
 
   rm -rf "$out_dir"
+}
+
+release_sha256() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    sha256sum "$1" | awk '{print $1}'
+  fi
+}
+
+run_package_release_reproducibility_test() {
+  local first second first_hash second_hash
+  first="$(mktemp -d)"
+  second="$(mktemp -d)"
+
+  if ! bash "${ROOT_DIR}/scripts/package-release.sh" "$first" >/dev/null 2>&1; then
+    fail "package-release should build artifacts for the reproducibility check"
+    rm -rf "$first" "$second"
+    return
+  fi
+
+  # Sleep past a whole-second boundary so a timestamp inside the archive or in
+  # the gzip header cannot hide behind two builds started in the same second.
+  sleep 1
+
+  if ! bash "${ROOT_DIR}/scripts/package-release.sh" "$second" >/dev/null 2>&1; then
+    fail "package-release should build artifacts twice"
+    rm -rf "$first" "$second"
+    return
+  fi
+
+  first_hash="$(release_sha256 "${first}/pandoc-pdf_linux_arm64.tar.gz")"
+  second_hash="$(release_sha256 "${second}/pandoc-pdf_linux_arm64.tar.gz")"
+  if [[ -n "$first_hash" && "$first_hash" == "$second_hash" ]]; then
+    pass "package-release is reproducible: two builds produce identical archives"
+  else
+    fail "package-release must be reproducible: ${first_hash} != ${second_hash}"
+  fi
+
+  rm -rf "$first" "$second"
 }

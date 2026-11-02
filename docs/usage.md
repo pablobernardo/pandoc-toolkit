@@ -212,7 +212,7 @@ Useful flags:
 
 - `--yes`: skips the interactive confirmation.
 - `--dry-run`: shows the plan without writing to disk.
-- `--install-dir <path>`: sets the installation path.
+- `--install-dir <path>`: writes the entrypoint symlink into `<path>`. It does **not** move the managed root, which comes from `PANDOC_PDF_UPDATE_HOME` (default `~/.local/share/pandoc-pdf`); an isolated run needs both set, or the update acts on the real installation.
 
 No token is needed: the update reads the public release metadata and downloads the
 asset from the public release URL. Anonymous requests to the GitHub API are limited

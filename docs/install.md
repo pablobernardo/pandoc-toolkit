@@ -86,6 +86,18 @@ make install-local-dev      # installs into the managed layout + symlink pandoc-
 
 This copies the contents of the repo to `~/.local/share/pandoc-pdf/versions/<VERSION>` and creates the corresponding symlinks. With `install-local-dev`, `pandoc-pdf-dev` also becomes available, pointing at the development entrypoint `bin/pandoc-pdf` of the repo.
 
+### Isolated installations for acceptance runs
+
+Three variables decide where an installation lives, and they are independent:
+
+- `PANDOC_PDF_INSTALL_HOME` — managed root used by `scripts/install.sh` and `make install-local`.
+- `PANDOC_PDF_INSTALL_DIR` — directory that receives the entrypoint symlink.
+- `PANDOC_PDF_UPDATE_HOME` — managed root used by `pandoc-pdf update`.
+
+`pandoc-pdf update --install-dir <path>` only moves the symlink. Export
+`PANDOC_PDF_UPDATE_HOME` as well when an update must stay inside a disposable
+directory; without it the update writes to `~/.local/share/pandoc-pdf`.
+
 ## System dependencies
 
 Install at least:
