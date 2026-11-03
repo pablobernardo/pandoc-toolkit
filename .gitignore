@@ -14,3 +14,5 @@ __pycache__/
 .ruff_cache
 # Output generado por el renderer en los ejemplos (incluye su propio .gitignore)
 examples/.output/
+# Output del bookkit cuando se ejecuta desde la raíz del repo
+/.output/
