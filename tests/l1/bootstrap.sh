@@ -3,7 +3,7 @@
 
 run_bootstrap_linux_pkg_manager_detection_tests() {
   local bootstrap_script
-  bootstrap_script="${ROOT_DIR}/scripts/bootstrap.sh"
+  bootstrap_script="${ROOT_DIR}/scripts/delivery/bootstrap.sh"
 
   local tmpbin out
 
@@ -113,7 +113,7 @@ STUB
   chmod +x "${tmpbin}/python3"
 
   set +e
-  PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" bash "${ROOT_DIR}/scripts/bootstrap.sh" --no-install --skip-link >"$out" 2>&1
+  PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" bash "${ROOT_DIR}/scripts/delivery/bootstrap.sh" --no-install --skip-link >"$out" 2>&1
   code=$?
   set -e
 

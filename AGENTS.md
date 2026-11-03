@@ -53,10 +53,10 @@ The full picture, with the render pipeline and the reasons behind it, is
 
 - **Entry point**: `bin/pandoc-pdf` (bash). Every user-facing string comes from
   `i18n/locales/`; see the language policy above.
-- **One renderer**: `scripts/render-native.py`. There is no second renderer, and
+- **One renderer**: `scripts/runtime/render-native.py`. There is no second renderer, and
   adding one back is a regression.
-- **Checks before rendering**: `scripts/preflight.py` (invoked by
-  `pandoc-pdf doctor`) and `scripts/validate-config.py`.
+- **Checks before rendering**: `scripts/runtime/preflight.py` (invoked by
+  `pandoc-pdf doctor`) and `scripts/runtime/validate-config.py`.
 - **Contract**: `schemas/pdf-config.schema.json`. Anything about configuration
   is answered there, not here.
 - **Tests**: `tests/run.sh` (orchestrator) plus `tests/l1/<area>.sh`. Add an

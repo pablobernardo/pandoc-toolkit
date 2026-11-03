@@ -72,7 +72,7 @@ def warn(message: str) -> None:
 # --- YAML reading -----------------------------------------------------------
 
 
-# Mirrors the toolkit's own fallback (scripts/render-native.py): parse with
+# Mirrors the toolkit's own fallback (scripts/runtime/render-native.py): parse with
 # Ruby's stdlib YAML under safe_load and hand back plain data as JSON.
 RUBY_YAML_SCRIPT = (
     "begin;"

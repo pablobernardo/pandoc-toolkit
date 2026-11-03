@@ -9,7 +9,7 @@ Agnostic toolkit for generating PDFs with Pandoc via a CLI (`pandoc-pdf`) using 
 On macOS or Linux, no clone and no token:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/delivery/install.sh | bash
 ```
 
 It installs the latest release into `~/.local/share/pandoc-pdf/versions/<tag>` behind a
@@ -18,7 +18,7 @@ replaces it later. Piping a script into a shell is a choice, not a requirement, 
 you would rather read it first:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/install.sh
+curl -fsSLO https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/delivery/install.sh
 less install.sh
 bash install.sh
 ```

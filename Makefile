@@ -1,28 +1,28 @@
 .PHONY: bootstrap bootstrap-dry bootstrap-yes bootstrap-ci install-release install-local install-local-dev package-release doctor validate render test epubcheck
 
 bootstrap:
-	bash scripts/bootstrap.sh
+	bash scripts/delivery/bootstrap.sh
 
 bootstrap-dry:
-	bash scripts/bootstrap.sh --dry-run
+	bash scripts/delivery/bootstrap.sh --dry-run
 
 bootstrap-yes:
-	bash scripts/bootstrap.sh --yes
+	bash scripts/delivery/bootstrap.sh --yes
 
 bootstrap-ci:
-	bash scripts/bootstrap.sh --ci
+	bash scripts/delivery/bootstrap.sh --ci
 
 install-release:
-	bash scripts/install.sh
+	bash scripts/delivery/install.sh
 
 install-local:
-	bash scripts/install-local.sh
+	bash scripts/delivery/install-local.sh
 
 install-local-dev:
-	bash scripts/install-local.sh dev
+	bash scripts/delivery/install-local.sh dev
 
 package-release:
-	bash scripts/package-release.sh dist
+	bash scripts/delivery/package-release.sh dist
 
 doctor:
 	bin/pandoc-pdf doctor
@@ -47,9 +47,9 @@ test:
 # Everything a pull request is verified with, runnable without CI.
 gate:
 	bash tests/run.sh
-	python3 scripts/check-i18n.py
-	python3 scripts/check-docs.py
-	python3 scripts/check-plan-conformance.py
+	python3 scripts/dev/check-i18n.py
+	python3 scripts/dev/check-docs.py
+	python3 scripts/dev/check-plan-conformance.py
 
 # Validating a finished publication is an acceptance step, not a runtime
 # dependency: EPUBCheck needs a JVM, and `make gate` must stay runnable without

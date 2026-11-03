@@ -16,15 +16,15 @@ run_render_legacy_flag_rejected_test() {
 run_render_no_yaml_parser_hints_i18n_test() {
   local sandbox
   sandbox="$(mktemp -d)"
-  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/chapters" "${sandbox}/templates" "${sandbox}/i18n/locales"
+  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates" "${sandbox}/i18n/locales"
 
   cp "$CLI" "${sandbox}/bin/pandoc-pdf"
   chmod +x "${sandbox}/bin/pandoc-pdf"
-  cp "${ROOT_DIR}/scripts/i18n.sh" "${sandbox}/scripts/i18n.sh"
-  cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
-  cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
-  cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
-  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/prepare-emojis.py"
+  cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
+  cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
+  cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
+  cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
   cp "${ROOT_DIR}/i18n/locales/es.json" "${sandbox}/i18n/locales/es.json"
   cp "${ROOT_DIR}/i18n/locales/en.json" "${sandbox}/i18n/locales/en.json"
@@ -96,15 +96,15 @@ EOF
 run_render_native_test() {
   local sandbox
   sandbox="$(mktemp -d)"
-  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/chapters" "${sandbox}/templates"
+  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/pandoc-pdf"
   chmod +x "${sandbox}/bin/pandoc-pdf"
-  cp "${ROOT_DIR}/scripts/i18n.sh" "${sandbox}/scripts/i18n.sh"
-  cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
-  cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
-  cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
-  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/prepare-emojis.py"
+  cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
+  cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
+  cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
+  cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
   cp "${FIXTURES_DIR}/render.config.yaml" "${sandbox}/render.config.yaml"
 
@@ -203,15 +203,15 @@ EOF
 run_render_native_advanced_paths_test() {
   local sandbox
   sandbox="$(mktemp -d)"
-  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/chapters" "${sandbox}/filters" "${sandbox}/assets/media" "${sandbox}/templates"
+  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/filters" "${sandbox}/assets/media" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/pandoc-pdf"
   chmod +x "${sandbox}/bin/pandoc-pdf"
-  cp "${ROOT_DIR}/scripts/i18n.sh" "${sandbox}/scripts/i18n.sh"
-  cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
-  cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
-  cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
-  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/prepare-emojis.py"
+  cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
+  cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
+  cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
+  cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
   cp "${FIXTURES_DIR}/render-extra-filter.config.yaml" "${sandbox}/render-extra-filter.config.yaml"
 
@@ -330,7 +330,7 @@ pandoc:
 EOF
 
   if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/partial.config.yaml" "$sandbox" >"$out" 2>&1; then
+    "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/partial.config.yaml" "$sandbox" >"$out" 2>&1; then
     pass "renderer accepts a config without the optional sections"
   else
     fail "renderer should accept a config without the optional sections ($(tail -2 "$out"))"
@@ -349,15 +349,15 @@ EOF
 run_render_missing_explicit_file_test() {
   local sandbox
   sandbox="$(mktemp -d)"
-  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/chapters" "${sandbox}/templates"
+  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/pandoc-pdf"
   chmod +x "${sandbox}/bin/pandoc-pdf"
-  cp "${ROOT_DIR}/scripts/i18n.sh" "${sandbox}/scripts/i18n.sh"
-  cp "${ROOT_DIR}/scripts/validate-config.py" "${sandbox}/scripts/validate-config.py"
-  cp "${ROOT_DIR}/scripts/render-native.py" "${sandbox}/scripts/render-native.py"
-  cp "${ROOT_DIR}/scripts/prepare-emojis.py" "${sandbox}/scripts/prepare-emojis.py"
-  chmod +x "${sandbox}/scripts/validate-config.py" "${sandbox}/scripts/render-native.py" "${sandbox}/scripts/prepare-emojis.py"
+  cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
+  cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
+  cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
+  cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
   cp "${FIXTURES_DIR}/render-missing-explicit.config.yaml" "${sandbox}/render-missing-explicit.config.yaml"
 
@@ -907,7 +907,7 @@ run_emoji_source_allowlist_test() {
   out="$(mktemp)"
 
   set +e
-  "${REAL_PYTHON3}" - "${ROOT_DIR}/scripts/prepare-emojis.py" >"$out" 2>&1 <<'PY'
+  "${REAL_PYTHON3}" - "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" >"$out" 2>&1 <<'PY'
 import importlib.util
 import sys
 
@@ -984,7 +984,7 @@ pandoc:
 CONFIG
 
   if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/docmeta.config.yaml" "$sandbox" >"$out" 2>&1; then
+    "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/docmeta.config.yaml" "$sandbox" >"$out" 2>&1; then
     pass "renderer accepts document language, titlepage and metadata"
   else
     fail "renderer should accept the new document fields ($(tail -2 "$out"))"
@@ -1016,7 +1016,7 @@ CONFIG
 
   capture="$(mktemp)"
   if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/defaults.config.yaml" "$sandbox" >"$out" 2>&1; then
+    "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/defaults.config.yaml" "$sandbox" >"$out" 2>&1; then
     pass "renderer accepts a config without language or titlepage"
   else
     fail "renderer should fall back when language and titlepage are absent"
@@ -1028,7 +1028,7 @@ CONFIG
   sed 's/  title: "Defaults"/  title: "Defaults"\n  language: es/' "${sandbox}/defaults.config.yaml" >"${sandbox}/spanish.config.yaml"
   capture="$(mktemp)"
   TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/spanish.config.yaml" "$sandbox" >"$out" 2>&1 || true
+    "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/spanish.config.yaml" "$sandbox" >"$out" 2>&1 || true
   assert_contains "$capture" "babel-lang=spanish" "document.language still selects Spanish explicitly"
   # The argv alone cannot prove the switch works: the template has to branch on
   # it. An earlier version emitted an unconditional -V titlepage=true and the
@@ -1084,14 +1084,14 @@ CONFIG
   # 1) An explicit name is honoured, not overridden by the title.
   build_config '  file_prefix: "report"'
   TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
+    "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
   assert_contains "$capture" "report-manual.pdf" "output.file_prefix names the file"
 
   # 2) Without a name, the title becomes a slug instead of a raw file name.
   build_config ''
   capture="$(mktemp)"
   TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
+    "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
   assert_contains "$capture" "project-technical-documentation-manual.pdf" "the title falls back to a slug"
   assert_not_contains "$capture" "Project Technical Documentation-manual.pdf" "the raw title is never a file name"
 
@@ -1099,7 +1099,7 @@ CONFIG
   build_config '  file_prefix: "../../etc/passwd"'
   capture="$(mktemp)"
   TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
+    "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/naming.config.yaml" "$sandbox" >"$out" 2>&1 || true
   # The slug keeps only [a-z0-9-], so a declared "../.." cannot survive as a path.
   assert_contains "$capture" "out/etc-passwd-manual.pdf" "a declared name cannot traverse out of the output directory"
 
@@ -1138,7 +1138,7 @@ pandoc:
 CONFIG
 
   TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
-    "${REAL_PYTHON3}" "${sandbox}/scripts/render-native.py" "${sandbox}/slug.config.yaml" "$sandbox" >"$out" 2>&1 || true
+    "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/slug.config.yaml" "$sandbox" >"$out" 2>&1 || true
   assert_contains "$capture" "informe-nandu-y-acucar-2026-manual.pdf" "accents and dashes become an ascii slug"
 
   rm -rf "$sandbox" "$tmpbin"

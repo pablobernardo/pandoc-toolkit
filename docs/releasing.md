@@ -26,7 +26,7 @@ the actual release candidate still need to run and be recorded.
 Use isolated temporary output and installation directories. These are checks to
 perform for the release, not claims that a future candidate has passed:
 
-- [ ] **Package contents and checksums**: run `scripts/package-release.sh` from a
+- [ ] **Package contents and checksums**: run `scripts/delivery/package-release.sh` from a
   **clean checkout of the approved commit**, never from a working tree: the
   script copies `templates/` wholesale, so an untracked local template would
   ship. Verify all four tarballs against `checksums.txt`, and rebuild the same
@@ -106,7 +106,7 @@ published tag or silently overwrite a published release.
 
 ## Security gates
 
-- `scripts/enforce-security-thresholds.py` fails the workflow at the configured
+- `scripts/dev/enforce-security-thresholds.py` fails the workflow at the configured
   thresholds; the current policy is zero errors and zero warnings.
 - SARIF upload is controlled by the repository variable `ENABLE_SARIF_UPLOAD`.
   Enabled, findings upload on push to `main`; on `pull_request` the scans run

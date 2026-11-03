@@ -11,7 +11,7 @@ run_install_local_dev_link_test() {
   install_home="${sandbox}/managed"
   install_bin="${sandbox}/bin"
 
-  if PANDOC_PDF_INSTALL_HOME="$install_home" PANDOC_PDF_INSTALL_DIR="$install_bin" /bin/bash "${ROOT_DIR}/scripts/install-local.sh" dev >"$out" 2>&1; then
+  if PANDOC_PDF_INSTALL_HOME="$install_home" PANDOC_PDF_INSTALL_DIR="$install_bin" /bin/bash "${ROOT_DIR}/scripts/delivery/install-local.sh" dev >"$out" 2>&1; then
     pass "install-local dev completes successfully"
   else
     fail "install-local dev should complete successfully"

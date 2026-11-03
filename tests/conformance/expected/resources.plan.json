@@ -52,7 +52,7 @@
       "missing_svg": "<CASES>/output/emoji/_missing.svg",
       "prepare_argv": [
         "python3",
-        "<REPO>/scripts/prepare-emojis.py",
+        "<REPO>/scripts/runtime/prepare-emojis.py",
         "<CASES>/output/report-recorded.md",
         "<CASES>/output/emoji",
         "<REPO>/filters/emoji"

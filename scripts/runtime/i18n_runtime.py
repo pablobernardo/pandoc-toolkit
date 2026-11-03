@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def _locales_dir() -> Path:
-    return Path(__file__).resolve().parents[1] / "i18n" / "locales"
+    return Path(__file__).resolve().parents[2] / "i18n" / "locales"
 
 
 def _available_locales() -> set[str]:
