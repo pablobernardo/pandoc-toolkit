@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
+"""Contract validator for pdf.config.yaml.
+
+The YAML loader and the JSON-Schema-subset validator live in the shared
+schema_runtime module so the bookkit tool (scripts/tools/bookkit) applies
+exactly the same rules; this file keeps the pdf-config-specific path checks
+and the CLI contract.
+"""
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any, NoReturn
@@ -16,170 +22,17 @@ except Exception:
         except Exception:
             return fallback
 
+try:
+    from schema_runtime import load_yaml, validate_with_schema
+except Exception:  # imported as a module from elsewhere: fix the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from schema_runtime import load_yaml, validate_with_schema
+
 
 def fail(msg: str) -> NoReturn:
     print(f"❌ {msg}")
     raise SystemExit(1)
 
-
-def load_yaml_with_python(path: Path):
-    try:
-        import yaml  # type: ignore
-    except Exception:
-        return None
-    try:
-        return yaml.safe_load(path.read_text(encoding="utf-8"))
-    except Exception as e:
-        fail(t("validate.error.yaml_invalid", "Invalid YAML: {error}", error=e))
-
-
-def load_yaml_with_ruby(path: Path):
-    if subprocess.run(["ruby", "-e", "require 'yaml'; require 'json'"], capture_output=True).returncode != 0:
-        return None
-
-    ruby_script = r"""
-require 'yaml'
-require 'json'
-path = ARGV[0]
-begin
-  data = YAML.safe_load(File.read(path), permitted_classes: [], aliases: false)
-  puts JSON.generate(data)
-rescue => e
-  STDERR.puts "Invalid YAML: #{e.message}"
-  exit 2
-end
-"""
-
-    proc = subprocess.run(
-        ["ruby", "-e", ruby_script, str(path)],
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode == 2:
-        fail(proc.stderr.strip() or t("validate.error.yaml_invalid_generic", "Invalid YAML"))
-    if proc.returncode != 0:
-        return None
-
-    try:
-        return json.loads(proc.stdout)
-    except Exception as e:
-        fail(t("validate.error.ruby_json_parse", "Could not parse JSON converted from Ruby: {error}", error=e))
-
-
-def path_label(path: list[str]) -> str:
-    return "root" if not path else ".".join(path)
-
-
-# Supported JSON-Schema subset: type, properties, required, additionalProperties,
-# items, minItems, minLength, minimum and enum. tests/run.sh fails if the schema
-# starts using anything else, so a keyword can never be silently ignored.
-def check_type(value: Any, expected: str) -> bool:
-    if expected == "object":
-        return isinstance(value, dict)
-    if expected == "array":
-        return isinstance(value, list)
-    if expected == "string":
-        return isinstance(value, str)
-    if expected == "integer":
-        return isinstance(value, int) and not isinstance(value, bool)
-    if expected == "boolean":
-        return isinstance(value, bool)
-    return True
-
-
-def validate_with_schema(data: Any, schema: dict[str, Any], path: list[str] | None = None) -> None:
-    path = path or []
-    label = path_label(path)
-
-    expected_type = schema.get("type")
-    if isinstance(expected_type, str) and not check_type(data, expected_type):
-        if label == "root":
-            fail(t("validate.error.root_type", "Root must be of type {type}", type=expected_type))
-        fail(t("validate.error.field_type", "'{label}' must be of type {type}", label=label, type=expected_type))
-
-    enum_values = schema.get("enum")
-    if isinstance(enum_values, list) and enum_values and data not in enum_values:
-        fail(
-            t(
-                "validate.error.not_in_enum",
-                "'{label}' must be one of: {allowed} (got '{value}')",
-                label=label,
-                allowed=", ".join(str(item) for item in enum_values),
-                value=data,
-            )
-        )
-
-    if expected_type == "object":
-        if not isinstance(data, dict):
-            fail(t("validate.error.object_type", "'{label}' must be of type object", label=label))
-
-        required = schema.get("required", [])
-        if required:
-            missing = [k for k in required if k not in data]
-            if missing:
-                fail(
-                    t(
-                        "validate.error.missing_required",
-                        "In '{label}' required fields are missing: {fields}",
-                        label=label,
-                        fields=", ".join(missing),
-                    )
-                )
-
-        additional_props = schema.get("additionalProperties", True)
-        properties = schema.get("properties", {})
-        if isinstance(additional_props, dict):
-            # JSON Schema allows a schema here: every key not declared in
-            # `properties` must satisfy it, and the failure names the key.
-            for key, value in data.items():
-                if key not in properties:
-                    validate_with_schema(value, additional_props, [*path, key])
-        elif additional_props is False:
-            extra = sorted([k for k in data.keys() if k not in properties])
-            if extra:
-                fail(
-                    t(
-                        "validate.error.extra_fields",
-                        "In '{label}' there are disallowed fields: {fields}",
-                        label=label,
-                        fields=", ".join(extra),
-                    )
-                )
-
-        for key, prop_schema in properties.items():
-            if key in data:
-                validate_with_schema(data[key], prop_schema, [*path, key])
-
-    elif expected_type == "array":
-        if not isinstance(data, list):
-            fail(t("validate.error.array_type", "'{label}' must be of type array", label=label))
-
-        min_items = schema.get("minItems")
-        if isinstance(min_items, int) and len(data) < min_items:
-            fail(t("validate.error.min_items", "'{label}' must have at least {count} item(s)", label=label, count=min_items))
-
-        item_schema = schema.get("items")
-        if isinstance(item_schema, dict):
-            for idx, item in enumerate(data):
-                validate_with_schema(item, item_schema, [*path, f"[{idx}]"])
-
-    elif expected_type == "string":
-        if not isinstance(data, str):
-            fail(t("validate.error.string_type", "'{label}' must be of type string", label=label))
-        min_length = schema.get("minLength")
-        if isinstance(min_length, int) and len(data) < min_length:
-            fail(t("validate.error.not_empty", "'{label}' cannot be empty", label=label))
-
-    elif expected_type == "integer":
-        if not (isinstance(data, int) and not isinstance(data, bool)):
-            fail(t("validate.error.integer_type", "'{label}' must be of type integer", label=label))
-        minimum = schema.get("minimum")
-        if isinstance(minimum, int) and data < minimum:
-            fail(t("validate.error.minimum", "'{label}' must be >= {minimum}", label=label, minimum=minimum))
-
-    elif expected_type == "boolean":
-        if not isinstance(data, bool):
-            fail(t("validate.error.boolean_type", "'{label}' must be of type boolean", label=label))
 
 
 def resolve_from_base(base_dir_path: Path, raw_path: str) -> Path:
@@ -267,11 +120,7 @@ def main() -> None:
     if not schema_path.exists():
         fail(t("validate.error.schema_not_found", "Schema not found: {path}", path=schema_path))
 
-    data = load_yaml_with_python(cfg_path)
-    if data is None:
-        data = load_yaml_with_ruby(cfg_path)
-    if data is None:
-        fail(t("validate.error.no_yaml_parser", "No YAML parser available (install PyYAML or Ruby)"))
+    data = load_yaml(cfg_path)
 
     if not isinstance(data, dict):
         fail(t("validate.error.yaml_root_object", "YAML root must be an object/map"))

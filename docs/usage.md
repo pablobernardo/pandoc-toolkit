@@ -27,7 +27,7 @@ together they cover it instead of repeating it:
 | `examples/test/` | The smallest valid configuration, with `titlepage: false` to show the cover switch |
 | `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
 | `examples/book/` | A book: a content-only `manifest.yaml` turned into the configuration by a `build.sh` glue step, the reading order (front matter, chapters, appendices) carried by `input.explicit_files`, and a `book`-class template with roman-numeral front matter and lettered appendices |
-| `examples/book-kit/` | One adapter, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers |
+| `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the small `build.sh` runner |
 
 `examples/toPDF.sh` renders the four pre-existing examples (`ohmyfake`,
 `manual`, `test` and `documentation`); the book example runs through its own
@@ -36,6 +36,16 @@ content examples (`ohmyfake`, `manual`, `test`, `book` and `book-kit`) are
 original and released under CC0: they exercise the toolkit rather than serve
 as product documentation. The `documentation` example renders the repository
 documentation, which is MIT licensed.
+
+### The bookkit tool
+
+`scripts/tools/bookkit/` ships a versioned tool for book projects: it turns
+declarative `manifest.yaml` and `series.yaml` files — governed by the tool's
+own contract (`manifest_version`), separate from `pdf.config.yaml` — into one
+standard configuration per volume and renders it through `pandoc-pdf`.
+`--check` validates the manifests and emits the generated configurations
+without rendering. Its model, fields, folder convention (a convention, never
+validated) and entry rules are documented in `scripts/tools/bookkit/README.md`.
 
 ## Configuration contract
 
@@ -240,7 +250,7 @@ pandoc-pdf validate-config -c pdf.config.yaml
 
 `validate-config` applies strict contract validation (required, types and disallowed fields), aligned with `schemas/pdf-config.schema.json`, plus functional validation of critical paths (`input.chapters_dir`, `pandoc.template`, `pandoc.metadata_file` when set, `filters.extra_lua_filters`). `input.order` is additionally validated against its `enum`: a value other than `natural` or `alphabetical` is rejected here, before it reaches the render.
 
-The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`). A test fails if the schema starts using any other keyword, so one can never be silently ignored.
+The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`, `anyOf`), shared with the bookkit tool through `scripts/runtime/schema_runtime.py`. A test fails if the schema starts using any other keyword, so one can never be silently ignored.
 
 `pandoc.template` is optional: if it is not set, the render uses `templates/default.tex`.
 

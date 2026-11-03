@@ -103,6 +103,7 @@ main() {
   run_chapter_link_rewrite_test
   run_multi_format_export_test
   run_plan_conformance_tests
+  run_bookkit_tests
 
   echo ""
   echo "Summary: PASS=${PASS} FAIL=${FAIL}"

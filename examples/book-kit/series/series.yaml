@@ -1,8 +1,12 @@
 # examples/book-kit/series/series.yaml
 #
-# Shared facts for a multi-volume series. The `volumes` list is ordered and
-# names the volume directories; each of those directories has its own
-# manifest.yaml, which may override any of the shared fields here.
+# Shared facts for a multi-volume series, validated by the shipped bookkit
+# tool against scripts/tools/bookkit/series.schema.json. The `volumes` list
+# is ordered and names the volume directories; each of those directories has
+# its own manifest.yaml (contract version 1, profile book), which may
+# override any of the shared fields here.
+
+manifest_version: 1
 
 collection: "Twin Lanterns Cycle"
 author: "The Example Maintainers"
