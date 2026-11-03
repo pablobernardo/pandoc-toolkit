@@ -56,10 +56,38 @@ run_docs_consistency_test() {
 
   covered=$(sed -n 's/.*docs OK: \([0-9]*\) markdown files.*/\1/p' "$out" | head -1)
   if [[ "${covered:-0}" -ge 20 ]]; then
-    pass "the check covers the whole tree (${covered} markdown files)"
+    pass "the check covers the tracked tree (${covered} markdown files)"
   else
-    fail "the check must cover the whole tree, it covered ${covered:-0}"
+    fail "the check must cover the tracked tree, it covered ${covered:-0}"
   fi
+
+  # Build artifacts and local scratch must not decide the result: a stale file
+  # under a gitignored directory once failed the gate over a document that was
+  # never published, and the reported coverage drifted with whatever scratch
+  # happened to be on the machine.
+  local repo
+  repo="$(mktemp -d)"
+  git -C "$repo" init --quiet
+  printf 'out/\n' >"$repo/.gitignore"
+  printf '# Doc\n\nSee [the other doc](other.md).\n' >"$repo/tracked.md"
+  printf '# Other\n' >"$repo/other.md"
+  git -C "$repo" add .gitignore tracked.md other.md
+  mkdir -p "$repo/out"
+  printf '# Stale\n\nSee [gone](missing.md).\n' >"$repo/out/stale.md"
+  set +e
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "$repo" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "an ignored markdown file does not decide the check"
+
+  # Untracked but not ignored still counts: that is what a commit would add.
+  printf '# New\n\nSee [gone](missing.md).\n' >"$repo/new.md"
+  set +e
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "$repo" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "an untracked markdown file is still checked"
+  rm -rf "$repo"
 
   # A relative link whose target is gone must fail.
   mkdir -p "${tree}/docs"
