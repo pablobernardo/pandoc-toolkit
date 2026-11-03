@@ -147,7 +147,7 @@
   "validate.error.integer_type": "'{label}' deve ser do tipo integer",
   "validate.error.minimum": "'{label}' deve ser >= {minimum}",
   "validate.error.boolean_type": "'{label}' deve ser do tipo boolean",
-  "validate.error.no_any_of_match": "'{label}' não corresponde a nenhuma das formas permitidas",
+  "template.error.unknown_name": "Nome de modelo desconhecido '{name}'; usa um caminho ou um de: {allowed}",
   "validate.error.base_dir_required": "'project.base_dir' é obrigatório",
   "validate.error.invalid_chapters_dir": "Caminho inválido em 'input.chapters_dir': diretório não existe ({path})",
   "validate.error.invalid_template": "Caminho inválido em 'pandoc.template': arquivo não existe ({path})",

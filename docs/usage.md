@@ -26,7 +26,6 @@ together they cover it instead of repeating it:
 | `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
 | `examples/test/` | The smallest valid configuration, with `titlepage: false` to show the cover switch |
 | `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
-| `examples/book/` | A book: a content-only `manifest.yaml` turned into the configuration by a `build.sh` glue step, the reading order (front matter, chapters, appendices) carried by `input.explicit_files`, and a `book`-class template with roman-numeral front matter and lettered appendices |
 | `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the small `build.sh` runner |
 
 `examples/toPDF.sh` renders the four pre-existing examples (`ohmyfake`,
@@ -46,11 +45,10 @@ standard configuration per volume and renders it through `pandoc-pdf`.
 `--check` validates the manifests and emits the generated configurations
 without rendering. Its model, fields, folder convention (a convention, never
 validated) and entry rules are documented in `scripts/tools/bookkit/README.md`.
-By default the generated configurations point at the project's own
-template, `<project>/templates/book.tex`: copy the toolkit's example
-template (`examples/book/templates/book.tex`) into the project's
-`templates/` directory, or pass `--template` with a book-class LaTeX
-template of your own.
+By default the generated configurations carry the builtin name `book`, which the
+toolkit ships and resolves inside the installation, so the same project builds
+from a checkout and from an installed CLI. Pass `--template` to use a book-class
+LaTeX template of your own, either as a path or as another builtin name.
 
 ## Configuration contract
 
@@ -257,7 +255,7 @@ pandoc-pdf validate-config -c pdf.config.yaml
 
 The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`, `anyOf`), shared with the bookkit tool through `scripts/runtime/schema_runtime.py`. A test fails if the schema starts using any other keyword, so one can never be silently ignored.
 
-`pandoc.template` is optional: if it is not set, the render uses `templates/default.tex`.
+`pandoc.template` is optional. Omitted, the render uses the toolkit's `templates/default.tex`. A **bare name — no path separator and no dot — selects a template that ships with the toolkit**: `book` resolves to `templates/book.tex`, which travels in the artifact, so the same configuration works in a checkout and in an installation. An unknown bare name fails naming the valid ones instead of being read as a path; anything else is a path resolved against `project.base_dir`.
 
 Render the PDF:
 

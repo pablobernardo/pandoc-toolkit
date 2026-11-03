@@ -7,6 +7,25 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Added
+
+- `pandoc.template` accepts a **builtin name** besides a path: a value with no
+  separator and no dot names a template that ships with the toolkit, so a
+  configuration written once works in a checkout and in an installation. `book`
+  resolves to `templates/book.tex`, a `book`-class template with roman-numeral
+  front matter, numbered chapters and lettered appendices. An unknown bare name
+  fails naming the valid ones instead of being read as a path. The validator and
+  the renderer share one rule, so both agree on what a value means.
+
+### Changed
+
+- `examples/book/` is gone: its template became the builtin `book`, and its
+  single-volume case is covered by `examples/book-kit/single/`. `bookkit` now
+  points the configurations it generates at the builtin name, so its output
+  builds from an installed CLI.
+
 ## [2.2.0] - 2026-11-03
 
 ### Added

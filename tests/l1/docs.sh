@@ -156,14 +156,20 @@ run_docs_consistency_test() {
 
 run_examples_validate_test() {
   local f code count=0
+  # Only files a commit could publish: ignored run output under examples/.output
+  # is regenerated on demand and can reference paths that no longer exist, so it
+  # must not decide whether the examples validate.
   while IFS= read -r f; do
+    [[ -f "$f" ]] || continue
     count=$((count + 1))
     set +e
     PANDOC_PDF_LANG=en "$CLI" validate-config -c "$f" >/dev/null 2>&1
     code=$?
     set -e
     assert_exit_code "0" "$code" "example config validates: ${f#"${ROOT_DIR}/"}"
-  done < <(find "${ROOT_DIR}/examples" -name 'pdf.config*.yaml' | sort)
+  done < <(git -C "$ROOT_DIR" ls-files -z --cached --others --exclude-standard -- examples \
+             | tr '\0' '\n' | grep -E '^examples/(.+/)?pdf\.config[^/]*\.yaml$' \
+             | sed "s|^|${ROOT_DIR}/|" | sort)
 
   if [[ "$count" -ge 1 ]]; then
     pass "the examples are exercised (${count} config(s))"

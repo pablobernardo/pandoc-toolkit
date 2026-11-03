@@ -58,14 +58,16 @@ if str(RUNTIME_DIR) not in sys.path:
 schema_runtime = importlib.import_module("schema_runtime")
 load_yaml = schema_runtime.load_yaml
 validate_with_schema = schema_runtime.validate_with_schema
+template_runtime = importlib.import_module("template_runtime")
+is_bare_name = template_runtime.is_bare_name
 
 CLI = TOOLKIT_ROOT / "bin" / "pandoc-pdf"
 MANIFEST_SCHEMA = TOOL_DIR / "manifest.schema.json"
 SERIES_SCHEMA = TOOL_DIR / "series.schema.json"
-# The default template is the project's own templates/book.tex (see
-# default_template): the toolkit ships no template path of its own, and the
-# old checkout-only default (examples/book/templates/book.tex) exists in no
-# installed artifact.
+# The default template is the builtin name: the toolkit ships templates/book.tex
+# inside the artifact, so one generated configuration works in a checkout and in
+# an installation. --template still accepts a path.
+DEFAULT_TEMPLATE = "book"
 DEFAULT_OUT = Path(".output") / "bookkit"
 
 LANG_CODES = ("en", "es", "pt", "gl")
@@ -111,24 +113,12 @@ def natural_key(name: str) -> list[tuple[int, int, str]]:
     return [(0, len(part), part) if part.isdigit() else (1, 0, part) for part in re.split(r"(\d+)", name.lower())]
 
 
-def default_template(project: Path) -> Path:
-    """The project's own template: <project>/templates/book.tex.
-
-    The tool no longer defaults to the toolkit's book example
-    (examples/book/templates/book.tex): that path only exists in a toolkit
-    checkout, never in an installed artifact. A consumer copies the example
-    template into the project, or passes --template with its own.
-    """
-    default = project / "templates" / "book.tex"
-    if not default.is_file():
-        die(
-            f"no book template in the project: {default.as_posix()}:"
-            " copy the toolkit's example template"
-            " (examples/book/templates/book.tex) into the project's"
-            " templates/ directory, or pass --template with a book-class"
-            " LaTeX template"
-        )
-    return default
+def default_template_hint() -> str:
+    """What to tell a consumer whose explicit template path does not exist."""
+    return (
+        "pass --template with a book-class LaTeX template, or omit it to use"
+        f" the toolkit's builtin '{DEFAULT_TEMPLATE}' template"
+    )
 
 
 # --- Manifest model ---------------------------------------------------------
@@ -271,7 +261,7 @@ def build_volume(
     volume_dir: Path,
     defaults: dict,
     out_volume_dir: Path,
-    template: Path,
+    template: str,
 ) -> Path:
     """Write the generated files and one pdf.config.yaml; return the config path."""
 
@@ -343,7 +333,7 @@ def emit_config(
     volume_dir: Path,
     out_volume_dir: Path,
     explicit_files: list[str],
-    template: Path,
+    template: str,
 ) -> str:
     """One standard pdf.config.yaml per volume, emitted as canonical text.
 
@@ -405,7 +395,7 @@ def emit_config(
             "  toc: true",
             "  toc_depth: 2",
             "  number_sections: true",
-            f"  template: {quoted(relpath(template, volume_dir))}",
+            f"  template: {quoted(template if is_bare_name(template) else relpath(Path(template), volume_dir))}",
             "  resource_path:",
             '    - "content"',
             "",
@@ -477,25 +467,32 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    explicit_template: Path | None = None
+    explicit_template: str | None = None
     if args.template:
-        explicit_template = Path(args.template).resolve()
-        if not explicit_template.is_file():
-            die(f"book template not found: {explicit_template}")
+        raw_template = args.template.strip()
+        if is_bare_name(raw_template):
+            # A name is a template the toolkit ships, so the validator and the
+            # renderer resolve it and there is no path to check here.
+            explicit_template = raw_template
+        else:
+            resolved_template = Path(raw_template).resolve()
+            if not resolved_template.is_file():
+                die(f"book template not found: {resolved_template}")
+            explicit_template = str(resolved_template)
 
-    projects: list[tuple[Path, Path]] = []
+    projects: list[tuple[Path, str]] = []
     for raw in args.projects:
         project = Path(raw)
         if not project.is_dir():
             die(f"not a directory: {project}")
         if not (project / "series.yaml").is_file() and not (project / "manifest.yaml").is_file():
             die(f"no series.yaml or manifest.yaml in: {project}")
-        template = explicit_template if explicit_template else default_template(project)
+        template = explicit_template if explicit_template else DEFAULT_TEMPLATE
         projects.append((project, template))
 
     # Contract validation first, for every project, before anything is built:
     # a manifest that fails validation never reaches the build.
-    plans: list[tuple[Path, str, Path, dict, dict, bool, Path]] = []
+    plans: list[tuple[Path, str, Path, dict, dict, bool, str]] = []
     for project, template in projects:
         series_path = project / "series.yaml"
         if series_path.is_file():
