@@ -26,7 +26,9 @@ The project follows semantic versioning and keeps two versioned contracts:
   installing). The packaged artifact carries the new layout, so anything that
   called `scripts/<name>.py` or `scripts/<name>.sh` directly moves with it.
   `bin/pandoc-pdf`, the configuration contract and the default behaviour are
-  unchanged, which is why this is a minor release and not a major one.
+  unchanged, which is why this is a minor release and not a major one. The
+  entrypoint file itself only follows the moved script paths: its commands,
+  options, output and exit codes are untouched.
 
 ### Fixed
 
