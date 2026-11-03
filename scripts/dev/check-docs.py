@@ -42,6 +42,10 @@ def markdown_files(root: Path) -> list[Path]:
     ignored directory once failed this check over a file that was never
     published, and the reported coverage drifted with whatever scratch the
     machine happened to hold.
+
+    Paths the index lists but that are absent from disk are skipped: an
+    uncommitted rename deletes the file while the index keeps the old path,
+    and reading it used to crash the whole check instead of reporting.
     """
     try:
         listed = subprocess.run(
@@ -49,7 +53,11 @@ def markdown_files(root: Path) -> list[Path]:
              "--cached", "--others", "--exclude-standard", "--", "*.md"],
             capture_output=True, text=True, check=True,
         ).stdout
-        return sorted(root / name for name in listed.split("\0") if name)
+        return sorted(
+            root / name
+            for name in listed.split("\0")
+            if name and (root / name).is_file()
+        )
     except (OSError, subprocess.SubprocessError):
         skip = {".git", "node_modules", ".atl"}
         return sorted(

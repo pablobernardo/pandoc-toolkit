@@ -80,6 +80,19 @@ run_docs_consistency_test() {
   set -e
   assert_exit_code "0" "$code" "an ignored markdown file does not decide the check"
 
+  # A rename in progress: git's index still lists a path that is absent
+  # from disk (an uncommitted rename deletes the file while the index keeps
+  # the old path). Staging a path without writing it reproduces exactly that
+  # state. The checker must skip the git-listed path instead of crashing.
+  blob=$(printf '# Gone\n' | git -C "$repo" hash-object -w --stdin)
+  git -C "$repo" update-index --add --cacheinfo "100644,${blob},vanished.md"
+  set +e
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "$repo" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a git-listed file missing from disk is skipped, not fatal"
+  assert_not_contains "$out" "Traceback" "a rename in progress does not crash the check"
+
   # Untracked but not ignored still counts: that is what a commit would add.
   printf '# New\n\nSee [gone](missing.md).\n' >"$repo/new.md"
   set +e

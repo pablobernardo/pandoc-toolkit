@@ -46,6 +46,11 @@ standard configuration per volume and renders it through `pandoc-pdf`.
 `--check` validates the manifests and emits the generated configurations
 without rendering. Its model, fields, folder convention (a convention, never
 validated) and entry rules are documented in `scripts/tools/bookkit/README.md`.
+By default the generated configurations point at the project's own
+template, `<project>/templates/book.tex`: copy the toolkit's example
+template (`examples/book/templates/book.tex`) into the project's
+`templates/` directory, or pass `--template` with a book-class LaTeX
+template of your own.
 
 ## Configuration contract
 
