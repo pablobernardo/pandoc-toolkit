@@ -27,13 +27,14 @@ together they cover it instead of repeating it:
 | `examples/test/` | The smallest valid configuration, with `titlepage: false` to show the cover switch |
 | `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
 | `examples/book/` | A book: a content-only `manifest.yaml` turned into the configuration by a `build.sh` glue step, the reading order (front matter, chapters, appendices) carried by `input.explicit_files`, and a `book`-class template with roman-numeral front matter and lettered appendices |
+| `examples/book-kit/` | One adapter, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers |
 
 `examples/toPDF.sh` renders the four pre-existing examples (`ohmyfake`,
 `manual`, `test` and `documentation`); the book example runs through its own
 `build.sh` because its content manifest needs a glue step before the CLI. The
-content examples (`ohmyfake`, `manual`, `test` and `book`) are original and
-released under CC0: they exercise the toolkit rather than serve as product
-documentation. The `documentation` example renders the repository
+content examples (`ohmyfake`, `manual`, `test`, `book` and `book-kit`) are
+original and released under CC0: they exercise the toolkit rather than serve
+as product documentation. The `documentation` example renders the repository
 documentation, which is MIT licensed.
 
 ## Configuration contract

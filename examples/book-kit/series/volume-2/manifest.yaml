@@ -1,0 +1,27 @@
+# examples/book-kit/series/volume-2/manifest.yaml
+#
+# Second volume of the series. chapter_start: 4 makes its first chapter
+# print as chapter 4, continuing the numbering of volume 1 instead of
+# restarting at 1.
+#
+# The excerpt entry is declared optional and its file does not exist on
+# purpose: the adapter skips it with a warning and the volume still renders.
+
+title: "Twin Lanterns, Volume 2: The South Tower"
+subtitle: "The second volume of the Twin Lanterns cycle"
+isbn: "978-0-000000-00-1"
+date: "2026"
+chapter_start: 4
+
+front_matter:
+  dedication: "content/front/00-dedication.md"
+
+chapters:
+  - "content/chapters/04-the-crossing.md"
+  - "content/chapters/05-the-south-tower.md"
+
+back_matter:
+  glossary: "content/back/01-glossary.md"
+  excerpt:
+    file: "content/back/99-excerpt.md"
+    optional: true

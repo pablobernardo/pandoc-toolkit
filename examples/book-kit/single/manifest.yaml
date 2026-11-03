@@ -1,0 +1,26 @@
+# examples/book-kit/single/manifest.yaml
+#
+# A single-volume project: there is no series.yaml, so this directory is
+# itself the volume and this manifest carries every field, with no series
+# defaults to merge. Paths are relative to THIS directory (the volume
+# directory), and every listed printable file must exist.
+
+title: "A Field Guide to Imaginary Weather"
+subtitle: "Three short chapters on weather that does not exist"
+author: "The Example Maintainers"
+publisher: "Example Editions"
+rights: "CC0 1.0 Universal - public domain dedication"
+language: "en"
+date: "2026"
+
+front_matter:
+  note: "content/front/00-note.md"
+
+chapters:
+  - "content/chapters/01-clouds.md"
+  - "content/chapters/02-fog.md"
+  - "content/chapters/03-rain.md"
+
+back_matter:
+  glossary: "content/back/01-glossary.md"
+  about: "content/back/02-about-this-guide.md"
