@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared i18n runtime for the bash entry points (bin/pandoc-pdf, scripts/bootstrap.sh).
+# Shared i18n runtime for the bash entry points (bin/pandoc-pdf, scripts/delivery/bootstrap.sh).
 #
 # Sourced, never executed. Contract: set I18N_ROOT to the toolkit root before
 # sourcing. Optionally set GLOBAL_ENV_FILE / PROJECT_ENV_FILE to override where

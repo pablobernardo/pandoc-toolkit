@@ -4,7 +4,7 @@
 run_package_release_artifact_test() {  local out_dir artifact
   out_dir="$(mktemp -d)"
 
-  if bash "${ROOT_DIR}/scripts/package-release.sh" "$out_dir" >/dev/null 2>&1; then
+  if bash "${ROOT_DIR}/scripts/delivery/package-release.sh" "$out_dir" >/dev/null 2>&1; then
     pass "package-release builds artifacts"
   else
     fail "package-release should build artifacts"
@@ -62,7 +62,7 @@ run_package_release_reproducibility_test() {
   first="$(mktemp -d)"
   second="$(mktemp -d)"
 
-  if ! bash "${ROOT_DIR}/scripts/package-release.sh" "$first" >/dev/null 2>&1; then
+  if ! bash "${ROOT_DIR}/scripts/delivery/package-release.sh" "$first" >/dev/null 2>&1; then
     fail "package-release should build artifacts for the reproducibility check"
     rm -rf "$first" "$second"
     return
@@ -72,7 +72,7 @@ run_package_release_reproducibility_test() {
   # the gzip header cannot hide behind two builds started in the same second.
   sleep 1
 
-  if ! bash "${ROOT_DIR}/scripts/package-release.sh" "$second" >/dev/null 2>&1; then
+  if ! bash "${ROOT_DIR}/scripts/delivery/package-release.sh" "$second" >/dev/null 2>&1; then
     fail "package-release should build artifacts twice"
     rm -rf "$first" "$second"
     return

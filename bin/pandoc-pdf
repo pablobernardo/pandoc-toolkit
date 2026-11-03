@@ -30,14 +30,14 @@ GLOBAL_ENV_FILE="${GLOBAL_CONFIG_DIR}/config.env"
 # toolkit installation, so two consuming repositories keep independent locales.
 PROJECT_ENV_FILE="${PWD}/.pandoc-pdf.env"
 
-I18N_HELPER="${ROOT_DIR}/scripts/i18n.sh"
+I18N_HELPER="${ROOT_DIR}/scripts/runtime/i18n.sh"
 if [[ ! -f "$I18N_HELPER" ]]; then
   echo "❌ pandoc-pdf: cannot find ${I18N_HELPER}; the installation looks incomplete" >&2
   exit 1
 fi
 
 I18N_ROOT="$ROOT_DIR"
-# shellcheck source=../scripts/i18n.sh
+# shellcheck source=../scripts/runtime/i18n.sh
 source "$I18N_HELPER"
 
 CLI_LANG="$(resolve_lang)"
@@ -918,7 +918,7 @@ PY
 
 run_doctor() {
   local config_path="${1:-}"
-  local preflight_script="$ROOT_DIR/scripts/preflight.sh"
+  local preflight_script="$ROOT_DIR/scripts/runtime/preflight.sh"
   if [[ ! -x "$preflight_script" ]]; then
     local msg
     msg="$(t "cli.error.preflight_not_found" "Executable preflight script not found: {path}")"
@@ -934,13 +934,13 @@ run_doctor() {
 
 validate_config_file() {
   local config_path="$1"
-  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/validate-config.py" "$config_path" "$ROOT_DIR/schemas/pdf-config.schema.json"
+  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/validate-config.py" "$config_path" "$ROOT_DIR/schemas/pdf-config.schema.json"
 }
 
 run_render() {
   local config_path="$1"
   ensure_yaml_parser_available
-  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR"
+  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$config_path" "$ROOT_DIR"
 }
 
 run_render_plan() {
@@ -950,7 +950,7 @@ run_render_plan() {
   [[ "$plan_mode" == "json" ]] && plan_flag="--plan-json"
 
   ensure_yaml_parser_available
-  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
+  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
 }
 
 main() {

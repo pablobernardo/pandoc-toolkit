@@ -46,11 +46,11 @@ jobs:
         run: |
           chmod +x bin/pandoc-pdf
           chmod +x tests/run.sh
-          chmod +x scripts/validate-config.py
-          chmod +x scripts/render-native.py
-          chmod +x scripts/prepare-emojis.py
-          chmod +x scripts/preflight.sh
-          chmod +x scripts/preflight.py
+          chmod +x scripts/runtime/validate-config.py
+          chmod +x scripts/runtime/render-native.py
+          chmod +x scripts/runtime/prepare-emojis.py
+          chmod +x scripts/runtime/preflight.sh
+          chmod +x scripts/runtime/preflight.py
 
       - name: Run L1 CLI test suite
         run: tests/run.sh
@@ -87,11 +87,11 @@ jobs:
       - name: Ensure scripts are executable
         run: |
           chmod +x bin/pandoc-pdf
-          chmod +x scripts/validate-config.py
-          chmod +x scripts/render-native.py
-          chmod +x scripts/prepare-emojis.py
-          chmod +x scripts/preflight.sh
-          chmod +x scripts/preflight.py
+          chmod +x scripts/runtime/validate-config.py
+          chmod +x scripts/runtime/render-native.py
+          chmod +x scripts/runtime/prepare-emojis.py
+          chmod +x scripts/runtime/preflight.sh
+          chmod +x scripts/runtime/preflight.py
           chmod +x tests/l2-local.sh
 
       - name: Run L2 local integration runner
@@ -132,11 +132,11 @@ jobs:
       - name: Ensure scripts are executable
         run: |
           chmod +x bin/pandoc-pdf
-          chmod +x scripts/validate-config.py
-          chmod +x scripts/render-native.py
-          chmod +x scripts/prepare-emojis.py
-          chmod +x scripts/preflight.sh
-          chmod +x scripts/preflight.py
+          chmod +x scripts/runtime/validate-config.py
+          chmod +x scripts/runtime/render-native.py
+          chmod +x scripts/runtime/prepare-emojis.py
+          chmod +x scripts/runtime/preflight.sh
+          chmod +x scripts/runtime/preflight.py
           chmod +x tests/l3-local.sh
 
       - name: Run L3 local integration runner

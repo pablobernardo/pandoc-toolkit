@@ -6,7 +6,7 @@ Reduce supply-chain risk by pinning critical runtime versions and keeping an exp
 
 ## Pandoc and TeX: what CI actually runs
 
-Neither is pinned by this repository: `scripts/bootstrap.sh` and CI install
+Neither is pinned by this repository: `scripts/delivery/bootstrap.sh` and CI install
 whatever the distribution provides, which lags the current release. That has a
 consequence worth stating plainly: **CI can be green while the toolkit is broken
 for anyone on a current Pandoc.**
@@ -167,7 +167,7 @@ scalars in configuration examples and fixtures.
 ## Pinned critical dependencies
 
 - `@mermaid-js/mermaid-cli@10.9.1`
-  - Usage: `scripts/bootstrap.sh` (default of `MERMAID_CLI_VERSION`, so a run can
+  - Usage: `scripts/delivery/bootstrap.sh` (default of `MERMAID_CLI_VERSION`, so a run can
     override it), L3 workflow in `.github/workflows/ci.yml`.
 
 ### Why this one is a tested version, not an enforced one
@@ -190,11 +190,11 @@ So the contract is the smoke test, not the number:
   and `make bootstrap` only warns, because downloading a browser is the user's
   decision.
 
-The pin lives in three places — `scripts/bootstrap.sh`, `.github/workflows/ci.yml`
+The pin lives in three places — `scripts/delivery/bootstrap.sh`, `.github/workflows/ci.yml`
 and this list — and they must change together. `ci.yml` carries a comment
 pointing here for exactly that reason.
 - `pyyaml==6.0.2`
-  - Usage: `scripts/bootstrap.sh` (assisted installation when the YAML parser is missing).
+  - Usage: `scripts/delivery/bootstrap.sh` (assisted installation when the YAML parser is missing).
 - `semgrep/semgrep:1.86.0` container image
   - Usage: `.github/workflows/security.yml` (pinned image instead of `pip install`, which breaks with modern setuptools).
 - `ghcr.io/gitleaks/gitleaks:v8.24.2` container image

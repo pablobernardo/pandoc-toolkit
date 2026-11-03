@@ -308,7 +308,7 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     if not mermaid_output_dir.is_absolute():
         mermaid_output_dir = (base_dir_path / mermaid_output_dir).resolve()
 
-    prepare_script = root_dir / "scripts/prepare-emojis.py"
+    prepare_script = root_dir / "scripts/runtime/prepare-emojis.py"
     prepare_argv = None
     if emoji_enabled and prepare_script.exists():
         prepare_argv = [

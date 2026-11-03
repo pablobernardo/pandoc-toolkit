@@ -11,7 +11,7 @@ path_dirname() {
 }
 
 SCRIPT_DIR="$(cd -- "$(path_dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 CLI_PATH="${ROOT_DIR}/bin/pandoc-pdf"
 LOCAL_BIN_DIR="${HOME}/.local/bin"
 LINK_PATH="${LOCAL_BIN_DIR}/pandoc-pdf"
@@ -25,14 +25,14 @@ ASSUME_YES=false
 MERMAID_CLI_VERSION="${MERMAID_CLI_VERSION:-10.9.1}"
 PYYAML_VERSION="${PYYAML_VERSION:-6.0.2}"
 
-I18N_HELPER="${ROOT_DIR}/scripts/i18n.sh"
+I18N_HELPER="${ROOT_DIR}/scripts/runtime/i18n.sh"
 if [[ ! -f "$I18N_HELPER" ]]; then
   echo "❌ bootstrap: cannot find ${I18N_HELPER}; the installation looks incomplete" >&2
   exit 1
 fi
 
 I18N_ROOT="$ROOT_DIR"
-# shellcheck source=../scripts/i18n.sh
+# shellcheck source=../../scripts/runtime/i18n.sh
 source "$I18N_HELPER"
 
 LANG_CODE="$(resolve_lang)"
@@ -43,7 +43,7 @@ usage() {
 $(t "bootstrap.title" "Installation bootstrap — Pandoc PDF Toolkit")
 
 $(t "bootstrap.usage" "Usage:")
-  scripts/bootstrap.sh [--dry-run] [--no-install] [--skip-link] [--yes] [--ci]
+  scripts/delivery/bootstrap.sh [--dry-run] [--no-install] [--skip-link] [--yes] [--ci]
 
 $(t "bootstrap.options" "Options:")
   --dry-run    $(t "bootstrap.opt.dryrun" "Show commands without executing")

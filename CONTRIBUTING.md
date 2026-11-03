@@ -33,8 +33,8 @@ working copy.
 | `make doctor` | Checks the local toolchain |
 | `make epubcheck FILE=path/to/publication.epub` | Validates a finished publication with EPUBCheck. Optional, needs a JVM; see [dependency policy](docs/dependency-policy.md) |
 | `make install-local-dev` | Puts the working copy on `PATH` for manual testing |
-| `python3 scripts/check-i18n.py` | Catalog parity and placeholders |
-| `python3 scripts/check-docs.py` | No document points at something missing |
+| `python3 scripts/dev/check-i18n.py` | Catalog parity and placeholders |
+| `python3 scripts/dev/check-docs.py` | No document points at something missing |
 
 `make gate` is the gate: run it before opening a pull request. When CI cannot start
 (an account without Actions minutes is the usual reason), it is the verification:
@@ -69,18 +69,18 @@ guidance and trust model in [the security policy](.github/SECURITY.md).
 
 Never write a user-facing string in code. Add the key to **all four** catalogs in
 `i18n/locales/` (`en`, `es`, `pt`, `gl`) with identical placeholders, then run
-`python3 scripts/check-i18n.py`. English is the wording that is written first;
+`python3 scripts/dev/check-i18n.py`. English is the wording that is written first;
 the others are translations, not copies.
 
 ## Where a change belongs
 
 | Changing | Touch |
 | --- | --- |
-| The configuration contract | `schemas/pdf-config.schema.json`, then `scripts/validate-config.py`, then `tests/l1/validate.sh` |
+| The configuration contract | `schemas/pdf-config.schema.json`, then `scripts/runtime/validate-config.py`, then `tests/l1/validate.sh` |
 | The CLI surface | `bin/pandoc-pdf` and its catalog keys, then `tests/l1/help.sh`, then `docs/usage.md` |
-| Rendering | `scripts/render-native.py`, plus the checks in `scripts/preflight.py`; `tests/l1/render.sh` |
+| Rendering | `scripts/runtime/render-native.py`, plus the checks in `scripts/runtime/preflight.py`; `tests/l1/render.sh` |
 | A filter | `filters/<name>.lua`; a failure must be loud, never silent |
-| Dependencies | `scripts/bootstrap.sh`, `.github/workflows/`, `docs/dependency-policy.md` |
+| Dependencies | `scripts/delivery/bootstrap.sh`, `.github/workflows/`, `docs/dependency-policy.md` |
 | A breaking change | The affected areas, an explicit migration guide, updated examples and a `CHANGELOG.md` entry; apply the toolkit and contract version rules in `AGENTS.md` |
 
 [`docs/README.md`](docs/README.md) maps every document to the question it answers.

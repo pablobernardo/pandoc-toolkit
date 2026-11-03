@@ -126,21 +126,24 @@ pandoc-toolkit/
     emoji/
     mermaid.lua
   scripts/
-    bootstrap.sh
-    install.sh
-    install-local.sh
-    package-release.sh
-    preflight.sh
-    preflight.py
-    validate-config.py
-    render-native.py         # the single renderer
-    prepare-emojis.py
-    i18n.sh
-    i18n_runtime.py
-    check-i18n.py
-    check-docs.py
-    check-plan-conformance.py
-    enforce-security-thresholds.py
+    runtime/
+      preflight.sh
+      preflight.py
+      validate-config.py
+      render-native.py       # the single renderer
+      prepare-emojis.py
+      i18n.sh
+      i18n_runtime.py
+    dev/
+      check-i18n.py
+      check-docs.py
+      check-plan-conformance.py
+      enforce-security-thresholds.py
+    delivery/
+      bootstrap.sh
+      install.sh
+      install-local.sh
+      package-release.sh
   schemas/
     pdf-config.schema.json
   i18n/
@@ -178,7 +181,7 @@ pandoc-toolkit/
 
 ## Render pipeline
 
-There is exactly one renderer: `scripts/render-native.py`. YAML is read with
+There is exactly one renderer: `scripts/runtime/render-native.py`. YAML is read with
 PyYAML when available and otherwise through Ruby's stdlib in a subprocess.
 
 `pandoc-pdf render -c <config>` validates the config against the schema and
@@ -189,7 +192,7 @@ code-level fallbacks for absent keys.
 `pandoc-pdf render -c <config> --dry-run [--json]` computes a pure plan
 (nothing is written or created) with `plan_version: 1`, containing the
 selected chapters, output targets, the exact pandoc `argv`, and the filter
-environment. `scripts/render-native.py` is split into `build_plan` (pure),
+environment. `scripts/runtime/render-native.py` is split into `build_plan` (pure),
 `execute_plan` (the single point with side effects) and `print_plan`.
 
 `output.formats` selects an ordered list of artifacts (default `[pdf]`),
@@ -221,7 +224,7 @@ prototype and is replaced, not supported as a second alias; see
 
 The plan is a conformance contract: four recorded cases in `tests/conformance/`
 cover minimal settings, metadata precedence, explicit chapter order, and custom
-templates/resources/filters. Run `python3 scripts/check-plan-conformance.py` to
+templates/resources/filters. Run `python3 scripts/dev/check-plan-conformance.py` to
 compare normalized plans, or add `--update` to refresh expectations after an
 intentional contract change. Set `PANDOC_PDF_BIN` to compare another implementation;
 an optional positional root selects a different tree of cases and expectations.
@@ -268,7 +271,7 @@ and configuration compatibility rules in `AGENTS.md`.
 | D1 | A single renderer (Python). Ruby stays only as an optional YAML parser in a subprocess; removing it entirely would require making PyYAML mandatory, and that was decided **against**. |
 | D2 | `runtime.strict: false` waives auxiliary dependencies, never the TeX engine: without an engine there is no PDF, so it always fails. |
 | D3 | `validate-config` rejects a missing `pandoc.metadata_file` and validates `input.order` against its `enum`. The validator implements a documented JSON Schema subset and a test fails if the schema uses any other keyword. |
-| D4 | Shell i18n unified in `scripts/i18n.sh`: catalog loaded once, no fork per message, one precedence chain for both entry points. |
+| D4 | Shell i18n unified in `scripts/runtime/i18n.sh`: catalog loaded once, no fork per message, one precedence chain for both entry points. |
 | D5 | Metadata precedence: when `pandoc.metadata_file` is set it wins and no `-V` variables are passed; when empty, the `document.*` fields become template variables. |
 | D6 | The plan shape (`plan_version: 1`) is frozen as is: `cwd: null` (inherited), `env` with the toolkit's four variables, and `prepare_argv[0]` as the neutral `python3` token. Any shape change requires `plan_version: 2`. |
 | D7 | `defaults/default.yaml` removed: the schema is the single source of truth. |
@@ -286,7 +289,7 @@ The original three-phase migration plan was executed:
 
 1. **Harden locally** — routes in `emoji.lua` and `mermaid.lua` were
    parameterised (read from metadata/vars), emoji preparation was consolidated
-   in `scripts/prepare-emojis.py`, and preflight was completed.
+   in `scripts/runtime/prepare-emojis.py`, and preflight was completed.
 2. **Extract the toolkit** — scripts, filters and templates moved to this
    repository and published by tag (v1.0.0 onwards). Each consuming repository
    keeps a `pdf.config.yaml` and invokes the toolkit through `bin/pandoc-pdf`.

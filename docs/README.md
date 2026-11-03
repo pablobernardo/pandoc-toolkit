@@ -32,5 +32,5 @@ marked with an arrow.
 Pending work lives in issues; verification evidence belongs in pull requests.
 The repository is written in English. Keep guides aligned with actual behaviour
 rather than appending status reports.
-`python3 scripts/check-docs.py` fails the suite if a reference points at
+`python3 scripts/dev/check-docs.py` fails the suite if a reference points at
 something that no longer exists.

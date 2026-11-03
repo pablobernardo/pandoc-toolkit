@@ -48,7 +48,7 @@ run_docs_consistency_test() {
   tree="$(mktemp -d)"
 
   set +e
-  python3 "${ROOT_DIR}/scripts/check-docs.py" "${ROOT_DIR}" >"$out" 2>&1
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "${ROOT_DIR}" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "every markdown reference points at something that exists"
@@ -65,7 +65,7 @@ run_docs_consistency_test() {
   mkdir -p "${tree}/docs"
   printf '# Doc\n\nSee [the other doc](missing.md).\n' >"${tree}/docs/a.md"
   set +e
-  python3 "${ROOT_DIR}/scripts/check-docs.py" "$tree" >"$out" 2>&1
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "$tree" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "a broken link fails the check"
@@ -74,7 +74,7 @@ run_docs_consistency_test() {
   # A backticked path in prose must fail too: no link checker sees those.
   printf '# Doc\n\nThe file `docs/gone.md` was removed.\n' >"${tree}/docs/a.md"
   set +e
-  python3 "${ROOT_DIR}/scripts/check-docs.py" "$tree" >"$out" 2>&1
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "$tree" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "a backticked path that does not exist fails the check"
@@ -83,7 +83,7 @@ run_docs_consistency_test() {
   # Commands inside fenced blocks are examples, not references.
   printf '# Doc\n\n```bash\ncat docs/not-there.md\n```\n' >"${tree}/docs/a.md"
   set +e
-  python3 "${ROOT_DIR}/scripts/check-docs.py" "$tree" >"$out" 2>&1
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "$tree" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "paths inside fenced code blocks are not references"
@@ -92,7 +92,7 @@ run_docs_consistency_test() {
   rm -f "${tree}/docs/a.md"
   printf '# Changelog\n\nRemoved `scripts/gone.rb` in 1.2.0.\n' >"${tree}/CHANGELOG.md"
   set +e
-  python3 "${ROOT_DIR}/scripts/check-docs.py" "$tree" >"$out" 2>&1
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "$tree" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "a history file may name what was removed"
@@ -103,7 +103,7 @@ run_docs_consistency_test() {
   local leaky="/Users"
   printf '# Doc\n\nSee `%s/someone/code/repo/.env`.\n' "$leaky" >"${tree}/docs/a.md"
   set +e
-  python3 "${ROOT_DIR}/scripts/check-docs.py" "$tree" >"$out" 2>&1
+  python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "$tree" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "an absolute home path fails the check"

@@ -7,7 +7,7 @@ This guide makes the `pandoc-pdf` command available for people, CI and coding ag
 Without cloning the repository:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/delivery/install.sh | bash
 ```
 
 This installs into the managed layout:
@@ -53,7 +53,7 @@ From the repository root:
 make bootstrap
 ```
 
-This command runs `scripts/bootstrap.sh`, which:
+This command runs `scripts/delivery/bootstrap.sh`, which:
 
 - detects the operating system,
 - detects a compatible Linux package manager (`apt-get`, `dnf`, `yum`, `pacman`, `zypper`, `apk`),
@@ -70,9 +70,9 @@ Useful options:
 make bootstrap-dry                       # shows actions without running them
 make bootstrap-yes                       # non-interactive mode
 make bootstrap-ci                        # CI mode (--yes --skip-link)
-bash scripts/bootstrap.sh --no-install   # only verifies dependencies + symlink
-bash scripts/bootstrap.sh --yes          # non-interactive equivalent
-bash scripts/bootstrap.sh --ci           # CI equivalent
+bash scripts/delivery/bootstrap.sh --no-install   # only verifies dependencies + symlink
+bash scripts/delivery/bootstrap.sh --yes          # non-interactive equivalent
+bash scripts/delivery/bootstrap.sh --ci           # CI equivalent
 ```
 
 ## Install from a local repository into the managed layout
@@ -90,7 +90,7 @@ This copies the contents of the repo to `~/.local/share/pandoc-pdf/versions/<VER
 
 Three variables decide where an installation lives, and they are independent:
 
-- `PANDOC_PDF_INSTALL_HOME` — managed root used by `scripts/install.sh` and `make install-local`.
+- `PANDOC_PDF_INSTALL_HOME` — managed root used by `scripts/delivery/install.sh` and `make install-local`.
 - `PANDOC_PDF_INSTALL_DIR` — directory that receives the entrypoint symlink.
 - `PANDOC_PDF_UPDATE_HOME` — managed root used by `pandoc-pdf update`.
 

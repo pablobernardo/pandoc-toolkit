@@ -20,7 +20,7 @@ data[""] = data.pop(next(iter(data)))
 json.dump(data, open(path, "w", encoding="utf-8"))
 PY
 
-  "${REAL_PYTHON3}" "${ROOT_DIR}/scripts/check-i18n.py" "$tmp" >"$out" 2>&1 || code=$?
+  "${REAL_PYTHON3}" "${ROOT_DIR}/scripts/dev/check-i18n.py" "$tmp" >"$out" 2>&1 || code=$?
   assert_exit_code "1" "$code" "the i18n check fails on an invalid catalog key"
   assert_contains "$out" "invalid key" "the failure names the invalid key"
   assert_not_contains "$out" "Traceback" "the failure reports the problem instead of crashing"
@@ -33,7 +33,7 @@ run_i18n_catalog_consistency_test() {
   local out
   out="$(mktemp)"
 
-  if "${REAL_PYTHON3}" "${ROOT_DIR}/scripts/check-i18n.py" "${ROOT_DIR}" >"$out" 2>&1; then
+  if "${REAL_PYTHON3}" "${ROOT_DIR}/scripts/dev/check-i18n.py" "${ROOT_DIR}" >"$out" 2>&1; then
     pass "i18n check validates catalogs and placeholders"
   else
     fail "i18n check should validate catalogs"
@@ -101,18 +101,18 @@ run_i18n_force_english_unknown_command_test() {
 }
 
 run_shared_i18n_runtime_test() {
-  if [[ ! -f "${ROOT_DIR}/scripts/i18n.sh" ]]; then
-    fail "scripts/i18n.sh must exist: it is the single shell i18n runtime"
+  if [[ ! -f "${ROOT_DIR}/scripts/runtime/i18n.sh" ]]; then
+    fail "scripts/runtime/i18n.sh must exist: it is the single shell i18n runtime"
     return 0
   fi
-  pass "scripts/i18n.sh exists"
+  pass "scripts/runtime/i18n.sh exists"
 
   local entry
-  for entry in bin/pandoc-pdf scripts/bootstrap.sh; do
-    if grep -q 'scripts/i18n.sh' "${ROOT_DIR}/${entry}"; then
+  for entry in bin/pandoc-pdf scripts/delivery/bootstrap.sh; do
+    if grep -q 'scripts/runtime/i18n.sh' "${ROOT_DIR}/${entry}"; then
       pass "${entry} sources the shared i18n runtime"
     else
-      fail "${entry} must source scripts/i18n.sh instead of duplicating locale logic"
+      fail "${entry} must source scripts/runtime/i18n.sh instead of duplicating locale logic"
     fi
     if grep -qE '^resolve_lang\(\) \{|^list_supported_locales\(\) \{' "${ROOT_DIR}/${entry}"; then
       fail "${entry} still defines its own locale resolution"
@@ -123,7 +123,7 @@ run_shared_i18n_runtime_test() {
 
   local out
   out="$(mktemp)"
-  if PANDOC_PDF_LANG=es bash "${ROOT_DIR}/scripts/bootstrap.sh" --help >"$out" 2>&1; then
+  if PANDOC_PDF_LANG=es bash "${ROOT_DIR}/scripts/delivery/bootstrap.sh" --help >"$out" 2>&1; then
     pass "bootstrap --help runs with the shared runtime"
   else
     fail "bootstrap --help should run with the shared runtime"

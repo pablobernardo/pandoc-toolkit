@@ -7,8 +7,12 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
+# The shared runtime lives in scripts/runtime; a dev script imports it across
+# the split, so the directory is added to the import path before the import.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "runtime"))
+
 try:
-    from i18n_runtime import t
+    from i18n_runtime import t  # type: ignore[import-not-found]
 except Exception:
     def t(_key: str, fallback: str, **kwargs: object) -> str:
         try:
@@ -48,7 +52,7 @@ def placeholders(msg: str) -> set[str]:
 
 
 def main() -> None:
-    root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
+    root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]
     locales_dir = root / "i18n/locales"
     if not locales_dir.exists():
         fail(t("check_i18n.error.locales_dir_missing", "locales directory does not exist: {path}", path=locales_dir))

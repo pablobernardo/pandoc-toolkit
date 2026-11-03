@@ -3,7 +3,7 @@ set -euo pipefail
 
 MANAGED_HOME="${PANDOC_PDF_INSTALL_HOME:-${HOME}/.local/share/pandoc-pdf}"
 INSTALL_BIN_DIR="${PANDOC_PDF_INSTALL_DIR:-${HOME}/.local/bin}"
-REPO_ROOT="${PANDOC_PDF_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+REPO_ROOT="${PANDOC_PDF_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 VERSION_FILE="${REPO_ROOT}/VERSION"
 
 if [[ ! -f "$VERSION_FILE" ]]; then

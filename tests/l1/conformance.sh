@@ -14,7 +14,7 @@ import sys
 import tempfile
 
 root = Path(sys.argv[1])
-checker = root / "scripts/check-plan-conformance.py"
+checker = root / "scripts/dev/check-plan-conformance.py"
 env = dict(os.environ, PANDOC_PDF_BIN=sys.argv[2], PANDOC_PDF_LANG="en")
 
 def check(ok, message):
