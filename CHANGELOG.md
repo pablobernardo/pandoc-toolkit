@@ -7,6 +7,39 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
+## [2.2.0] - 2026-11-03
+
+### Added
+
+- Two book examples. `examples/book/` lays out a single volume with front
+  matter, numbered chapters and lettered appendices through a `book`-class
+  template, and `examples/book-kit/` turns a content manifest into one PDF per
+  volume, including a volume whose chapters continue the previous numbering.
+  The manifest and its adapter live with the book: the toolkit still receives a
+  `pdf.config.yaml` and nothing else, so a change in a book format never becomes
+  a toolkit contract change.
+
+### Changed
+
+- `scripts/` is split into `scripts/runtime` (what the renderer executes),
+  `scripts/dev` (repository and CI tooling) and `scripts/delivery` (building and
+  installing). The packaged artifact carries the new layout, so anything that
+  called `scripts/<name>.py` or `scripts/<name>.sh` directly moves with it.
+  `bin/pandoc-pdf`, the configuration contract and the default behaviour are
+  unchanged, which is why this is a minor release and not a major one.
+
+### Fixed
+
+- Release artifacts are reproducible: packaging the same commit twice produces
+  the same hash, so a published checksum can be compared with the approved
+  candidate. Packaging is documented to run from a clean checkout, because the
+  archive copies `templates/` wholesale.
+- The documentation check only inspects files a commit could publish, so build
+  output and local scratch no longer decide whether it passes or how much it
+  reports covering.
+- The test suite fails when a test is defined but never registered in the
+  orchestrator, instead of silently dropping that coverage.
+
 ## [2.1.1] - 2026-11-02
 
 ### Fixed
