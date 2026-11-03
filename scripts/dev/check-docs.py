@@ -35,10 +35,27 @@ HISTORY_PREFIXES = ("odd/",)
 
 
 def markdown_files(root: Path) -> list[Path]:
-    return sorted(
-        p for p in root.rglob("*.md")
-        if ".git" not in p.parts and "node_modules" not in p.parts
-    )
+    """The Markdown the repository actually carries.
+
+    Tracked files plus untracked ones git does not ignore: what a commit could
+    publish. Ignored output is excluded on purpose. A stale document under an
+    ignored directory once failed this check over a file that was never
+    published, and the reported coverage drifted with whatever scratch the
+    machine happened to hold.
+    """
+    try:
+        listed = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z",
+             "--cached", "--others", "--exclude-standard", "--", "*.md"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        return sorted(root / name for name in listed.split("\0") if name)
+    except (OSError, subprocess.SubprocessError):
+        skip = {".git", "node_modules", ".atl"}
+        return sorted(
+            path for path in root.rglob("*.md")
+            if not skip & set(path.parts)
+        )
 
 
 def references(text: str):
