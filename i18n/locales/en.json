@@ -147,7 +147,7 @@
   ,"validate.error.integer_type": "'{label}' must be of type integer"
   ,"validate.error.minimum": "'{label}' must be >= {minimum}"
   ,"validate.error.boolean_type": "'{label}' must be of type boolean"
-  ,"validate.error.no_any_of_match": "'{label}' does not match any allowed shape"
+  ,"template.error.unknown_name": "Unknown template name '{name}'; use a path or one of: {allowed}"
   ,"validate.error.base_dir_required": "'project.base_dir' is required"
   ,"validate.error.invalid_chapters_dir": "Invalid path in 'input.chapters_dir': directory does not exist ({path})"
   ,"validate.error.invalid_template": "Invalid path in 'pandoc.template': file does not exist ({path})"

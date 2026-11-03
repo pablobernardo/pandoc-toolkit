@@ -13,9 +13,9 @@ run_bookkit_tests() {
 
   scratch="$(mktemp -d)"
 
-  # The tool's default template is the project's own templates/book.tex, not
-  # a checkout-only example path. The example projects are used read-only, so
-  # the fixture projects carry their own copy of a book-class template.
+  # The tool's default template is the builtin name `book`, which the toolkit
+  # ships, so a project needs no template of its own. The fixture projects keep
+  # a copy only for the explicit --template assertion.
   local single_fix="$scratch/single"
   local series_fix="$scratch/series"
   cp -R "$single" "$single_fix"
@@ -36,8 +36,8 @@ run_bookkit_tests() {
   assert_contains "$out" "Check ok: 1 volume" "bookkit --check reports the planned volume"
   if [[ -f "$scratch/out-single/single/pdf.config.yaml" ]]; then
     pass "bookkit --check emits the generated configuration"
-    assert_contains "$scratch/out-single/single/pdf.config.yaml" 'template: "templates/book\.tex"' \
-      "the default template resolves to the project's own templates/book.tex"
+    assert_contains "$scratch/out-single/single/pdf.config.yaml" 'template: "book"' \
+      "the default template is the builtin name, not a project path"
   else
     fail "bookkit --check must emit the generated configuration"
   fi
@@ -179,7 +179,10 @@ YAML
     fail "the ordered project must emit a generated configuration"
   fi
 
-  # --- A project without templates/book.tex fails, naming the file --------
+  # --- A project without a local templates/ still plans -------------------
+  # The builtin name ships with the toolkit, so a project needs no template of
+  # its own: that is what makes the generated configuration usable from an
+  # installed CLI.
 
   local bare="$scratch/no-template"
   cp -R "$single" "$bare"   # the pristine example: no templates/ inside
@@ -189,11 +192,9 @@ YAML
   python3 "$tool" --check --out "$scratch/out-bare" "$bare" >"$out" 2>&1
   code=$?
   set -e
-  assert_exit_code "1" "$code" "a project without templates/book.tex fails"
-  assert_contains "$out" "copy the toolkit's example template" \
-    "the failure asks the consumer to copy the example template into the project"
-  assert_contains "$out" "no-template/templates/book\.tex" \
-    "the failure names the file it looked for"
+  assert_exit_code "0" "$code" "a project without its own template still plans"
+  assert_contains "$scratch/out-bare/no-template/pdf.config.yaml" 'template: "book"' \
+    "the generated configuration carries the builtin name"
   rm -f "$out"
 
   # --- An explicit relative --template still resolves ----------------------

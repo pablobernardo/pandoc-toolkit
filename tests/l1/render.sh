@@ -23,6 +23,7 @@ run_render_no_yaml_parser_hints_i18n_test() {
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
@@ -104,6 +105,7 @@ run_render_native_test() {
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
@@ -212,6 +214,7 @@ run_render_native_advanced_paths_test() {
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
@@ -359,6 +362,7 @@ run_render_missing_explicit_file_test() {
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
@@ -1289,4 +1293,60 @@ PY
   assert_contains "$got" "inline-code-breaks.lua" "the inline code filter is always in the chain"
 
   rm -f "$plan" "$got"
+}
+
+# A template may be a builtin name instead of a path. The toolkit ships
+# templates/book.tex, and the validator and the renderer must agree on what the
+# name means: if either side disagrees, the configuration is useless.
+run_builtin_template_test() {
+  local sandbox out code cfg
+
+  sandbox="$(new_contract_sandbox)"
+  cp "${ROOT_DIR}/templates/book.tex" "${sandbox}/templates/book.tex"
+  printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
+
+  cfg="${sandbox}/pdf.config.yaml"
+  write_contract_config "$cfg" natural true "" true
+  python3 - "$cfg" <<'PY'
+import sys
+
+path = sys.argv[1]
+text = open(path, encoding="utf-8").read()
+open(path, "w", encoding="utf-8").write(
+    text.replace("  resource_path:", "  template: book\n  resource_path:", 1)
+)
+PY
+
+  set +e
+  "${sandbox}/bin/pandoc-pdf" validate-config -c "$cfg" >/dev/null 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a builtin template name validates"
+
+  out="$(mktemp)"
+  set +e
+  "${sandbox}/bin/pandoc-pdf" render --dry-run --json -c "$cfg" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a builtin template name plans a render"
+  assert_contains "$out" "${sandbox}/templates/book.tex" \
+    "the plan resolves a builtin name inside the toolkit, not the project"
+
+  python3 - "$cfg" <<'PY'
+import sys
+
+path = sys.argv[1]
+text = open(path, encoding="utf-8").read()
+open(path, "w", encoding="utf-8").write(text.replace("template: book", "template: boook", 1))
+PY
+
+  set +e
+  "${sandbox}/bin/pandoc-pdf" validate-config -c "$cfg" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "an unknown template name is rejected"
+  assert_contains "$out" "book" "the failure names the valid template names"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
 }

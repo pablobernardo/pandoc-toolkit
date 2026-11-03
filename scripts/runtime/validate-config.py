@@ -28,6 +28,16 @@ except Exception:  # imported as a module from elsewhere: fix the path
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from schema_runtime import load_yaml, validate_with_schema
 
+try:
+    import template_runtime
+except Exception:  # imported as a module from elsewhere: fix the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import template_runtime
+
+# The toolkit root, so a builtin template name resolves where the renderer looks
+# for it: a name is a shipped template, not a project file.
+TOOLKIT_ROOT = Path(__file__).resolve().parents[2]
+
 
 def fail(msg: str) -> NoReturn:
     print(f"❌ {msg}")
@@ -67,7 +77,29 @@ def validate_runtime_paths(data: dict[str, Any], cfg_path: Path) -> None:
             )
 
     template_raw = str(pandoc_cfg.get("template", "")).strip()
-    if template_raw:
+    if template_raw and template_runtime.is_bare_name(template_raw):
+        # A bare name is a template that ships with the toolkit. The renderer
+        # resolves it against the toolkit root, so validation only has to know the
+        # name and that the file is there.
+        builtin_template = template_runtime.builtin_path(TOOLKIT_ROOT, template_raw)
+        if builtin_template is None:
+            fail(
+                t(
+                    "template.error.unknown_name",
+                    "Unknown template name '{name}'; use a path or one of: {allowed}",
+                    name=template_raw,
+                    allowed=", ".join(template_runtime.known_names()),
+                )
+            )
+        if not builtin_template.is_file():
+            fail(
+                t(
+                    "validate.error.invalid_template",
+                    "Invalid path in 'pandoc.template': file does not exist ({path})",
+                    path=builtin_template,
+                )
+            )
+    elif template_raw:
         template_path = resolve_from_base(base_dir_path, template_raw)
         if not template_path.exists() or not template_path.is_file():
             fail(

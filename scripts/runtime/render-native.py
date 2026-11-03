@@ -13,6 +13,12 @@ from pathlib import Path
 from typing import NoReturn
 
 try:
+    import template_runtime
+except Exception:  # imported as a module from elsewhere: fix the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import template_runtime
+
+try:
     import yaml  # type: ignore
 except Exception:  # PyYAML is optional: Ruby's stdlib YAML is the fallback.
     yaml = None
@@ -270,14 +276,24 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     user_template_raw = str(user_pandoc_cfg.get("template", "")).strip()
 
     if user_template_raw:
-        template_path = Path(user_template_raw)
-        if not template_path.is_absolute():
-            template_path = (base_dir_path / template_path).resolve()
+        if template_runtime.is_bare_name(user_template_raw):
+            builtin_template = template_runtime.builtin_path(root_dir, user_template_raw)
+            if builtin_template is None:
+                die(
+                    t(
+                        "template.error.unknown_name",
+                        "Unknown template name '{name}'; use a path or one of: {allowed}",
+                        name=user_template_raw,
+                        allowed=", ".join(template_runtime.known_names()),
+                    )
+                )
+            template_path = builtin_template
+        else:
+            template_path = Path(user_template_raw)
+            if not template_path.is_absolute():
+                template_path = (base_dir_path / template_path).resolve()
     else:
-        template_default_raw = str(pandoc.get("template", "templates/default.tex")).strip() or "templates/default.tex"
-        template_path = Path(template_default_raw)
-        if not template_path.is_absolute():
-            template_path = (root_dir / template_path).resolve()
+        template_path = template_runtime.default_path(root_dir)
 
     metadata_path = None
     metadata_raw = str(pandoc.get("metadata_file", ""))
