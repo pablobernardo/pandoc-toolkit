@@ -13,17 +13,31 @@ run_bookkit_tests() {
 
   scratch="$(mktemp -d)"
 
+  # The tool's default template is the project's own templates/book.tex, not
+  # a checkout-only example path. The example projects are used read-only, so
+  # the fixture projects carry their own copy of a book-class template.
+  local single_fix="$scratch/single"
+  local series_fix="$scratch/series"
+  cp -R "$single" "$single_fix"
+  cp -R "$series" "$series_fix"
+  mkdir -p "$single_fix/templates" "$series_fix/templates"
+  printf '%s\n' '\documentclass{book}' '\begin{document}' '$body$' '\end{document}' \
+    >"$single_fix/templates/book.tex"
+  cp "$single_fix/templates/book.tex" "$series_fix/templates/book.tex"
+
   # --- Both canonical manifests validate through --check ------------------
 
   out="$(mktemp)"
   set +e
-  python3 "$tool" --check --out "$scratch/out-single" "$single" >"$out" 2>&1
+  python3 "$tool" --check --out "$scratch/out-single" "$single_fix" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "bookkit --check passes for the single-volume project"
   assert_contains "$out" "Check ok: 1 volume" "bookkit --check reports the planned volume"
   if [[ -f "$scratch/out-single/single/pdf.config.yaml" ]]; then
     pass "bookkit --check emits the generated configuration"
+    assert_contains "$scratch/out-single/single/pdf.config.yaml" 'template: "templates/book\.tex"' \
+      "the default template resolves to the project's own templates/book.tex"
   else
     fail "bookkit --check must emit the generated configuration"
   fi
@@ -31,7 +45,7 @@ run_bookkit_tests() {
 
   out="$(mktemp)"
   set +e
-  python3 "$tool" --check --out "$scratch/out-series" "$series" >"$out" 2>&1
+  python3 "$tool" --check --out "$scratch/out-series" "$series_fix" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "bookkit --check passes for the series (an optional missing file still plans)"
@@ -41,7 +55,7 @@ run_bookkit_tests() {
   # --- A missing required field fails naming the field --------------------
 
   local broken="$scratch/missing-field"
-  cp -R "$single" "$broken"
+  cp -R "$single_fix" "$broken"
   grep -v '^title:' "$broken/manifest.yaml" >"$broken/manifest.yaml.tmp"
   mv "$broken/manifest.yaml.tmp" "$broken/manifest.yaml"
 
@@ -57,7 +71,7 @@ run_bookkit_tests() {
   # --- An unknown profile fails -------------------------------------------
 
   local novel="$scratch/unknown-profile"
-  cp -R "$single" "$novel"
+  cp -R "$single_fix" "$novel"
   sed 's/^profile: book$/profile: novel/' "$novel/manifest.yaml" >"$novel/manifest.yaml.tmp"
   mv "$novel/manifest.yaml.tmp" "$novel/manifest.yaml"
 
@@ -73,7 +87,7 @@ run_bookkit_tests() {
   # --- An entry missing its file fails naming volume, logical name, path --
 
   local lost="$scratch/missing-entry"
-  cp -R "$single" "$lost"
+  cp -R "$single_fix" "$lost"
   sed 's|content/chapters/01-clouds\.md|content/chapters/99-missing.md|' "$lost/manifest.yaml" >"$lost/manifest.yaml.tmp"
   mv "$lost/manifest.yaml.tmp" "$lost/manifest.yaml"
 
@@ -91,7 +105,7 @@ run_bookkit_tests() {
 
   out="$(mktemp)"
   set +e
-  python3 "$tool" --check --out "$scratch/out-optional" "$series" >"$out" 2>&1
+  python3 "$tool" --check --out "$scratch/out-optional" "$series_fix" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "an optional entry with an absent file does not fail the plan"
@@ -142,7 +156,7 @@ run_bookkit_tests() {
   # --- chapters: ordered resolves the folder in natural order -------------
 
   local ordered="$scratch/ordered"
-  cp -R "$single" "$ordered"
+  cp -R "$single_fix" "$ordered"
   cat >"$ordered/manifest.yaml" <<'YAML'
 manifest_version: 1
 profile: book
@@ -164,6 +178,40 @@ YAML
   else
     fail "the ordered project must emit a generated configuration"
   fi
+
+  # --- A project without templates/book.tex fails, naming the file --------
+
+  local bare="$scratch/no-template"
+  cp -R "$single" "$bare"   # the pristine example: no templates/ inside
+
+  out="$(mktemp)"
+  set +e
+  python3 "$tool" --check --out "$scratch/out-bare" "$bare" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "a project without templates/book.tex fails"
+  assert_contains "$out" "copy the toolkit's example template" \
+    "the failure asks the consumer to copy the example template into the project"
+  assert_contains "$out" "no-template/templates/book\.tex" \
+    "the failure names the file it looked for"
+  rm -f "$out"
+
+  # --- An explicit relative --template still resolves ----------------------
+
+  local relative="$scratch/explicit-relative"
+  cp -R "$single" "$relative"
+  mkdir -p "$relative/latex"
+  cp "$single_fix/templates/book.tex" "$relative/latex/book-template.tex"
+
+  out="$(mktemp)"
+  set +e
+  # Run from inside the project so the relative template is relative to it,
+  # exactly the way an explicit --template has always been resolved.
+  (cd "$relative" && python3 "$tool" --check --out "$scratch/out-relative" --template latex/book-template.tex .) >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "an explicit relative --template still resolves"
+  rm -f "$out"
 
   rm -rf "$scratch"
 }

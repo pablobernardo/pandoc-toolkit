@@ -62,10 +62,10 @@ validate_with_schema = schema_runtime.validate_with_schema
 CLI = TOOLKIT_ROOT / "bin" / "pandoc-pdf"
 MANIFEST_SCHEMA = TOOL_DIR / "manifest.schema.json"
 SERIES_SCHEMA = TOOL_DIR / "series.schema.json"
-# The default template is the toolkit's own book example, which exists in a
-# toolkit checkout. A consumer passes --template with its own book-class
-# template: the installed toolkit does not ship examples/.
-DEFAULT_TEMPLATE = TOOLKIT_ROOT / "examples" / "book" / "templates" / "book.tex"
+# The default template is the project's own templates/book.tex (see
+# default_template): the toolkit ships no template path of its own, and the
+# old checkout-only default (examples/book/templates/book.tex) exists in no
+# installed artifact.
 DEFAULT_OUT = Path(".output") / "bookkit"
 
 LANG_CODES = ("en", "es", "pt", "gl")
@@ -109,6 +109,26 @@ def natural_key(name: str) -> list[tuple[int, int, str]]:
     """
 
     return [(0, len(part), part) if part.isdigit() else (1, 0, part) for part in re.split(r"(\d+)", name.lower())]
+
+
+def default_template(project: Path) -> Path:
+    """The project's own template: <project>/templates/book.tex.
+
+    The tool no longer defaults to the toolkit's book example
+    (examples/book/templates/book.tex): that path only exists in a toolkit
+    checkout, never in an installed artifact. A consumer copies the example
+    template into the project, or passes --template with its own.
+    """
+    default = project / "templates" / "book.tex"
+    if not default.is_file():
+        die(
+            f"no book template in the project: {default.as_posix()}:"
+            " copy the toolkit's example template"
+            " (examples/book/templates/book.tex) into the project's"
+            " templates/ directory, or pass --template with a book-class"
+            " LaTeX template"
+        )
+    return default
 
 
 # --- Manifest model ---------------------------------------------------------
@@ -453,28 +473,30 @@ def main() -> None:
     parser.add_argument(
         "--template",
         default=None,
-        help="book-class LaTeX template for the generated configurations (default: the toolkit's own book example template)",
+        help="book-class LaTeX template for the generated configurations (default: <project>/templates/book.tex)",
     )
     args = parser.parse_args()
 
-    template = Path(args.template).resolve() if args.template else DEFAULT_TEMPLATE
-    if not template.is_file():
-        hint = "" if args.template else "; pass --template with a book-class LaTeX template"
-        die(f"book template not found: {template}{hint}")
+    explicit_template: Path | None = None
+    if args.template:
+        explicit_template = Path(args.template).resolve()
+        if not explicit_template.is_file():
+            die(f"book template not found: {explicit_template}")
 
-    projects: list[Path] = []
+    projects: list[tuple[Path, Path]] = []
     for raw in args.projects:
         project = Path(raw)
         if not project.is_dir():
             die(f"not a directory: {project}")
         if not (project / "series.yaml").is_file() and not (project / "manifest.yaml").is_file():
             die(f"no series.yaml or manifest.yaml in: {project}")
-        projects.append(project)
+        template = explicit_template if explicit_template else default_template(project)
+        projects.append((project, template))
 
     # Contract validation first, for every project, before anything is built:
     # a manifest that fails validation never reaches the build.
-    plans: list[tuple[Path, str, Path, dict, dict, bool]] = []
-    for project in projects:
+    plans: list[tuple[Path, str, Path, dict, dict, bool, Path]] = []
+    for project, template in projects:
         series_path = project / "series.yaml"
         if series_path.is_file():
             series = load_contract(series_path, SERIES_SCHEMA)
@@ -483,17 +505,17 @@ def main() -> None:
                 if not (volume_dir / "manifest.yaml").is_file():
                     die(f"series '{project.name}': volume '{volume_name}' has no manifest.yaml")
                 manifest = load_contract(volume_dir / "manifest.yaml", MANIFEST_SCHEMA)
-                plans.append((project, volume_name, volume_dir, series, manifest, True))
+                plans.append((project, volume_name, volume_dir, series, manifest, True, template))
         else:
             manifest = load_contract(project / "manifest.yaml", MANIFEST_SCHEMA)
-            plans.append((project, project.name, project, {}, manifest, False))
+            plans.append((project, project.name, project, {}, manifest, False, template))
 
     if not args.check and not CLI.is_file():
         die(f"pandoc-pdf CLI not found: {CLI}")
 
     out_root = Path(args.out).resolve()
     failures: list[str] = []
-    for project, volume_name, volume_dir, defaults, manifest, is_series in plans:
+    for project, volume_name, volume_dir, defaults, manifest, is_series, template in plans:
         # A series nests one output directory per volume; a single-volume
         # project is its own volume and does not repeat its name.
         out_volume_dir = (

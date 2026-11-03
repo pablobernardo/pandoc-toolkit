@@ -144,10 +144,12 @@ python3 scripts/tools/bookkit/build.py --template path/to/book.tex path/to/proje
 ```
 
 Without `--template`, the tool points the generated configurations at the
-toolkit's own book example template
-(`examples/book/templates/book.tex`), which exists in a toolkit checkout.
-A consumer copies a book-class template into its own repository and passes
-it with `--template`; the installed toolkit does not ship `examples/`.
+project's own template, `<project>/templates/book.tex`. A project without
+that file fails with an error that names it and asks you to copy the
+toolkit's example template (`examples/book/templates/book.tex`) into the
+project's `templates/` directory, or to pass `--template` with a
+book-class LaTeX template of your own. An explicit `--template` is any
+path you choose, relative to the working directory or absolute.
 
 ## Requirements
 
