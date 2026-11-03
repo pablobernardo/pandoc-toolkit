@@ -1,0 +1,34 @@
+# examples/book/manifest.yaml
+#
+# Content manifest for the book example. It describes WHAT the book contains,
+# never HOW it is rendered: no engine, no template, no filters, no output
+# settings. The glue step (build.sh) is the only piece that turns this manifest
+# into a pdf.config.yaml for the pandoc-pdf CLI.
+#
+# File lists are ordered: the reading order is exactly the order below.
+# Paths are relative to the content directory (see `chapters_dir` in the
+# generated configuration).
+#
+# Every listed file must exist. The renderer's `input.explicit_files` fails
+# loudly on a missing path, so there are no "pending" placeholders here.
+
+title: "The Lighthouse Keeper"
+subtitle: "A small book in three chapters"
+author: "The Example Maintainers"
+language: "en"
+description: >-
+  A proof-of-concept book laid out with the pandoc-pdf toolkit: front
+  matter, numbered chapters and lettered appendices.
+
+front_matter:
+  - front/00-dedication.md
+  - front/01-characters.md
+
+chapters:
+  - chapters/01-the-harbour.md
+  - chapters/02-the-light.md
+  - chapters/03-the-storm.md
+
+back_matter:
+  - back/01-glossary.md
+  - back/02-about-the-author.md
