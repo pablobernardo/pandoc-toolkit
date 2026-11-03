@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""build.py - the book-kit adapter.
+"""build.py - the bookkit tool.
 
 One adapter for both book shapes:
 
@@ -10,7 +10,9 @@ One adapter for both book shapes:
   ordered ``volumes`` list of volume directory names, each with its own
   ``manifest.yaml``.
 
-For every volume the adapter:
+Both YAML files are validated against this tool's own contract
+(``manifest.schema.json`` and ``series.schema.json``) before anything else
+happens. For every volume the tool then:
 
 1. merges the series defaults under the volume's own overrides;
 2. resolves every declared content path against the volume directory,
@@ -22,40 +24,49 @@ For every volume the adapter:
    and ``\\appendix`` before the back matter) into the run output, so the
    content files carry no LaTeX markers;
 4. writes one ``pdf.config.yaml`` per volume into the run output;
-5. renders it through the public CLI (``bin/pandoc-pdf render``).
+5. renders it through the public CLI (``bin/pandoc-pdf render``), unless
+   ``--check`` asked only for validation and the generated configurations.
 
-The adapter belongs to the book, not to the toolkit: the toolkit only ever
-sees a standard ``pdf.config.yaml``. It runs from any working directory,
-uses no absolute paths and no network, and reads YAML with PyYAML when
-available, falling back to Ruby's stdlib YAML through a subprocess (the
-same fallback the toolkit itself uses); without either parser it fails
-with a clear message.
+The tool belongs to the book, not to the pdf.config contract: the toolkit
+only ever sees a standard ``pdf.config.yaml``. It runs from any working
+directory, uses no absolute paths and no network, and reads YAML through the
+toolkit's own shared loader (``scripts/runtime/schema_runtime.py``): PyYAML
+when available, Ruby's stdlib YAML through a subprocess otherwise; without
+either parser it fails with a clear message.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import NoReturn
 
-try:
-    import yaml as pyyaml  # type: ignore
-except Exception:  # PyYAML is optional: Ruby's stdlib YAML is the fallback.
-    pyyaml = None
+TOOL_DIR = Path(__file__).resolve().parent
+TOOLKIT_ROOT = TOOL_DIR.parents[2]
+RUNTIME_DIR = TOOLKIT_ROOT / "scripts" / "runtime"
+if str(RUNTIME_DIR) not in sys.path:
+    sys.path.insert(0, str(RUNTIME_DIR))
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-TOOLKIT_ROOT = SCRIPT_DIR.parents[1]
+# The shared runtime lives two directories up; it is imported by path so the
+# tool works no matter where it is invoked from.
+schema_runtime = importlib.import_module("schema_runtime")
+load_yaml = schema_runtime.load_yaml
+validate_with_schema = schema_runtime.validate_with_schema
+
 CLI = TOOLKIT_ROOT / "bin" / "pandoc-pdf"
-# The example may point at its sibling example's template. A real consumer
-# copies the template into its own repository and points at its own copy.
-BOOK_TEMPLATE = TOOLKIT_ROOT / "examples" / "book" / "templates" / "book.tex"
-DEFAULT_OUT = SCRIPT_DIR.parent / ".output" / "book-kit"
+MANIFEST_SCHEMA = TOOL_DIR / "manifest.schema.json"
+SERIES_SCHEMA = TOOL_DIR / "series.schema.json"
+# The default template is the toolkit's own book example, which exists in a
+# toolkit checkout. A consumer passes --template with its own book-class
+# template: the installed toolkit does not ship examples/.
+DEFAULT_TEMPLATE = TOOLKIT_ROOT / "examples" / "book" / "templates" / "book.tex"
+DEFAULT_OUT = Path(".output") / "bookkit"
 
 LANG_CODES = ("en", "es", "pt", "gl")
 
@@ -67,59 +78,6 @@ def die(message: str) -> NoReturn:
 
 def warn(message: str) -> None:
     print(f"build.py: warning: {message}", file=sys.stderr)
-
-
-# --- YAML reading -----------------------------------------------------------
-
-
-# Mirrors the toolkit's own fallback (scripts/runtime/render-native.py): parse with
-# Ruby's stdlib YAML under safe_load and hand back plain data as JSON.
-RUBY_YAML_SCRIPT = (
-    "begin;"
-    "data = YAML.safe_load(File.read(ARGV[0]), permitted_classes: [], aliases: false);"
-    "puts JSON.generate(data);"
-    "rescue => e;"
-    "STDERR.puts e.message;"
-    "exit 2;"
-    "end"
-)
-
-
-def load_yaml_file(path: Path) -> dict:
-    """Read a YAML file into a plain dict, via PyYAML or the Ruby fallback."""
-
-    data: object = None
-    if pyyaml is not None:
-        try:
-            data = pyyaml.safe_load(path.read_text(encoding="utf-8"))
-        except Exception as error:
-            die(f"could not parse YAML: {path}: {error}")
-    else:
-        ruby_bin = shutil.which("ruby")
-        if ruby_bin is None:
-            die(
-                "no YAML parser available: install PyYAML"
-                " (python3 -m pip install pyyaml) or a Ruby with stdlib YAML"
-            )
-        proc = subprocess.run(
-            [ruby_bin, "-ryaml", "-rjson", "-e", RUBY_YAML_SCRIPT, str(path)],
-            capture_output=True,
-            text=True,
-        )
-        if proc.returncode == 2:
-            die(f"could not parse YAML: {path}: {proc.stderr.strip() or 'invalid YAML'}")
-        if proc.returncode != 0:
-            die(f"could not read YAML: {path}: {proc.stderr.strip() or 'ruby failed'}")
-        try:
-            data = json.loads(proc.stdout)
-        except Exception as error:
-            die(f"could not read YAML: {path}: {error}")
-
-    if data is None:
-        return {}
-    if not isinstance(data, dict):
-        die(f"root of {path} must be a mapping")
-    return data
 
 
 # --- Small helpers ----------------------------------------------------------
@@ -144,11 +102,24 @@ def relpath(target: Path, start: Path) -> str:
     return Path(os.path.relpath(target, start)).as_posix()
 
 
+def natural_key(name: str) -> list[tuple[int, int, str]]:
+    """Sort key where digit runs compare numerically (chapter-2 < chapter-10).
+
+    Mirrors the toolkit's own 'natural' order (scripts/runtime/render-native.py).
+    """
+
+    return [(0, len(part), part) if part.isdigit() else (1, 0, part) for part in re.split(r"(\d+)", name.lower())]
+
+
 # --- Manifest model ---------------------------------------------------------
 
 
 class Entry:
-    """One declared content entry: a path string or a map with file/print/optional."""
+    """One declared content entry: a path string or a map with file/print/optional.
+
+    The contract schemas already enforce the shape; these checks remain as
+    the tool's own defense and keep the documented error messages.
+    """
 
     section: str
     logical: str
@@ -221,14 +192,26 @@ def ordered_entries(section: str, raw: object, volume: str) -> list[Entry]:
     return [Entry(section, str(name), value, volume) for name, value in raw.items()]
 
 
+def ordered_chapters(chapters_dir: str, volume: str, volume_dir: Path) -> list[Entry]:
+    """chapters: ordered — every *.md in chapters_dir, in natural order."""
+
+    base = volume_dir / chapters_dir
+    if not base.is_dir():
+        die(f"volume '{volume}': 'chapters_dir' is not a directory: {chapters_dir}")
+    names = sorted((p.name for p in base.glob("*.md") if p.is_file()), key=natural_key)
+    if not names:
+        die(f"volume '{volume}': no chapters found in '{chapters_dir}'")
+    return [
+        Entry("chapters", str(index + 1), (Path(chapters_dir) / name).as_posix(), volume)
+        for index, name in enumerate(names)
+    ]
+
+
 def chapter_entries(raw: object, volume: str) -> list[Entry]:
-    """chapters: an ordered list of entries, or a mapping with ordered: true."""
-    if isinstance(raw, dict):
-        if not raw.get("ordered"):
-            die(f"volume '{volume}': 'chapters' mapping must set 'ordered: true'")
-        raw = raw.get("files")
+    """chapters: an explicit ordered list of entries (schema already enforced)."""
+
     if not isinstance(raw, list) or not raw:
-        die(f"volume '{volume}': 'chapters' must be a non-empty ordered list")
+        die(f"volume '{volume}': 'chapters' must be the keyword 'ordered' or a non-empty list")
     return [
         Entry("chapters", str(index + 1), item, volume)
         for index, item in enumerate(raw)
@@ -263,21 +246,23 @@ def merge_defaults(manifest: dict, defaults: dict) -> dict:
 
 
 def build_volume(
+    manifest: dict,
     volume_name: str,
     volume_dir: Path,
     defaults: dict,
     out_volume_dir: Path,
+    template: Path,
 ) -> Path:
     """Write the generated files and one pdf.config.yaml; return the config path."""
 
-    manifest = merge_defaults(load_yaml_file(volume_dir / "manifest.yaml"), defaults)
+    merged = merge_defaults(manifest, defaults)
 
-    title_value = manifest.get("title")
+    title_value = merged.get("title")
     if not isinstance(title_value, str) or not title_value.strip():
         die(f"volume '{volume_name}': manifest must declare a non-empty 'title'")
     title: str = title_value
 
-    chapter_start = manifest.get("chapter_start")
+    chapter_start = merged.get("chapter_start")
     if chapter_start is not None and (
         not isinstance(chapter_start, int)
         or isinstance(chapter_start, bool)
@@ -285,7 +270,7 @@ def build_volume(
     ):
         die(f"volume '{volume_name}': 'chapter_start' must be an integer of 1 or more")
 
-    language = manifest.get("language")
+    language = merged.get("language")
     if language is not None and language not in LANG_CODES:
         die(
             f"volume '{volume_name}': 'language' must be one of"
@@ -293,16 +278,21 @@ def build_volume(
         )
 
     front = resolve_entries(
-        ordered_entries("front_matter", manifest.get("front_matter"), volume_name), volume_dir
+        ordered_entries("front_matter", merged.get("front_matter"), volume_name), volume_dir
     )
-    chapters = resolve_entries(chapter_entries(manifest.get("chapters"), volume_name), volume_dir)
+    chapters_raw = merged.get("chapters")
+    if isinstance(chapters_raw, str):
+        chapters_dir = merged.get("chapters_dir", "content/chapters")
+        chapters = resolve_entries(ordered_chapters(chapters_dir, volume_name, volume_dir), volume_dir)
+    else:
+        chapters = resolve_entries(chapter_entries(chapters_raw, volume_name), volume_dir)
     back = resolve_entries(
-        ordered_entries("back_matter", manifest.get("back_matter"), volume_name), volume_dir
+        ordered_entries("back_matter", merged.get("back_matter"), volume_name), volume_dir
     )
 
     # Generated mode files live in the run output, never inside the content
     # directories. explicit_files resolves against the volume directory
-    # (input.chapters_dir is "."), so the adapter computes the relative hops.
+    # (input.chapters_dir is "."), so the tool computes the relative hops.
     generated_dir = out_volume_dir / "generated"
     mainmatter_file = generated_dir / "00-mainmatter.md"
     mainmatter_text = "\\mainmatter\n"
@@ -321,7 +311,7 @@ def build_volume(
     out_volume_dir.mkdir(parents=True, exist_ok=True)
     config_path = out_volume_dir / "pdf.config.yaml"
     config_path.write_text(
-        emit_config(manifest, title, volume_dir, out_volume_dir, explicit_files),
+        emit_config(merged, title, volume_dir, out_volume_dir, explicit_files, template),
         encoding="utf-8",
     )
     return config_path
@@ -333,6 +323,7 @@ def emit_config(
     volume_dir: Path,
     out_volume_dir: Path,
     explicit_files: list[str],
+    template: Path,
 ) -> str:
     """One standard pdf.config.yaml per volume, emitted as canonical text.
 
@@ -341,7 +332,7 @@ def emit_config(
     """
     slug = slugify(title)
     lines = [
-        "# Generated by examples/book-kit/build.py. Do not edit:",
+        "# Generated by scripts/tools/bookkit/build.py. Do not edit:",
         "# change the volume's manifest.yaml (and series.yaml) instead.",
         "version: 1",
         "",
@@ -362,7 +353,7 @@ def emit_config(
     lines.append("  titlepage: true")
     metadata = {
         key: str(manifest[key])
-        for key in ("collection", "isbn")
+        for key in ("collection", "isbn", "audience", "description")
         if isinstance(manifest.get(key), str) and manifest[key].strip()
     }
     if metadata:
@@ -394,7 +385,7 @@ def emit_config(
             "  toc: true",
             "  toc_depth: 2",
             "  number_sections: true",
-            f"  template: {quoted(relpath(BOOK_TEMPLATE, volume_dir))}",
+            f"  template: {quoted(relpath(template, volume_dir))}",
             "  resource_path:",
             '    - "content"',
             "",
@@ -417,42 +408,21 @@ def emit_config(
     return "\n".join(lines)
 
 
-# --- Shape discovery --------------------------------------------------------
+# --- Contracts --------------------------------------------------------------
 
 
-def discover_projects() -> list[Path]:
-    """Project directories: they hold a series.yaml (series) or a manifest.yaml."""
-    projects = []
-    for child in sorted(SCRIPT_DIR.iterdir()):
-        if not child.is_dir() or child.name.startswith("."):
-            continue
-        if (child / "series.yaml").is_file() or (child / "manifest.yaml").is_file():
-            projects.append(child)
-    return projects
+def load_contract(path: Path, schema_path: Path) -> dict:
+    """Load a YAML file and validate it against one of this tool's schemas."""
 
-
-def project_volumes(project_dir: Path) -> list[tuple[str, Path, dict]]:
-    """The volumes of one project as (name, directory, series defaults) triples."""
-    series_path = project_dir / "series.yaml"
-    if not series_path.is_file():
-        return [(project_dir.name, project_dir, {})]
-
-    series = load_yaml_file(series_path)
-    volume_names = series.get("volumes")
-    if not isinstance(volume_names, list) or not volume_names:
-        die(f"series.yaml of {project_dir.name} must list at least one volume")
-    volumes: list[tuple[str, Path, dict]] = []
-    for volume_name in volume_names:
-        if not isinstance(volume_name, str) or not volume_name.strip():
-            die(
-                f"series.yaml of {project_dir.name}: every entry in 'volumes'"
-                " must be a directory name"
-            )
-        volume_dir = project_dir / volume_name
-        if not (volume_dir / "manifest.yaml").is_file():
-            die(f"series '{project_dir.name}': volume '{volume_name}' has no manifest.yaml")
-        volumes.append((volume_name, volume_dir, series))
-    return volumes
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except Exception as error:
+        die(f"invalid contract schema {schema_path.name}: {error}")
+    data = load_yaml(path)
+    if not isinstance(data, dict):
+        die(f"root of {path} must be a mapping")
+    validate_with_schema(data, schema)
+    return data
 
 
 # --- Main -------------------------------------------------------------------
@@ -460,53 +430,97 @@ def project_volumes(project_dir: Path) -> list[tuple[str, Path, dict]]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Render the book-kit examples through bin/pandoc-pdf."
+        description=(
+            "bookkit: turn declarative book manifests (manifest.yaml, series.yaml)"
+            " into standard pdf.config.yaml files and render them through bin/pandoc-pdf."
+        )
     )
-    parser.add_argument("projects", nargs="*", help="project names to build (default: every project)")
-    parser.add_argument("--out", default=str(DEFAULT_OUT), help="run output directory")
+    parser.add_argument(
+        "projects",
+        nargs="+",
+        help="project directories: a volume directory with manifest.yaml, or a series directory with series.yaml",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="validate the manifests against the contract and emit the generated configurations without rendering",
+    )
+    parser.add_argument(
+        "--out",
+        default=str(DEFAULT_OUT),
+        help=f"run output directory (default: {DEFAULT_OUT.as_posix()})",
+    )
+    parser.add_argument(
+        "--template",
+        default=None,
+        help="book-class LaTeX template for the generated configurations (default: the toolkit's own book example template)",
+    )
     args = parser.parse_args()
 
-    if not CLI.is_file():
-        die(f"pandoc-pdf CLI not found: {CLI}")
-    if not BOOK_TEMPLATE.is_file():
-        die(f"book template not found: {BOOK_TEMPLATE}")
+    template = Path(args.template).resolve() if args.template else DEFAULT_TEMPLATE
+    if not template.is_file():
+        hint = "" if args.template else "; pass --template with a book-class LaTeX template"
+        die(f"book template not found: {template}{hint}")
 
-    projects = discover_projects()
-    if args.projects:
-        wanted = set(args.projects)
-        projects = [project for project in projects if project.name in wanted]
-        missing = wanted - {project.name for project in projects}
-        if missing:
-            die(f"no such project(s): {', '.join(sorted(missing))}")
-    if not projects:
-        die(f"no book projects found next to {SCRIPT_DIR}")
+    projects: list[Path] = []
+    for raw in args.projects:
+        project = Path(raw)
+        if not project.is_dir():
+            die(f"not a directory: {project}")
+        if not (project / "series.yaml").is_file() and not (project / "manifest.yaml").is_file():
+            die(f"no series.yaml or manifest.yaml in: {project}")
+        projects.append(project)
+
+    # Contract validation first, for every project, before anything is built:
+    # a manifest that fails validation never reaches the build.
+    plans: list[tuple[Path, str, Path, dict, dict, bool]] = []
+    for project in projects:
+        series_path = project / "series.yaml"
+        if series_path.is_file():
+            series = load_contract(series_path, SERIES_SCHEMA)
+            for volume_name in series["volumes"]:
+                volume_dir = project / volume_name
+                if not (volume_dir / "manifest.yaml").is_file():
+                    die(f"series '{project.name}': volume '{volume_name}' has no manifest.yaml")
+                manifest = load_contract(volume_dir / "manifest.yaml", MANIFEST_SCHEMA)
+                plans.append((project, volume_name, volume_dir, series, manifest, True))
+        else:
+            manifest = load_contract(project / "manifest.yaml", MANIFEST_SCHEMA)
+            plans.append((project, project.name, project, {}, manifest, False))
+
+    if not args.check and not CLI.is_file():
+        die(f"pandoc-pdf CLI not found: {CLI}")
 
     out_root = Path(args.out).resolve()
     failures: list[str] = []
-    for project in projects:
-        is_series = (project / "series.yaml").is_file()
-        for volume_name, volume_dir, defaults in project_volumes(project):
-            # A series nests one output directory per volume; a single-volume
-            # project is its own volume and does not repeat its name.
-            out_volume_dir = (
-                out_root / project.name / volume_name if is_series else out_root / project.name
-            )
-            print(f"==> {project.name}/{volume_name}")
-            config_path = build_volume(volume_name, volume_dir, defaults, out_volume_dir)
-            print(f"    config: {relpath(config_path, Path.cwd())}")
+    for project, volume_name, volume_dir, defaults, manifest, is_series in plans:
+        # A series nests one output directory per volume; a single-volume
+        # project is its own volume and does not repeat its name.
+        out_volume_dir = (
+            out_root / project.name / volume_name if is_series else out_root / project.name
+        )
+        print(f"==> {project.name}/{volume_name}")
+        config_path = build_volume(manifest, volume_name, volume_dir, defaults, out_volume_dir, template)
+        print(f"    config: {relpath(config_path, Path.cwd())}")
 
-            result = subprocess.run([str(CLI), "render", "-c", str(config_path)])
-            pdfs = sorted(out_volume_dir.glob("*.pdf"))
-            if result.returncode == 0 and pdfs:
-                for pdf in pdfs:
-                    print(f"    [ok] {relpath(pdf, Path.cwd())}")
-            else:
-                failures.append(f"{project.name}/{volume_name}")
-                print(f"    [FAIL] {project.name}/{volume_name} (exit {result.returncode})")
+        if args.check:
+            continue
 
+        result = subprocess.run([str(CLI), "render", "-c", str(config_path)])
+        pdfs = sorted(out_volume_dir.glob("*.pdf"))
+        if result.returncode == 0 and pdfs:
+            for pdf in pdfs:
+                print(f"    [ok] {relpath(pdf, Path.cwd())}")
+        else:
+            failures.append(f"{project.name}/{volume_name}")
+            print(f"    [FAIL] {project.name}/{volume_name} (exit {result.returncode})")
+
+    if args.check:
+        print(f"Check ok: {len(plans)} volume(s) validated, configurations in {relpath(out_root, Path.cwd())}")
+        return
     if failures:
         die(f"render failed for: {', '.join(failures)}")
-    print(f"Done: {len(projects)} project(s) rendered into {relpath(out_root, Path.cwd())}")
+    print(f"Done: {len(plans)} volume(s) rendered into {relpath(out_root, Path.cwd())}")
 
 
 if __name__ == "__main__":

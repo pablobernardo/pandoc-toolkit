@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "bookkit series manifest (manifest_version 1)",
+  "description": "Contract for a project's series.yaml: the shared facts of a multi-volume book and the ordered volume list. Every field except 'volumes' is a default that a volume's manifest.yaml may override.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifest_version", "volumes"],
+  "properties": {
+    "manifest_version": {
+      "type": "integer",
+      "enum": [1],
+      "description": "Contract version of the series manifest itself; only 1 exists."
+    },
+    "collection": {
+      "type": "string",
+      "description": "Name of the series; passed to pandoc as the 'collection' metadata variable."
+    },
+    "author": {
+      "type": "string",
+      "description": "Shared default; a volume's author overrides it."
+    },
+    "publisher": {
+      "type": "string",
+      "description": "Shared default; a volume's publisher overrides it."
+    },
+    "rights": {
+      "type": "string",
+      "description": "Shared default; a volume's rights overrides it."
+    },
+    "language": {
+      "type": "string",
+      "description": "Shared default; a volume's language overrides it. The tool restricts it to the toolkit's supported codes (en, es, pt, gl)."
+    },
+    "volumes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Ordered list of volume directory names, relative to the series directory. The order is significant: it is the build and reading order."
+    }
+  }
+}

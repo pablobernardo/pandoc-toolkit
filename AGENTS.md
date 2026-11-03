@@ -80,8 +80,10 @@ Three rules that are not visible in the schema:
 
 - The validator implements an explicit JSON Schema subset (`type`,
   `properties`, `required`, `additionalProperties`, `items`, `minItems`,
-  `minLength`, `minimum`, `enum`). A test fails if the schema starts using any
-  other keyword, so a new keyword needs the validator extended first.
+  `minLength`, `minimum`, `enum`, `anyOf`). A test fails if the schema starts
+  using any other keyword, so a new keyword needs the validator extended first.
+  The YAML loading and the validator live in `scripts/runtime/schema_runtime.py`,
+  shared by `validate-config` and the bookkit tool.
 - The schema is never bypassed: a configuration that fails validation does not
   reach the renderer.
 - `version` is mandatory and the contract version is independent of the toolkit

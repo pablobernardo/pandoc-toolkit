@@ -1,11 +1,15 @@
 # examples/book-kit/series/volume-1/manifest.yaml
 #
-# First volume of the series. author, publisher, rights and language are
-# inherited from ../series.yaml. Paths are relative to THIS directory.
+# First volume of the series, contract version 1, profile book. author,
+# publisher, rights and language are inherited from ../series.yaml. Paths
+# are relative to THIS directory.
 #
-# The review-request page in back_matter is a real file that the adapter
+# The review-request page in back_matter is a real file that the tool
 # excludes from the PDF (print: false): it ships with the book project but
 # is not part of the printed volume.
+
+manifest_version: 1
+profile: book
 
 title: "Twin Lanterns, Volume 1: The North Tower"
 subtitle: "The first volume of the Twin Lanterns cycle"
@@ -13,8 +17,8 @@ isbn: "978-0-000000-00-0"
 date: "2026"
 
 front_matter:
-  dedication: "content/front/00-dedication.md"
-  the-two-lights: "content/front/01-the-two-lights.md"
+  dedication: "content/front-matter/00-dedication.md"
+  the-two-lights: "content/front-matter/01-the-two-lights.md"
 
 chapters:
   - "content/chapters/01-the-north-road.md"
@@ -22,7 +26,7 @@ chapters:
   - "content/chapters/03-the-keeper.md"
 
 back_matter:
-  glossary: "content/back/01-glossary.md"
+  glossary: "content/back-matter/01-glossary.md"
   review-request:
-    file: "content/back/02-review-request.md"
+    file: "content/back-matter/02-review-request.md"
     print: false

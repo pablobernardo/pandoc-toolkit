@@ -147,6 +147,7 @@
   ,"validate.error.integer_type": "'{label}' debe ser de tipo integer"
   ,"validate.error.minimum": "'{label}' debe ser >= {minimum}"
   ,"validate.error.boolean_type": "'{label}' debe ser de tipo boolean"
+  ,"validate.error.no_any_of_match": "'{label}' no coincide con ninguna de las formas permitidas"
   ,"validate.error.base_dir_required": "'project.base_dir' es obligatorio"
   ,"validate.error.invalid_chapters_dir": "Ruta inválida en 'input.chapters_dir': no existe directorio ({path})"
   ,"validate.error.invalid_template": "Ruta inválida en 'pandoc.template': no existe fichero ({path})"

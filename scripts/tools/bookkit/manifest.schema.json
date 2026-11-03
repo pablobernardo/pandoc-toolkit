@@ -1,0 +1,142 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "bookkit volume manifest (manifest_version 1)",
+  "description": "Contract for one volume's manifest.yaml. Paths are relative to the volume directory. The folder layout (content/front, content/chapters, content/back) is a convention and is not validated.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifest_version", "profile", "title", "chapters"],
+  "properties": {
+    "manifest_version": {
+      "type": "integer",
+      "enum": [1],
+      "description": "Contract version of the manifest itself; only 1 exists."
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["book"],
+      "description": "What kind of publication this manifest describes; only 'book' exists."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Required. Names the volume and, by the toolkit's slug rule, the PDF file."
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Optional subtitle, passed through to the document."
+    },
+    "isbn": {
+      "type": "string",
+      "description": "Optional ISBN, passed to pandoc as the 'isbn' metadata variable so a consumer's own template can print it."
+    },
+    "date": {
+      "type": "string",
+      "description": "Optional date string, passed through to the document."
+    },
+    "audience": {
+      "type": "string",
+      "description": "Optional intended audience, passed as document metadata."
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description, passed as document metadata."
+    },
+    "collection": {
+      "type": "string",
+      "description": "Optional series name; in the single-volume shape the manifest may declare it, in the series shape series.yaml provides the default."
+    },
+    "author": {
+      "type": "string",
+      "description": "Optional override of the series.yaml author."
+    },
+    "publisher": {
+      "type": "string",
+      "description": "Optional override of the series.yaml publisher."
+    },
+    "rights": {
+      "type": "string",
+      "description": "Optional override of the series.yaml rights."
+    },
+    "language": {
+      "type": "string",
+      "description": "Optional override of the series.yaml language; the tool restricts it to the toolkit's supported codes (en, es, pt, gl)."
+    },
+    "chapter_start": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional. The volume's first chapter prints with this number: the generated mode file sets the LaTeX chapter counter to chapter_start - 1."
+    },
+    "chapters_dir": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Folder used when 'chapters' is the keyword 'ordered'. Default: content/chapters."
+    },
+    "chapters": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": ["ordered"],
+          "description": "Keyword: the chapters are every *.md file in 'chapters_dir', in the toolkit's natural order."
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "anyOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "minLength": 1 },
+                  "print": { "type": "boolean" },
+                  "optional": { "type": "boolean" }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "description": "Required, non-empty: either the keyword 'ordered' or an ordered list of entries (a path string, or a mapping with file/print/optional)."
+    },
+    "front_matter": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file"],
+            "properties": {
+              "file": { "type": "string", "minLength": 1 },
+              "print": { "type": "boolean" },
+              "optional": { "type": "boolean" }
+            }
+          }
+        ]
+      },
+      "description": "Optional ordered map of logical name to entry; render order follows the manifest order."
+    },
+    "back_matter": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file"],
+            "properties": {
+              "file": { "type": "string", "minLength": 1 },
+              "print": { "type": "boolean" },
+              "optional": { "type": "boolean" }
+            }
+          }
+        ]
+      },
+      "description": "Optional ordered map of logical name to entry; render order follows the manifest order."
+    }
+  }
+}
