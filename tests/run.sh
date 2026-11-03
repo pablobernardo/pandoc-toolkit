@@ -22,6 +22,7 @@ done
 
 main() {
   echo "== Running pandoc-pdf tests =="
+  run_suite_registration_test
   run_help_test
   run_help_i18n_notes_test
   run_version_tests
