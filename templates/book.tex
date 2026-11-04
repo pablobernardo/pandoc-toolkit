@@ -146,6 +146,29 @@ $endif$
 % ---- Links ----
 \usepackage[hidelinks]{hyperref}
 
+% ---- Contents entries the adapter can hide ----
+% The contents list every chapter by default. The bookkit adapter emits
+% \BookChaptersUnlisted around an entry declared with toc: false and
+% \BookChaptersListed after it, so a dedication can stay out of the contents
+% while a prologue stays in.
+%
+% It works by swallowing the contents entries while the flag is off, not by
+% changing the chapter command: the class itself calls \chapter* for the table
+% of contents, and redefining \chapter breaks that. A chapter written while the
+% flag is off keeps its (front-matter) numbering rules and simply is not listed.
+%
+% This must come after hyperref loads: hyperref redefines \addcontentsline, and
+% a definition placed before it would be silently replaced.
+\makeatletter
+\newif\ifBookChapterListed
+\BookChapterListedtrue
+\let\BookAddContentsLine\addcontentsline
+\renewcommand\addcontentsline[3]{%
+  \ifBookChapterListed\BookAddContentsLine{#1}{#2}{#3}\fi}
+\newcommand\BookChaptersListed{\BookChapterListedtrue}
+\newcommand\BookChaptersUnlisted{\BookChapterListedfalse}
+\makeatother
+
 % ---- Title page ----
 \newcommand{\doTitlePage}{%
 \begin{titlepage}

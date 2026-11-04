@@ -133,6 +133,39 @@ run_bookkit_tests() {
     fail "the series volume-1 configuration must exist for the print: false assertion"
   fi
 
+  # --- toc: false keeps a page out of the contents ------------------------
+
+  if [[ -f "$v1config" ]]; then
+    assert_contains "$v1config" "toc-off" "an entry with toc: false gets the switch that hides it"
+    assert_contains "$scratch/out-series/series/volume-1/generated/10-toc-off.md" 'BookChaptersUnlisted' \
+      "the hide switch calls the template command"
+    assert_contains "$scratch/out-series/series/volume-1/generated/11-toc-on.md" 'BookChaptersListed' \
+      "the switch is turned back on right after the entry"
+    if python3 - "$v1config" <<'PY'
+import sys
+
+order = [
+    line.strip()
+    for line in open(sys.argv[1], encoding="utf-8").read().splitlines()
+    if line.strip().startswith("- ")
+]
+
+
+def position(fragment: str) -> int:
+    return next(index for index, line in enumerate(order) if fragment in line)
+
+
+assert position("toc-off") < position("00-dedication") < position("toc-on") < position("01-the-two-lights")
+PY
+    then
+      pass "the unlisted entry is wrapped, and the listed one after it is not"
+    else
+      fail "toc: false must wrap only its own entry, before the listed one"
+    fi
+  else
+    fail "volume-1 configuration must exist for the toc assertions"
+  fi
+
   # --- chapter_start reaches the generated mode file ----------------------
 
   local v2mainmatter="$scratch/out-series/series/volume-2/generated/00-mainmatter.md"
