@@ -103,7 +103,10 @@ The schema requires `version`, `project`, `document`, `input`, `output`,
 4. If `pandoc.metadata_file` is set and exists, it takes priority over the
    `document.*` fields; otherwise `document.*` values are passed as pandoc
    variables. `document.language` and `document.titlepage` are typesetting
-   decisions and apply either way.
+   decisions and apply either way. A declared `cover-image` (in the metadata
+   file or in `document.metadata`) is resolved against `base_dir` for both
+   formats and prints as an image page before the title page, independently of
+   `document.titlepage`.
 5. Filters (`emoji`, `mermaid`) can be disabled per document via their
    `enabled` flags.
 
@@ -225,7 +228,13 @@ supported through `cover-image` in the metadata file or `document.metadata`;
 Pandoc writes the image cover and keeps its typographic title page after it.
 Relative assets resolve from `project.base_dir`, which every job appends last to
 the resource path, and a relative `cover-image` is resolved the same way because
-the EPUB writer reads the cover directly and ignores the resource path. No EPUB
+the EPUB writer reads the cover directly and ignores the resource path. PDF
+plans resolve the same key with the same rule (one shared resolver,
+`relative_cover_image`): LaTeX does not read the pandoc resource path either, so
+the renderer passes the resolved absolute path to the template, which prints the
+image page before the typographic title page through a
+`\newgeometry`/`\restoregeometry` pair, independently of `document.titlepage`.
+No EPUB
 plan carries `\clearpage`: the compatibility switch is a typesetting decision,
 so it only applies to the PDF. The emoji filter keeps heading emoji as characters
 in EPUB as well: the navigation document reuses headings, and a link there must
@@ -292,7 +301,7 @@ and configuration compatibility rules in `AGENTS.md`.
 | D10 | Every action is pinned to a commit SHA with its tag in a comment. Dependabot tracks the `github-actions` ecosystem weekly, so the pins do not rot; a tag is a mutable pointer, and these workflows handle the token that publishes releases. |
 | D11 | `mermaid-cli` is a **tested** version, not an enforced one: 10.9.1 is what the toolkit installs and CI renders with, any other version is accepted when `doctor` renders its test diagram, and this repository never pins a user's system-wide install. See `docs/dependency-policy.md`. |
 | D12 | `pandoc.metadata_file` is optional: the legacy side file stays supported and wins when present, but a configuration can now carry the cover through `document.*`, plus `document.language`, `document.titlepage` and a free-form `document.metadata` map. The file name still comes from `document.title`, so no consumer's output is renamed. |
-| D13 | Relative assets resolve from `project.base_dir`, never from the directory the command was invoked in. Every job appends `base_dir` **last** to the pandoc resource path, so a declared `pandoc.resource_path` keeps its priority and existing resolution is only widened. A relative `cover-image` is resolved against `base_dir` before Pandoc sees it, because the EPUB writer opens the cover directly and ignores the resource path. The plan keeps `cwd: null` as D6 requires: this is a resolution rule, not a plan shape change. No EPUB plan carries the generated `\clearpage`, which is LaTeX-only markup. |
+| D13 | Relative assets resolve from `project.base_dir`, never from the directory the command was invoked in. Every job appends `base_dir` **last** to the pandoc resource path, so a declared `pandoc.resource_path` keeps its priority and existing resolution is only widened. A relative `cover-image` is resolved against `base_dir` before Pandoc sees it, because neither the EPUB writer nor LaTeX's `\includegraphics` reads the resource path; both branches share the same resolver. The plan keeps `cwd: null` as D6 requires: this is a resolution rule, not a plan shape change. No EPUB plan carries the generated `\clearpage`, which is LaTeX-only markup. |
 | D14 | Missing Unicode symbols in PDFs are fixed as a glyph-only, template-level fallback. In the XeLaTeX/LuaLaTeX branch, exactly the six symbols of #83 (`☐ ☑ ☒ ✅ ❌ ⚠`) are mapped to GNU FreeSerif when it exists, looked up by standard file name first (`FreeSerif.ttf`, TeX Live) and then by family name (`FreeSerif`, fontconfig/luaotfload, e.g. Debian's `fonts-freefont-ttf`). The mapping applies in prose, inline code, untagged fenced code and highlighted fenced code. The prose and code font selections, the pdfLaTeX branch and the emoji filter are untouched: code stays textual and the symbols render as monochrome FreeSerif text glyphs, not as color-emoji images, so the fallback does not depend on the emoji filter; when the filter is enabled, it substitutes SVG in prose and leaves code alone (`Code`/`CodeBlock`), so in code contexts the fallback still applies. The mapping reaches fenced code because the six characters remain active inside fancyvrb's `Verbatim`/`Highlighting` environments, so their `newunicodechar` mappings execute there too; a consuming template that neutralizes those characters inside its verbatim environments loses the mapping; `tests/integration/unicode-symbols.sh` checks this, and it is optional and not part of `make gate`. The `newunicodechar` package is guarded together with the font: a TeX installation without either degrades instead of failing. The emoji presentation selector (U+FE0F), as in the issue's `⚠️`, is consumed only immediately after a mapped glyph, never globally. PDF text extraction keeps the base symbols but not the selector (`⚠️` extracts as `⚠`), so exact Unicode-sequence copy fidelity is not claimed. Without the font, rendering degrades to the previous behavior including the Missing-character diagnostics. No configuration contract or CLI change. |
 
 ## How we got here
