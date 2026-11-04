@@ -435,6 +435,9 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
         cmd.extend(["-o", str(artifact_out)])
     else:
         uses_metadata_file = metadata_path is not None and metadata_path.exists()
+        # The image cover is a PDF page too, not just an EPUB artifact: resolve
+        # the declared value once, against the project base, like the EPUB path.
+        cover_image = relative_cover_image(metadata_path, document, base_dir_path)
         if uses_metadata_file:
             cmd.append(f"--metadata-file={metadata_path}")
         else:
@@ -447,6 +450,11 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
             extra_metadata = document.get("metadata")
             if isinstance(extra_metadata, dict):
                 for key, value in extra_metadata.items():
+                    # A relative cover-image is emitted below with its resolved
+                    # location; two values for one key would reach the template
+                    # ambiguously.
+                    if key == "cover-image" and cover_image is not None:
+                        continue
                     cmd.extend(["--metadata", f"{key}={value}"])
 
         # Language and the cover switch are typesetting decisions, not cover text, so
@@ -454,6 +462,12 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
         cmd.extend(["-V", f"babel-lang={BABEL_LANGS.get(language, DEFAULT_BABEL_LANGUAGE)}"])
         titlepage = document.get("titlepage", True)
         cmd.extend(["--metadata", "titlepage=true" if titlepage is not False else "titlepage=false"])
+        # CLI metadata outranks the metadata file, so this corrects the location
+        # of the declared value without ever inventing a cover. The template
+        # prints the image page when the variable is set, before the title page
+        # and independently of the titlepage switch.
+        if cover_image is not None:
+            cmd.extend(["--metadata", f"cover-image={cover_image}"])
         cmd.extend(["-o", str(artifact_out)])
 
     return {

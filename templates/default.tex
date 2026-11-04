@@ -322,6 +322,18 @@ $endif$
 
 \begin{document}
 
+$if(cover-image)$
+% ---- Image cover page ----
+% A declared cover image is not a title page: it precedes the typographic
+% title page and prints even when the titlepage switch is false. The
+% newgeometry/restoregeometry pair lets the image use the whole sheet,
+% whatever the body margins are.
+\newgeometry{margin=0pt}
+\thispagestyle{empty}
+\noindent\includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]{$cover-image$}
+\restoregeometry
+$endif$
+
 $if(titlepage)$
     \doTitlePage
 $endif$

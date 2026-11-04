@@ -11,6 +11,15 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Added
 
+- An image cover page for the PDF. Declare `cover-image` in the metadata file or
+  in `document.metadata` — the same key the EPUB path already reads, no new
+  configuration field — and the shipped templates (`templates/default.tex`,
+  `templates/book.tex`) print the image on a full-bleed page **before** the
+  typographic title page, through a `\newgeometry`/`\restoregeometry` pair. A
+  cover is not a title page: the image page prints even with `titlepage: false`.
+  A relative `cover-image` resolves against `project.base_dir` in the PDF branch
+  too, reusing the resolver (`relative_cover_image`) the EPUB path already had;
+  documents without the key render exactly as before.
 - `pandoc.top_level_division`, an optional, PDF-only field mapping one to one to
   Pandoc's own `--top-level-division` flag: `default`, `section`, `chapter` or
   `part`. Absent (or `default`), the renderer passes no flag and existing

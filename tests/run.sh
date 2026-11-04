@@ -80,6 +80,8 @@ main() {
   run_render_output_file_name_test
   run_render_slug_accents_test
   run_render_document_metadata_test
+  run_render_pdf_cover_plan_test
+  run_render_pdf_cover_render_test
   run_validate_metadata_contract_tests
   run_validate_optional_inert_fields_tests
   run_documentation_example_coverage_test
