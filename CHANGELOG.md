@@ -7,6 +7,16 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Fixed
+
+- `pandoc-pdf validate-config` no longer dies with a Python traceback on a
+  machine whose `PATH` has no `ruby`: it reads through the same YAML module as
+  `pandoc-pdf doctor`, which resolves Ruby from the usual install locations
+  before falling back to `PATH`, and when no parser is reachable at all it
+  reports the documented "No YAML parser available" error instead of crashing.
+
 ## [2.3.0] - 2026-11-04
 
 ### Added

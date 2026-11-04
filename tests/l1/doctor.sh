@@ -238,3 +238,34 @@ STUB
   rm -rf "$tmpbin"
   rm -f "$out"
 }
+
+run_doctor_config_parse_error_test() {
+  # The config is generated here instead of living under tests/fixtures: its
+  # whole point is being unparseable, and a versioned file that every YAML
+  # linter is right to reject would be permanent noise in the tree.
+  local cfgdir out cfgdir_cleanup
+  cfgdir="$(mktemp -d)"
+  cfgdir_cleanup="$cfgdir"
+  cat >"${cfgdir}/broken.config.yaml" <<'YAML'
+version: 1
+pandoc:
+  pdf_engine: xelatex
+output:
+  formats: |
+    pdf
+  broken: [unclosed
+YAML
+
+  local out_file
+  out_file="$(mktemp)"
+  set +e
+  PANDOC_PDF_LANG=en /bin/bash "$CLI" doctor -c "${cfgdir}/broken.config.yaml" >"$out_file" 2>&1
+  local code=$?
+  set -e
+  assert_exit_code "1" "$code" "doctor -c fails when the YAML does not parse"
+  assert_contains "$out_file" "Could not parse config for preflight" "doctor names the YAML parse failure"
+  assert_not_contains "$out_file" "Traceback" "the config loader reports a parse failure without crashing"
+
+  rm -rf "$cfgdir_cleanup"
+  rm -f "$out_file"
+}

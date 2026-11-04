@@ -4,8 +4,10 @@
 Two pieces live here so they exist exactly once:
 
 * the YAML loader — PyYAML when importable, Ruby's stdlib YAML through a
-  subprocess otherwise (the same fallback the renderer uses); without either
-  parser it fails with a clear message, and
+  subprocess otherwise (the same fallback the renderer uses); Ruby resolves
+  through one shared rule, the usual install locations first and PATH second,
+  so no entry point can disagree about which parser is reachable. Without
+  either parser it fails with a clear message, and
 * the JSON-Schema-subset validator that applies `schemas/pdf-config.schema.json`
   (via `validate-config.py`) and the tool-local contracts under
   `scripts/tools/bookkit/` (via its `build.py`).
@@ -25,6 +27,7 @@ the contract `validate-config.py` has always exposed.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, NoReturn
@@ -48,10 +51,38 @@ class SchemaError(Exception):
     """A validation failure, carrying the already-localized message."""
 
 
+class YamlError(Exception):
+    """A YAML read failure, carrying the parser's own error text.
+
+    The callers render it in their own words, so the exception stays free of
+    catalog keys: `kind` is ``parse`` for a document the parser rejected and
+    ``ruby_json`` when Ruby parsed the file but its JSON conversion could not
+    be read back.
+    """
+
+    def __init__(self, message: str, kind: str = "parse") -> None:
+        super().__init__(message)
+        self.kind = kind
+
+
 # --- YAML reading -----------------------------------------------------------
 
 
+def resolve_ruby_binary() -> str | None:
+    """Ruby from the usual install locations first, then from PATH.
+
+    A hardcoded candidate keeps the loader working when PATH is minimal (CI, an
+    installed CLI, a sandboxed test); a PATH-only lookup cannot.
+    """
+    candidates = ["/usr/bin/ruby", "/opt/homebrew/bin/ruby"]
+    for candidate in candidates:
+        if Path(candidate).is_file() and Path(candidate).exists():
+            return candidate
+    return shutil.which("ruby")
+
+
 def load_yaml_with_python(path: Path):
+    """The PyYAML reading of `path`, or None when PyYAML is not importable."""
     try:
         import yaml  # type: ignore
     except Exception:
@@ -59,11 +90,16 @@ def load_yaml_with_python(path: Path):
     try:
         return yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception as e:
-        fail(t("validate.error.yaml_invalid", "Invalid YAML: {error}", error=e))
+        raise YamlError(str(e)) from e
 
 
 def load_yaml_with_ruby(path: Path):
-    if subprocess.run(["ruby", "-e", "require 'yaml'; require 'json'"], capture_output=True).returncode != 0:
+    """The Ruby stdlib reading of `path`, or None when Ruby is unavailable."""
+    ruby_bin = resolve_ruby_binary()
+    if ruby_bin is None:
+        return None
+
+    if subprocess.run([ruby_bin, "-e", "require 'yaml'; require 'json'"], capture_output=True).returncode != 0:
         return None
 
     ruby_script = r"""
@@ -74,32 +110,39 @@ begin
   data = YAML.safe_load(File.read(path), permitted_classes: [], aliases: false)
   puts JSON.generate(data)
 rescue => e
-  STDERR.puts "Invalid YAML: #{e.message}"
+  STDERR.puts e.message
   exit 2
 end
 """
 
     proc = subprocess.run(
-        ["ruby", "-e", ruby_script, str(path)],
+        [ruby_bin, "-e", ruby_script, str(path)],
         capture_output=True,
         text=True,
     )
     if proc.returncode == 2:
-        fail(proc.stderr.strip() or t("validate.error.yaml_invalid_generic", "Invalid YAML"))
+        raise YamlError(proc.stderr.strip())
     if proc.returncode != 0:
         return None
 
     try:
         return json.loads(proc.stdout)
     except Exception as e:
-        fail(t("validate.error.ruby_json_parse", "Could not parse JSON converted from Ruby: {error}", error=e))
+        raise YamlError(str(e), kind="ruby_json") from e
 
 
 def load_yaml(path: Path):
     """Load a YAML file: PyYAML when importable, Ruby's stdlib otherwise."""
-    data = load_yaml_with_python(path)
-    if data is None:
-        data = load_yaml_with_ruby(path)
+    try:
+        data = load_yaml_with_python(path)
+        if data is None:
+            data = load_yaml_with_ruby(path)
+    except YamlError as e:
+        if e.kind == "ruby_json":
+            fail(t("validate.error.ruby_json_parse", "Could not parse JSON converted from Ruby: {error}", error=e))
+        if str(e):
+            fail(t("validate.error.yaml_invalid", "Invalid YAML: {error}", error=e))
+        fail(t("validate.error.yaml_invalid_generic", "Invalid YAML"))
     if data is None:
         fail(t("validate.error.no_yaml_parser", "No YAML parser available (install PyYAML or Ruby)"))
     return data

@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import re
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -16,6 +14,12 @@ except Exception:
             return fallback.format(**kwargs)
         except Exception:
             return fallback
+
+try:
+    from schema_runtime import YamlError, load_yaml_with_python, load_yaml_with_ruby
+except Exception:  # imported as a module from elsewhere: fix the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from schema_runtime import YamlError, load_yaml_with_python, load_yaml_with_ruby
 
 
 DEFAULT_REQUIRED = ["pandoc", "python3", "curl", "mmdc"]
@@ -29,47 +33,36 @@ def fail(msg: str) -> None:
     raise SystemExit(1)
 
 
-def load_yaml_with_python(path: Path):
+def load_config_for_preflight(path: Path):
+    """Read the config with the best parser reachable, degrading in order.
+
+    The full parser goes first, the minimal reader second (so an environment
+    without PyYAML still answers the few keys doctor needs), and Ruby last. Both
+    parsers come from ``schema_runtime``, the toolkit's single YAML rule, so the
+    gate cannot disagree with ``validate-config`` about what a file says.
+
+    A file the parser actually rejected is a user error, not a reason to
+    degrade, so it fails with the preflight wording instead of being retried.
+    """
+    cfg = None
     try:
-        import yaml  # type: ignore
-    except Exception:
-        return None
-    try:
-        return yaml.safe_load(path.read_text(encoding="utf-8"))
-    except Exception as e:
+        cfg = load_yaml_with_python(path)
+        if cfg is None:
+            cfg = load_yaml_minimal_for_preflight(path)
+        if cfg is None:
+            cfg = load_yaml_with_ruby(path)
+    except YamlError as e:
+        if e.kind == "ruby_json":
+            fail(
+                f"❌ {t('preflight.error.ruby_yaml_parse', 'Error parsing YAML converted by Ruby: {error}', error=e)}"
+            )
         fail(f"❌ {t('preflight.error.config_parse', 'Could not parse config for preflight: {error}', error=e)}")
 
-
-def load_yaml_with_ruby(path: Path):
-    ruby_bin = resolve_ruby_binary()
-    if ruby_bin is None:
-        return None
-
-    if subprocess.run([ruby_bin, "-e", "require 'yaml'; require 'json'"], capture_output=True).returncode != 0:
-        return None
-    ruby_script = r"""
-require 'yaml'
-require 'json'
-path = ARGV[0]
-begin
-  data = YAML.safe_load(File.read(path), permitted_classes: [], aliases: false)
-  puts JSON.generate(data)
-rescue => e
-  STDERR.puts "#{e.message}"
-  exit 2
-end
-"""
-    proc = subprocess.run([ruby_bin, "-e", ruby_script, str(path)], capture_output=True, text=True)
-    if proc.returncode == 2:
+    if cfg is None:
         fail(
-            f"❌ {t('preflight.error.config_parse', 'Could not parse config for preflight: {error}', error=proc.stderr.strip())}"
+            f"❌ {t('preflight.error.no_yaml_parser', 'Preflight with -c requires PyYAML or Ruby YAML available')}"
         )
-    if proc.returncode != 0:
-        return None
-    try:
-        return json.loads(proc.stdout)
-    except Exception as e:
-        fail(f"❌ {t('preflight.error.ruby_yaml_parse', 'Error parsing YAML converted by Ruby: {error}', error=e)}")
+    return cfg
 
 
 def load_yaml_minimal_for_preflight(path: Path):
@@ -211,14 +204,6 @@ def is_valid_command_name(cmd: str) -> bool:
     return re.match(r"^[A-Za-z0-9._+-]+$", cmd) is not None
 
 
-def resolve_ruby_binary() -> str | None:
-    candidates = ["/usr/bin/ruby", "/opt/homebrew/bin/ruby"]
-    for candidate in candidates:
-        if Path(candidate).is_file() and Path(candidate).exists():
-            return candidate
-    return shutil.which("ruby")
-
-
 def parse_config_path(argv: list[str]) -> Path | None:
     if not argv:
         return None
@@ -300,15 +285,7 @@ def main() -> None:
         if not config_path.exists():
             fail(f"❌ {t('preflight.error.config_not_found', 'Config not found for preflight: {path}', path=config_path)}")
 
-        cfg = load_yaml_with_python(config_path)
-        if cfg is None:
-            cfg = load_yaml_minimal_for_preflight(config_path)
-        if cfg is None:
-            cfg = load_yaml_with_ruby(config_path)
-        if cfg is None:
-            fail(
-                f"❌ {t('preflight.error.no_yaml_parser', 'Preflight with -c requires PyYAML or Ruby YAML available')}"
-            )
+        cfg = load_config_for_preflight(config_path)
 
         if isinstance(cfg, dict):
             runtime = cfg.get("runtime")

@@ -47,10 +47,12 @@ main() {
   run_doctor_failure_missing_cmd
   run_doctor_with_config_required_cmd
   run_doctor_rejects_invalid_required_cmd
+  run_doctor_config_parse_error_test
   run_bootstrap_linux_pkg_manager_detection_tests
   run_bootstrap_mermaid_browser_warning_test
   run_ci_render_dependencies_test
   run_validate_config_tests
+  run_validate_yaml_loader_no_parser_test
   run_validate_metadata_file_test
   run_schema_keyword_support_test
   run_validate_order_enum_test
