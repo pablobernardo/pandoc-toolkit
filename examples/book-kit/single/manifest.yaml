@@ -37,4 +37,7 @@ back_matter:
   about: "back-matter/02-about-this-guide.md"
 
 # The same contents separation the series declares in series.yaml.
-toc_separators: space
+toc_separators: label
+toc_labels:
+  chapters: "Chapters"
+  appendices: "Appendices"
