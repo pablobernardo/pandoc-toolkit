@@ -29,6 +29,11 @@ The project follows semantic versioning and keeps two versioned contracts:
   single-volume case is covered by `examples/book-kit/single/`. `bookkit` now
   points the configurations it generates at the builtin name, so its output
   builds from an installed CLI.
+- A published artifact now carries only what an installed toolkit runs:
+  `scripts/runtime` and the `bookkit` tool. The repository's own tooling
+  (`scripts/dev` for the documentation and catalog checks, `scripts/delivery`
+  for building and installing) is no longer packaged, so an installation no
+  longer looks like it carries supported developer commands.
 
 ## [2.2.0] - 2026-11-03
 

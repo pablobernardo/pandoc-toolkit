@@ -16,6 +16,11 @@ This installs into the managed layout:
 - `~/.local/share/pandoc-pdf/current`
 - `~/.local/bin/pandoc-pdf`
 
+An installed version carries only what it runs: the CLI, `scripts/runtime`, the
+shipped templates, the schemas and catalogs, and the `bookkit` tool. The
+repository's own tooling (`scripts/dev` for the documentation and catalog
+checks, `scripts/delivery` for building and installing) is not installed.
+
 ## Optional agent skill
 
 To guide an agent from **existing Markdown** to a reviewed PDF, run this from the

@@ -24,6 +24,27 @@ run_package_release_artifact_test() {  local out_dir artifact
     pass "package-release artifact excludes Python bytecode caches"
   fi
 
+  # Only what an installation runs ships: the runtime it executes and the tool it
+  # exposes. dev and delivery are repository tooling, and shipping them made an
+  # installed toolkit look like it carried supported developer commands.
+  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | sed 's|^\./||' | grep -qE '^scripts/(dev|delivery)/'; then
+    fail "package-release must not ship repository tooling: scripts/dev or scripts/delivery found"
+  else
+    pass "package-release ships no repository tooling"
+  fi
+
+  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | sed 's|^\./||' | grep -qx 'scripts/runtime/render-native.py'; then
+    pass "package-release ships the runtime the CLI executes"
+  else
+    fail "package-release must ship scripts/runtime/render-native.py"
+  fi
+
+  if tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | sed 's|^\./||' | grep -qx 'scripts/tools/bookkit/build.py'; then
+    pass "package-release ships the bookkit tool"
+  else
+    fail "package-release must ship scripts/tools/bookkit/build.py"
+  fi
+
   # GNU tar and BSD tar do not print the "./" prefix the same way, which made this
   # assertion pass on macOS and fail on Ubuntu for the same artifact. Normalise it
   # instead of trusting one implementation's formatting.
