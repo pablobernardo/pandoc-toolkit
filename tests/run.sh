@@ -116,6 +116,7 @@ main() {
   run_plan_conformance_tests
   run_bookkit_tests
   run_bookkit_toc_separators_test
+  run_bookkit_series_defaults_test
   run_book_command_test
 
   echo ""
