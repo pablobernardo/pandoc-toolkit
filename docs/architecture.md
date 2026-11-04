@@ -187,6 +187,13 @@ pandoc-toolkit/
 
 There is exactly one renderer: `scripts/runtime/render-native.py`. YAML is read with
 PyYAML when available and otherwise through Ruby's stdlib in a subprocess.
+`validate-config` and `doctor` read through the same module,
+`schema_runtime.py`, so neither can disagree with the other about which parser a
+configuration needs; Ruby resolves from the usual install locations first and
+from `PATH` second, which is what keeps the validator working when `PATH` is
+minimal. `doctor` keeps its own minimal reader for the few keys it needs, and
+uses it only when the full parser is unavailable: it is a degradation path, not
+a second definition of what a configuration says.
 
 `pandoc-pdf render -c <config>` validates the config against the schema and
 renders. There is no `defaults/default.yaml` and no baseline merge: the schema

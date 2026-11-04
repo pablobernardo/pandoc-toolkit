@@ -240,3 +240,32 @@ run_validate_optional_inert_fields_tests() {
   assert_exit_code "0" "$code" "an enabled filter without settings is valid"
   rm -f "$out"
 }
+
+run_validate_yaml_loader_no_parser_test() {
+  # "Neither PyYAML nor Ruby is reachable" cannot be reproduced portably: a
+  # machine may have PyYAML installed and the loader also checks the usual Ruby
+  # install locations, not only PATH. The simulation is therefore explicit, and
+  # what it pins is the observable contract: a clear message and exit 1, never a
+  # traceback from the loader of record.
+  local out
+  out="$(mktemp)"
+  set +e
+  "${REAL_PYTHON3}" - "$ROOT_DIR" "${FIXTURES_DIR}/valid.config.yaml" >"$out" 2>&1 <<'PY'
+import sys
+
+root, config = sys.argv[1], sys.argv[2]
+sys.path.insert(0, root + "/scripts/runtime")
+
+import schema_runtime
+
+schema_runtime.load_yaml_with_python = lambda path: None
+schema_runtime.resolve_ruby_binary = lambda: None
+schema_runtime.load_yaml(config)
+PY
+  local code=$?
+  set -e
+  assert_exit_code "1" "$code" "the shared YAML loader exits 1 without any reachable parser"
+  assert_contains "$out" "No YAML parser available" "the shared YAML loader names the missing parser"
+  assert_not_contains "$out" "Traceback" "the shared YAML loader never crashes without a parser"
+  rm -f "$out"
+}
