@@ -26,11 +26,12 @@ together they cover it instead of repeating it:
 | `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
 | `examples/test/` | The smallest valid configuration, with `titlepage: false` to show the cover switch |
 | `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
-| `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the small `build.sh` runner |
+| `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the `pandoc-pdf book` subcommand |
 
-`examples/toPDF.sh` renders the four pre-existing examples (`ohmyfake`,
-`manual`, `test` and `documentation`); the book example runs through its own
-`build.sh` because its content manifest needs a glue step before the CLI. The
+`examples/toPDF.sh` renders every example: the four configuration-driven ones
+(`ohmyfake`, `manual`, `test` and `documentation`) through `pandoc-pdf render`,
+and the book example through `pandoc-pdf book`, because its volumes are declared
+as manifests rather than as a configuration. The
 content examples (`ohmyfake`, `manual`, `test`, `book` and `book-kit`) are
 original and released under CC0: they exercise the toolkit rather than serve
 as product documentation. The `documentation` example renders the repository
@@ -49,6 +50,20 @@ By default the generated configurations carry the builtin name `book`, which the
 toolkit ships and resolves inside the installation, so the same project builds
 from a checkout and from an installed CLI. Pass `--template` to use a book-class
 LaTeX template of your own, either as a path or as another builtin name.
+
+Reach the tool through the CLI: `pandoc-pdf book` forwards every argument to
+`scripts/tools/bookkit/build.py` unchanged and reports the tool's own output and
+exit code. From the example directory:
+
+```bash
+pandoc-pdf book --out ../.output/book-kit single series
+```
+
+Check without rendering:
+
+```bash
+pandoc-pdf book --check examples/book-kit/single
+```
 
 ## Configuration contract
 

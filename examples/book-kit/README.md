@@ -7,12 +7,14 @@ with the same template, the same configuration shape and the same shipped
 tool.
 
 ```bash
-./build.sh
+pandoc-pdf book --out ../.output/book-kit single series
 ```
 
-The build runs from any working directory and writes everything into
+The command above runs from this directory and writes everything into
 `../.output/book-kit/` (gitignored): one `pdf.config.yaml` per volume, the
-generated mode files, and one PDF per volume.
+generated mode files, and one PDF per volume. From any other working
+directory, pass the project paths and `--out` as you would to the tool
+itself — the subcommand forwards them unchanged.
 
 ## The model
 
@@ -30,8 +32,8 @@ The manifests describe **what** each volume contains, never how it is
 rendered. The shipped tool, `scripts/tools/bookkit/build.py`, turns that
 model into one standard `pdf.config.yaml` per volume and calls
 `bin/pandoc-pdf render`. The toolkit never learns that manifests or series
-exist. This directory's `build.sh` is only a runner: it resolves the
-example's paths and forwards them to the tool.
+exist. The `pandoc-pdf book` subcommand is the front door to that tool: it
+forwards every argument and reports the tool's own output and exit code.
 
 ## The folder convention
 
@@ -97,8 +99,6 @@ state the toolkit keeps.
 
 ## Files
 
-- `build.sh` — a runner that forwards this example's projects to the
-  shipped tool; there is no adapter here any more.
 - `single/` — a single-volume project without `series.yaml`.
 - `series/` — a two-volume project with `series.yaml`; `volume-2` continues
   the chapter numbering of `volume-1` with `chapter_start`.

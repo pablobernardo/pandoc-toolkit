@@ -10,6 +10,7 @@
   "cli.help.notes": "Notas:",
   "cli.help.note.render_native": "render usa implementación nativa.",
   "cli.help.note.yaml_parsing": "O parseo de config soporta Python+PyYAML ou Ruby stdlib YAML.",
+  "cli.help.note.book": "book reenvía á ferramenta bookkit incluída (scripts/tools/bookkit/build.py).",
   "cli.locale.error.missing_target": "Debes indicar un locale (por exemplo: pandoc-pdf locale set --project es)",
   "cli.locale.error.unsupported": "Locale non soportado: {locale}. Soportados: {supported}",
   "cli.locale.show.language": "idioma",
