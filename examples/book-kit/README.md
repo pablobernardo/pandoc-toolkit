@@ -19,8 +19,8 @@ itself — the subcommand forwards them unchanged.
 ## The model
 
 A **book project** is a directory with an optional `series.yaml` and one or
-more volumes. A **volume** is a directory with a `manifest.yaml` and its
-`content/`. There are two shapes:
+more volumes. A **volume** is a directory with a `manifest.yaml` and its content
+folders beside it. There are two shapes:
 
 - `single/` — no `series.yaml`: the project directory is itself the volume,
   and its `manifest.yaml` carries every field, with no defaults to merge.
@@ -37,8 +37,9 @@ forwards every argument and reports the tool's own output and exit code.
 
 ## The folder convention
 
-The volumes here use the convention the tool documents:
-`content/front-matter/`, `content/chapters/` and `content/back-matter/`.
+The volumes here use the convention the tool documents: `front-matter/`,
+`chapters/` and `back-matter/`, at the volume root, beside the manifest. There is
+no `content/` level: a volume directory is the volume.
 
 **The layout is a convention, not a contract.** The manifest names each
 file, so a project can use any folder names it likes; the tool never
@@ -65,7 +66,7 @@ The three rules, as exercised by this example:
 
 1. A declared entry whose printable file is missing **fails** the build with
    the volume, the logical name and the path in the message:
-   `volume 'volume-1': chapters entry '2' declares a missing file: content/chapters/02-the-tower.md`
+   `volume 'volume-1': chapters entry '2' declares a missing file: chapters/02-the-tower.md`
 2. An `optional: true` entry whose file is missing is **skipped with a
    warning** and the volume still renders. In `series/volume-2` the excerpt
    entry is declared `optional` and its file deliberately does not exist.

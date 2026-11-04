@@ -29,15 +29,17 @@ exist.
 
 A volume's content conventionally lives in:
 
-- `content/front-matter/` — pages before the numbered chapters;
-- `content/chapters/` — the numbered chapters;
-- `content/back-matter/` — pages after the chapters.
+- `front-matter/` — pages before the numbered chapters;
+- `chapters/` — the numbered chapters;
+- `back-matter/` — pages after the chapters.
 
-**This layout is a convention, not a contract.** The manifest names each
-file explicitly, so a project can use any folder names it likes; the tool
-never validates the layout. Only `chapters_dir` has a default
-(`content/chapters`), and only because the `ordered` chapters keyword needs
-somewhere to look.
+The folders sit at the **volume root**, beside the `manifest.yaml`: there is no
+extra `content/` level to carry into a project.
+
+**This layout is a convention, not a contract.** The manifest names each file
+explicitly, so a project can use any folder names it likes; the tool never
+validates the layout. Only `chapters_dir` has a default (`chapters`), and only
+because the `ordered` chapters keyword needs somewhere to look.
 
 ## `series.yaml` (series shape only)
 
@@ -66,7 +68,7 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 | `author`, `publisher`, `rights`, `language` | Optional overrides of the `series.yaml` defaults; in the single-volume shape the manifest is their only source. |
 | `chapter_start` | Optional integer, 1 or more. The volume's first chapter prints with that number: the generated mode file sets the LaTeX chapter counter to `chapter_start - 1`. |
 | `chapters` | Required, non-empty: either the keyword `ordered` or an ordered list of entries. |
-| `chapters_dir` | Optional string, default `content/chapters`. Only read when `chapters` is `ordered`. |
+| `chapters_dir` | Optional string, default `chapters`. Only read when `chapters` is `ordered`. |
 | `front_matter`, `back_matter` | Optional ordered maps of **logical name to entry**; the render order follows the manifest order. |
 
 Every path in a manifest is relative to **the volume directory**.
@@ -74,7 +76,7 @@ Every path in a manifest is relative to **the volume directory**.
 ### `chapters: ordered`
 
 The keyword form means: the chapters are every `*.md` file inside
-`chapters_dir` (default `content/chapters`), taken in the toolkit's
+`chapters_dir` (default `chapters`), taken in the toolkit's
 **natural order** (digit runs compare numerically, so `02` comes before
 `10`). A directory that does not exist, or that contains no `*.md` files,
 fails the build. The explicit list form names the files and their order
@@ -95,7 +97,7 @@ The three entry rules, exactly:
 
 1. A declared entry whose printable file is missing **fails** the build with
    the volume, the logical name and the path in the message:
-   `volume 'volume-1': chapters entry '2' declares a missing file: content/chapters/02-the-tower.md`
+   `volume 'volume-1': chapters entry '2' declares a missing file: chapters/02-the-tower.md`
 2. An `optional: true` entry whose file is missing is **skipped with a
    warning** and the volume still plans (and renders).
 3. A `print: false` entry is excluded **silently**.

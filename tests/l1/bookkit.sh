@@ -90,7 +90,7 @@ run_bookkit_tests() {
 
   local lost="$scratch/missing-entry"
   cp -R "$single_fix" "$lost"
-  sed 's|content/chapters/01-clouds\.md|content/chapters/99-missing.md|' "$lost/manifest.yaml" >"$lost/manifest.yaml.tmp"
+  sed 's|chapters/01-clouds\.md|chapters/99-missing.md|' "$lost/manifest.yaml" >"$lost/manifest.yaml.tmp"
   mv "$lost/manifest.yaml.tmp" "$lost/manifest.yaml"
 
   out="$(mktemp)"
@@ -99,7 +99,7 @@ run_bookkit_tests() {
   code=$?
   set -e
   assert_exit_code "1" "$code" "bookkit --check fails when a declared entry file is missing"
-  assert_contains "$out" "volume 'missing-entry': chapters entry '1' declares a missing file: content/chapters/99-missing\.md" \
+  assert_contains "$out" "volume 'missing-entry': chapters entry '1' declares a missing file: chapters/99-missing\.md" \
     "the failure names the volume, the logical name and the path"
   rm -f "$out"
 
@@ -111,7 +111,7 @@ run_bookkit_tests() {
   code=$?
   set -e
   assert_exit_code "0" "$code" "an optional entry with an absent file does not fail the plan"
-  assert_contains "$out" "volume 'volume-2': back_matter entry 'excerpt' is optional and its file was not found, skipped: content/back-matter/99-excerpt\.md" \
+  assert_contains "$out" "volume 'volume-2': back_matter entry 'excerpt' is optional and its file was not found, skipped: back-matter/99-excerpt\.md" \
     "the optional skip names the volume, the entry and the path"
   if [[ -f "$scratch/out-optional/series/volume-2/pdf.config.yaml" ]]; then
     pass "the volume with the optional absent file still plans"
@@ -129,7 +129,7 @@ run_bookkit_tests() {
     else
       pass "a print: false entry is excluded from the generated configuration"
     fi
-    assert_contains "$v1config" "content/back-matter/01-glossary\.md" \
+    assert_contains "$v1config" "back-matter/01-glossary\.md" \
       "printable entries stay in the generated configuration"
   else
     fail "the series volume-1 configuration must exist for the print: false assertion"
@@ -208,8 +208,8 @@ YAML
   rm -f "$out"
   local orderedconfig="$scratch/out-ordered/ordered/pdf.config.yaml"
   if [[ -f "$orderedconfig" ]]; then
-    assert_contains "$orderedconfig" "content/chapters/01-clouds\.md" "ordered picks up the first chapter"
-    assert_contains "$orderedconfig" "content/chapters/03-rain\.md" "ordered picks up the last chapter"
+    assert_contains "$orderedconfig" "chapters/01-clouds\.md" "ordered picks up the first chapter"
+    assert_contains "$orderedconfig" "chapters/03-rain\.md" "ordered picks up the last chapter"
   else
     fail "the ordered project must emit a generated configuration"
   fi

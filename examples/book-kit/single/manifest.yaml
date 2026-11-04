@@ -25,13 +25,13 @@ isbn: "978-0-000000-01-8"
 audience: "Curious readers of impossible weather"
 
 front_matter:
-  note: "content/front-matter/00-note.md"
+  note: "front-matter/00-note.md"
 
 chapters:
-  - "content/chapters/01-clouds.md"
-  - "content/chapters/02-fog.md"
-  - "content/chapters/03-rain.md"
+  - "chapters/01-clouds.md"
+  - "chapters/02-fog.md"
+  - "chapters/03-rain.md"
 
 back_matter:
-  glossary: "content/back-matter/01-glossary.md"
-  about: "content/back-matter/02-about-this-guide.md"
+  glossary: "back-matter/01-glossary.md"
+  about: "back-matter/02-about-this-guide.md"

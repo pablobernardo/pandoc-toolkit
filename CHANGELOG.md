@@ -7,6 +7,19 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Changed
+
+- A `bookkit` volume no longer carries a `content/` level: `front-matter/`,
+  `chapters/` and `back-matter/` sit at the volume root, beside `manifest.yaml`.
+  The folder added nesting and travelled into every project that copied the
+  example, without carrying meaning the manifest did not already state.
+  `chapters_dir` now defaults to `chapters`; a manifest that relied on the old
+  default and uses `chapters: ordered` must declare
+  `chapters_dir: "content/chapters"` or move its files. The layout remains a
+  convention, never validated by the tool.
+
 ## [2.4.0] - 2026-11-04
 
 ### Added
