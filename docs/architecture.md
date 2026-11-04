@@ -126,7 +126,7 @@ pandoc-toolkit/
     emoji/
     mermaid.lua
   scripts/
-    runtime/
+    runtime/                 # ships: what the CLI executes
       preflight.sh
       preflight.py
       validate-config.py
@@ -134,12 +134,16 @@ pandoc-toolkit/
       prepare-emojis.py
       i18n.sh
       i18n_runtime.py
-    dev/
+      schema_runtime.py      # YAML loading and the schema subset
+      template_runtime.py    # what a pandoc.template value means
+    tools/
+      bookkit/               # ships: the versioned book tool
+    dev/                     # repository only, never shipped
       check-i18n.py
       check-docs.py
       check-plan-conformance.py
       enforce-security-thresholds.py
-    delivery/
+    delivery/                # repository only, never shipped
       bootstrap.sh
       install.sh
       install-local.sh

@@ -14,9 +14,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Toolkit runtime layout required by bin/pandoc-pdf
+# Toolkit runtime layout required by bin/pandoc-pdf. Only what an installed
+# toolkit runs ships: the runtime it executes and the tool it exposes. dev and
+# delivery are repository tooling, unusable from an installation and not
+# something a consumer should read as supported.
+mkdir -p "${STAGING_DIR}/scripts"
+cp -R "${ROOT_DIR}/scripts/runtime" "${STAGING_DIR}/scripts/runtime"
+cp -R "${ROOT_DIR}/scripts/tools" "${STAGING_DIR}/scripts/tools"
 cp -R "${ROOT_DIR}/bin" "${STAGING_DIR}/bin"
-cp -R "${ROOT_DIR}/scripts" "${STAGING_DIR}/scripts"
 cp -R "${ROOT_DIR}/schemas" "${STAGING_DIR}/schemas"
 cp -R "${ROOT_DIR}/templates" "${STAGING_DIR}/templates"
 cp -R "${ROOT_DIR}/filters" "${STAGING_DIR}/filters"
