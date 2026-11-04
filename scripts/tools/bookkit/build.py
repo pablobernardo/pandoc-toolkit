@@ -534,7 +534,14 @@ def main() -> None:
 
     projects: list[tuple[Path, str]] = []
     for raw in args.projects:
-        project = Path(raw)
+        # Resolve the project before anything computes a path against it. The
+        # output directory is already resolved, and on a platform where the two
+        # spellings differ -- macOS gives /var/folders and resolves it to
+        # /private/var/folders -- a relative path built from one and applied to
+        # the other points outside the tree. The generated configuration then
+        # names files that do not exist, and the render fails with a path that
+        # looks plausible.
+        project = Path(raw).resolve()
         if not project.is_dir():
             die(f"not a directory: {project}")
         if not (project / "series.yaml").is_file() and not (project / "manifest.yaml").is_file():

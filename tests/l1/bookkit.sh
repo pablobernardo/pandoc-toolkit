@@ -247,5 +247,47 @@ YAML
   assert_exit_code "0" "$code" "an explicit relative --template still resolves"
   rm -f "$out"
 
+  # --- A symlinked project path still generates resolvable paths -----------
+  # The output directory is resolved while a project path need not be. When the
+  # two spellings differ (macOS reports /var/folders and resolves it to
+  # /private/var/folders) a relative path built from one and applied to the other
+  # points outside the tree, and the render then fails naming a plausible path.
+  # Passing the project through a symlink reproduces that on any platform.
+
+  local real_project="$scratch/real-project"
+  local linked_project="$scratch/linked-project"
+  cp -R "$single" "$real_project"
+  ln -s "$real_project" "$linked_project"
+
+  out="$(mktemp)"
+  set +e
+  python3 "$tool" --check --out "$scratch/out-linked" "$linked_project" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a symlinked project path still plans"
+  # The resolved project name decides the output directory, so find the
+  # configuration instead of assuming which spelling it uses.
+  local linked_config
+  linked_config="$(find "$scratch/out-linked" -name pdf.config.yaml | head -1)"
+  if python3 - "$linked_config" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+config = Path(sys.argv[1])
+text = config.read_text(encoding="utf-8")
+base = re.search(r'base_dir: "([^"]+)"', text).group(1)
+entries = re.findall(r'^    - "([^"]+)"', text, re.M)
+resolved_base = (config.parent / base).resolve()
+missing = [entry for entry in entries if not (resolved_base / entry).exists()]
+assert not missing, missing
+PY
+  then
+    pass "every generated path resolves from the declared base_dir"
+  else
+    fail "generated paths must resolve from base_dir, even through a symlinked project"
+  fi
+  rm -f "$out"
+
   rm -rf "$scratch"
 }
