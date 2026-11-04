@@ -183,9 +183,21 @@ run_examples_validate_test() {
 run_documentation_example_coverage_test() {
   local planned expected missing
 
+  # The documentation example declares two formats, so its plan is the version-2
+  # envelope with one version-1 job per format; a single-format configuration
+  # would be a bare version-1 plan. Read both shapes instead of assuming one, and
+  # never let a failing helper abort the suite silently: an empty result is
+  # reported by the assertion below.
   planned="$(PANDOC_PDF_LANG=en "$CLI" render -c "${ROOT_DIR}/examples/documentation/pdf.config.yaml" \
     --dry-run --json 2>/dev/null \
-    | "${REAL_PYTHON3}" -c 'import json,sys; print("\n".join(sorted(p.split("/")[-1] for p in json.load(sys.stdin)["chapters"])))' 2>/dev/null)"
+    | "${REAL_PYTHON3}" -c '
+import json
+import sys
+
+plan = json.load(sys.stdin)
+jobs = plan["jobs"] if "jobs" in plan else [plan]
+print("\n".join(sorted({path.split("/")[-1] for job in jobs for path in job["chapters"]})))
+' 2>/dev/null)" || planned=""
 
   expected="$(cd "${ROOT_DIR}/docs" && ls -1 *.md | grep -v '^README\.md$' | sort)"
   missing="$(comm -13 <(printf '%s\n' "$planned" | sort) <(printf '%s\n' "$expected" | sort) | tr -d ' ')"

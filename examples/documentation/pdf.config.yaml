@@ -35,7 +35,7 @@ input:
     - "i18n.md"
 
 output:
-  formats: [epub]
+  formats: [pdf, epub]
   # Paths resolve against project.base_dir (the repository root here),
   # so this points inside the repository's ignored output area.
   dir: "examples/.output/documentation"

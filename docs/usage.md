@@ -24,15 +24,16 @@ together they cover it instead of repeating it:
 | --- | --- |
 | `examples/ohmyfake/` | Defaults: `glob` plus `order: natural`, `toc_depth: 2`, a cover built from `document.*`, merged Markdown kept, the name as a slug of the title |
 | `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
-| `examples/test/` | The smallest valid configuration, with `titlepage: false` to show the cover switch |
+| `examples/no-titlepage/` | The smallest valid configuration, rendered in both formats, with `titlepage: false`: the document opens on the table of contents instead of a typeset title page |
 | `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
 | `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the `pandoc-pdf book` subcommand |
 
 `examples/toPDF.sh` renders every example: the four configuration-driven ones
-(`ohmyfake`, `manual`, `test` and `documentation`) through `pandoc-pdf render`,
+(`ohmyfake`, `manual`, `no-titlepage` and `documentation`) through
+`pandoc-pdf render`,
 and the book example through `pandoc-pdf book`, because its volumes are declared
 as manifests rather than as a configuration. The
-content examples (`ohmyfake`, `manual`, `test`, `book` and `book-kit`) are
+content examples (`ohmyfake`, `manual`, `no-titlepage` and `book-kit`) are
 original and released under CC0: they exercise the toolkit rather than serve
 as product documentation. The `documentation` example renders the repository
 documentation, which is MIT licensed.

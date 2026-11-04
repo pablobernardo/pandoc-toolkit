@@ -109,7 +109,7 @@ that already has a JDK it installs a second one.
 ### Running it
 
 ```bash
-make epubcheck FILE=examples/.output/test/project-technical-documentation-20261101.epub
+make epubcheck FILE=examples/.output/no-titlepage/project-technical-documentation-20261101.epub
 ```
 
 Exit codes: `0` no errors, `1` errors found, `2` fatal. **Errors fail, warnings
