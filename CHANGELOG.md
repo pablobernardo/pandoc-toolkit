@@ -9,6 +9,14 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+### Changed
+
+- The documentation has one page per question again for books: `docs/books.md`
+  describes the whole flow — the template, `pandoc-pdf book`, the volume layout,
+  the fields that shape a book, the cover image and the contents separation —
+  and `docs/usage.md` points at it instead of telling half of it. The contents
+  fields were documented nowhere under `docs/` until now.
+
 ### Fixed
 
 - `make install-local` installs the **released payload**: the packager and the

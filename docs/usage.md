@@ -38,33 +38,23 @@ original and released under CC0: they exercise the toolkit rather than serve
 as product documentation. The `documentation` example renders the repository
 documentation, which is MIT licensed.
 
-### The bookkit tool
+### Books
 
-`scripts/tools/bookkit/` ships a versioned tool for book projects: it turns
-declarative `manifest.yaml` and `series.yaml` files — governed by the tool's
-own contract (`manifest_version`), separate from `pdf.config.yaml` — into one
-standard configuration per volume and renders it through `pandoc-pdf`.
-`--check` validates the manifests and emits the generated configurations
-without rendering. Its model, fields, folder convention (a convention, never
-validated) and entry rules are documented in `scripts/tools/bookkit/README.md`.
-By default the generated configurations carry the builtin name `book`, which the
-toolkit ships and resolves inside the installation, so the same project builds
-from a checkout and from an installed CLI. Pass `--template` to use a book-class
-LaTeX template of your own, either as a path or as another builtin name.
+A book is the same renderer with a `book`-class template and, when the volumes
+are declared as manifests, one configuration per volume. The whole story —
+manifests, the volume layout, `pandoc-pdf book`, the fields that shape a book,
+the cover image and how the contents is separated — is
+[`books.md`](books.md).
 
-Reach the tool through the CLI: `pandoc-pdf book` forwards every argument to
-`scripts/tools/bookkit/build.py` unchanged and reports the tool's own output and
-exit code. From the example directory:
+In short:
 
 ```bash
-pandoc-pdf book --out ../.output/book-kit single series
+pandoc-pdf book --check examples/book-kit/single   # validate and emit the configurations
+pandoc-pdf book --out ../.output examples/book-kit/single examples/book-kit/series
 ```
 
-Check without rendering:
-
-```bash
-pandoc-pdf book --check examples/book-kit/single
-```
+The field reference for a manifest lives with the tool, in
+[`scripts/tools/bookkit/README.md`](../scripts/tools/bookkit/README.md).
 
 ## Configuration contract
 
