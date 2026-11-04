@@ -20,6 +20,15 @@ The project follows semantic versioning and keeps two versioned contracts:
   A relative `cover-image` resolves against `project.base_dir` in the PDF branch
   too, reusing the resolver (`relative_cover_image`) the EPUB path already had;
   documents without the key render exactly as before.
+- `pandoc-pdf book`, a first-class subcommand that forwards to the shipped
+  bookkit tool (`scripts/tools/bookkit/build.py`): every argument passes
+  through unchanged and stdout, stderr and the exit code are exactly what
+  invoking the tool directly produces. `--help` lists the command and its
+  note. The `examples/book-kit/build.sh` runner is removed; the example README
+  and `docs/usage.md` use the subcommand instead, and `examples/toPDF.sh`
+  renders the book example through it, so one runner covers every example.
+  Adding the command is free under the breaking-change policy; no
+  existing command changed.
 - `pandoc.top_level_division`, an optional, PDF-only field mapping one to one to
   Pandoc's own `--top-level-division` flag: `default`, `section`, `chapter` or
   `part`. Absent (or `default`), the renderer passes no flag and existing

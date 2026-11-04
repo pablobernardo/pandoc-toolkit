@@ -293,3 +293,65 @@ PY
 
   rm -rf "$scratch"
 }
+
+# `pandoc-pdf book` is the front door to the shipped tool: the same arguments,
+# the same stdout and the same exit code as invoking build.py directly. No PDF
+# renders here: --check exercises the whole forwarding path.
+run_book_command_test() {
+  local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
+  local single="${ROOT_DIR}/examples/book-kit/single"
+  local scratch
+
+  scratch="$(mktemp -d)"
+  local proj="$scratch/single"
+  cp -R "$single" "$proj"
+
+  # --- --help lists the command -------------------------------------------
+
+  local help_out
+  help_out="$(mktemp)"
+  "$CLI" --help >"$help_out" 2>&1
+  assert_contains "$help_out" "pandoc-pdf book" "--help lists the book subcommand"
+  rm -f "$help_out"
+
+  # --- The subcommand matches the direct tool invocation ------------------
+
+  local direct_out cli_out
+  direct_out="$(mktemp)"
+  cli_out="$(mktemp)"
+  mkdir -p "$scratch/run-direct" "$scratch/run-cli"
+  set +e
+  (cd "$scratch/run-direct" && python3 "$tool" --check --out out "$proj") >"$direct_out" 2>&1
+  local direct_code=$?
+  (cd "$scratch/run-cli" && "$CLI" book --check --out out "$proj") >"$cli_out" 2>&1
+  local cli_code=$?
+  set -e
+  assert_exit_code "0" "$direct_code" "the direct tool invocation passes for the example project"
+  assert_exit_code "$direct_code" "$cli_code" "pandoc-pdf book exits with the tool's own exit code"
+  if cmp -s "$direct_out" "$cli_out"; then
+    pass "pandoc-pdf book prints exactly what the direct tool invocation prints"
+  else
+    fail "pandoc-pdf book must forward stdout unchanged to the tool"
+  fi
+  rm -f "$direct_out" "$cli_out"
+
+  # --- A failing invocation still fails with the tool's own message -------
+
+  local broken="$scratch/broken"
+  cp -R "$proj" "$broken"
+  grep -v '^title:' "$broken/manifest.yaml" >"$broken/manifest.yaml.tmp"
+  mv "$broken/manifest.yaml.tmp" "$broken/manifest.yaml"
+
+  local out
+  out="$(mktemp)"
+  set +e
+  "$CLI" book --check --out "$scratch/out-broken" "$broken" >"$out" 2>&1
+  local broken_code=$?
+  set -e
+  assert_exit_code "1" "$broken_code" "pandoc-pdf book fails when the tool fails"
+  assert_contains "$out" "required fields are missing: title" \
+    "the failure carries the tool's own message"
+  rm -f "$out"
+
+  rm -rf "$scratch"
+}

@@ -52,6 +52,7 @@ usage() {
   notes_title="$(t "cli.help.notes" "Notes:")"
   note_render_native="$(t "cli.help.note.render_native" "render uses native implementation.")"
   note_yaml_parsing="$(t "cli.help.note.yaml_parsing" "Config parsing supports Python+PyYAML or Ruby stdlib YAML.")"
+  note_book="$(t "cli.help.note.book" "book forwards to the shipped bookkit tool (scripts/tools/bookkit/build.py).")"
 
   cat <<EOF
 Pandoc PDF Toolkit CLI
@@ -67,10 +68,12 @@ ${usage_title}
   pandoc-pdf doctor [-c <pdf.config.yaml>]
   pandoc-pdf validate-config -c <pdf.config.yaml>
   pandoc-pdf render -c <pdf.config.yaml> [--dry-run] [--json]
+  pandoc-pdf book [args...]
 
 ${notes_title}
   - ${note_render_native}
   - ${note_yaml_parsing}
+  - ${note_book}
 EOF
 }
 
@@ -1079,6 +1082,14 @@ main() {
       else
         run_render "$config"
       fi
+      ;;
+    book)
+      # Transparent front door to the shipped bookkit tool: every argument is
+      # forwarded unchanged, the environment is inherited untouched, and
+      # stdout, stderr and the exit code are exactly what invoking the tool
+      # directly produces. The tool re-enters the CLI itself (bin/pandoc-pdf
+      # render), so there is no recursion here.
+      exec python3 "${ROOT_DIR}/scripts/tools/bookkit/build.py" "$@"
       ;;
     help|-h|--help)
       usage
