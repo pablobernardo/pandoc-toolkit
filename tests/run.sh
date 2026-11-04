@@ -43,6 +43,7 @@ main() {
   run_update_dev_command_blocked_test
   run_update_rollback_on_validation_failure_test
   run_install_local_dev_link_test
+  run_install_local_release_layout_test
   run_doctor_success_with_mocked_path
   run_doctor_failure_missing_cmd
   run_doctor_with_config_required_cmd

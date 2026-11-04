@@ -30,6 +30,64 @@ run_install_local_dev_link_test() {
   assert_exit_code "0" "$code" "pandoc-pdf-dev symlink is executable"
   assert_contains "$out" "^pandoc-pdf [0-9]+\.[0-9]+\.[0-9]+$" "pandoc-pdf-dev reports toolkit version"
 
+  # A development install owns its own directory and leaves the stable one
+  # alone: the managed layout is named after the release tag, with the `v` the
+  # network installer uses, and `current` belongs to releases.
+  local version
+  version="$(cat "${ROOT_DIR}/VERSION")"
+  if [[ -d "${install_home}/versions/v${version}-dev" ]]; then
+    pass "a development install uses a v-prefixed directory of its own"
+  else
+    fail "a development install must land in versions/v${version}-dev"
+  fi
+
+  if [[ -e "${install_home}/current" ]]; then
+    fail "a development install must not repoint the stable current link"
+  else
+    pass "a development install leaves the stable current link alone"
+  fi
+
+  # The local installer builds the released payload, not a copy of the repo, so
+  # a local install cannot test something the artifact does not ship.
+  local payload_dir
+  payload_dir="${install_home}/versions/v${version}-dev"
+  if [[ -e "${payload_dir}/LICENSE" && ! -e "${payload_dir}/examples" \
+    && ! -e "${payload_dir}/Makefile" && ! -e "${payload_dir}/scripts/dev" ]]; then
+    pass "a local install carries the released payload and nothing else"
+  else
+    fail "a local install must carry the released payload, not the repository"
+  fi
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
+run_install_local_release_layout_test() {
+  local sandbox out
+  sandbox="$(mktemp -d)"
+  out="$(mktemp)"
+
+  local install_home install_bin
+  install_home="${sandbox}/managed"
+  install_bin="${sandbox}/bin"
+
+  set +e
+  PANDOC_PDF_INSTALL_HOME="$install_home" PANDOC_PDF_INSTALL_DIR="$install_bin" \
+    /bin/bash "${ROOT_DIR}/scripts/delivery/install-local.sh" >"$out" 2>&1
+  local code=$?
+  set -e
+
+  local version
+  version="$(cat "${ROOT_DIR}/VERSION")"
+  assert_exit_code "0" "$code" "a release-shaped local install completes"
+  if [[ -L "${install_home}/current" && -d "${install_home}/versions/v${version}" ]]; then
+    pass "a release-shaped local install uses the v-prefixed tag and sets current"
+  else
+    fail "a release-shaped local install must use versions/v${version} and point current at it"
+  fi
+  assert_contains "$out" "Installed pandoc-pdf ${version} from local repo" \
+    "the release-shaped install reports the version it installed"
+
   rm -rf "$sandbox"
   rm -f "$out"
 }

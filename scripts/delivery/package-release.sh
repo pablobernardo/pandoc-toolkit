@@ -14,27 +14,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Toolkit runtime layout required by bin/pandoc-pdf. Only what an installed
-# toolkit runs ships: the runtime it executes and the tool it exposes. dev and
-# delivery are repository tooling, unusable from an installation and not
-# something a consumer should read as supported.
-mkdir -p "${STAGING_DIR}/scripts"
-cp -R "${ROOT_DIR}/scripts/runtime" "${STAGING_DIR}/scripts/runtime"
-cp -R "${ROOT_DIR}/scripts/tools" "${STAGING_DIR}/scripts/tools"
-cp -R "${ROOT_DIR}/bin" "${STAGING_DIR}/bin"
-cp -R "${ROOT_DIR}/schemas" "${STAGING_DIR}/schemas"
-cp -R "${ROOT_DIR}/templates" "${STAGING_DIR}/templates"
-cp -R "${ROOT_DIR}/filters" "${STAGING_DIR}/filters"
-cp -R "${ROOT_DIR}/i18n" "${STAGING_DIR}/i18n"
-cp "${ROOT_DIR}/VERSION" "${STAGING_DIR}/VERSION"
-cp "${ROOT_DIR}/README.md" "${STAGING_DIR}/README.md"
-cp "${ROOT_DIR}/LICENSE" "${STAGING_DIR}/LICENSE"
+# One payload, shared with the local installer: what an installation carries is
+# decided in `payload.sh`, so the artifact and a local install cannot drift.
+# shellcheck source=payload.sh
+source "${ROOT_DIR}/scripts/delivery/payload.sh"
+populate_payload "${STAGING_DIR}" "${ROOT_DIR}"
 
 chmod +x "${STAGING_DIR}/bin/pandoc-pdf"
-
-# Never ship local Python bytecode caches.
-find "${STAGING_DIR}" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || true
-find "${STAGING_DIR}" -name '*.pyc' -type f -delete 2>/dev/null || true
 
 artifacts=(
   "pandoc-pdf_darwin_amd64.tar.gz"

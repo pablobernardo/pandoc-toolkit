@@ -85,11 +85,19 @@ bash scripts/delivery/bootstrap.sh --ci           # CI equivalent
 Once the repo is cloned, you can install it into the same layout used by `install-release` (so that `update` works correctly) and additionally create the development symlink:
 
 ```bash
-make install-local          # installs into the managed layout (versions/<tag> + current + bin)
-make install-local-dev      # installs into the managed layout + symlink pandoc-pdf-dev -> bin/pandoc-pdf of the repo
+make install-local          # versions/v<version> + current + bin, exactly like a release
+make install-local-dev      # versions/v<version>-dev + pandoc-pdf-dev -> bin/pandoc-pdf of the repo
 ```
 
-This copies the contents of the repo to `~/.local/share/pandoc-pdf/versions/<VERSION>` and creates the corresponding symlinks. With `install-local-dev`, `pandoc-pdf-dev` also becomes available, pointing at the development entrypoint `bin/pandoc-pdf` of the repo.
+A local install carries **the released payload**, from the same list the packager
+uses, so it exercises what an installation actually receives: no `examples/`, no
+`Makefile` and no repository tooling.
+
+The directory is named after the release tag, `versions/v<version>`, which is
+what the network installer writes. A development install gets its own
+`versions/v<version>-dev` and **does not touch `current`**: the stable binary
+keeps pointing where it pointed, and `pandoc-pdf-dev` is the separate
+development entrypoint.
 
 ### Isolated installations for acceptance runs
 

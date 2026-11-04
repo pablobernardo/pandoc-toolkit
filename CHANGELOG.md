@@ -9,6 +9,16 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+### Fixed
+
+- `make install-local` installs the **released payload**: the packager and the
+  local installer now take it from one list, so a local install no longer ships
+  `examples/`, `Makefile` or the repository tooling, and no longer omits
+  `LICENSE` and `README.md`. It also names its directory after the release tag,
+  `versions/v<version>`, matching what the network installer writes; a
+  development install goes to `versions/v<version>-dev` and leaves `current`
+  alone instead of taking over the stable binary of the same version.
+
 ### Added
 
 - `bookkit` volumes accept `toc_separators`, so the contents stop reading as one
