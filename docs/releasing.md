@@ -59,7 +59,7 @@ perform for the release, not claims that a future candidate has passed:
 
 The following Bash commands are illustrative, not an instruction to run them
 without approval. Start at the approved commit on a clean `main`; confirm that
-`github` is the intended publishing remote. Check both local and remote tags,
+`origin` is the intended publishing remote. Check both local and remote tags,
 then derive the tag from `VERSION` rather than copying an old release number:
 
 ```bash
@@ -73,7 +73,7 @@ if git show-ref --verify --quiet "refs/tags/$tag"; then
   printf 'Tag already exists locally: %s\n' "$tag" >&2
   exit 1
 fi
-remote_tags="$(git ls-remote --tags github "refs/tags/$tag")"
+remote_tags="$(git ls-remote --tags origin "refs/tags/$tag")"
 test -z "$remote_tags"
 ```
 
@@ -81,7 +81,7 @@ Only after the acceptance evidence and explicit publishing approval:
 
 ```bash
 git tag -a "$tag" -m "pandoc-pdf $version"
-git push github "$tag"
+git push origin "$tag"
 ```
 
 The tag triggers `.github/workflows/release.yml`, which builds the four
