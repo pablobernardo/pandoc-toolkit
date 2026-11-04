@@ -169,7 +169,11 @@ jobs:
           # job and this one rely on what the image already provides.
           chrome_path="$(command -v google-chrome)"
           test -x "$chrome_path"
-          PUPPETEER_EXECUTABLE_PATH="$chrome_path" bash examples/toPDF.sh
+          # This job validates EPUB publications and carries no LaTeX, so the
+          # runner is narrowed to the format validated here. The PDF path is
+          # covered by L1 and by the L2/L3 jobs, which install a TeX toolchain.
+          PUPPETEER_EXECUTABLE_PATH="$chrome_path" \
+            FORMATS=epub bash examples/toPDF.sh
 
       - name: Install the pinned EPUBCheck
         # Acceptance only. A consumer producing a publication never needs a JVM,
