@@ -72,6 +72,11 @@ DEFAULT_OUT = Path(".output") / "bookkit"
 
 LANG_CODES = ("en", "es", "pt", "gl")
 
+# How the contents are separated into blocks, at the two boundaries the
+# adapter controls: before the first chapter and before the first appendix.
+TOC_SEPARATORS = ("none", "space", "rule", "label")
+DEFAULT_TOC_SEPARATORS = "space"
+
 
 def die(message: str) -> NoReturn:
     print(f"build.py: error: {message}", file=sys.stderr)
@@ -286,6 +291,53 @@ def with_toc_guards(
     return files
 
 
+_LATEX_SPECIALS = {
+    "\\": r"\textbackslash{}",
+    "{": r"\{",
+    "}": r"\}",
+    "%": r"\%",
+    "#": r"\#",
+    "&": r"\&",
+    "_": r"\_",
+    "$": r"\$",
+    "~": r"\textasciitilde{}",
+    "^": r"\textasciicircum{}",
+}
+
+
+def latex_escape(text: str) -> str:
+    """A short label, safe to embed in the contents file."""
+    return "".join(_LATEX_SPECIALS.get(char, char) for char in text)
+
+
+def toc_separator_block(style: str, label: str | None, macro: str) -> str:
+    """The LaTeX that separates one block of the contents.
+
+    The block defines its own macro before using it, so a volume built with a
+    custom book-class template compiles without that template declaring anything.
+    """
+    if style == "none":
+        return ""
+    if style == "space":
+        body = r"\protect\vspace{1.2em}"
+    elif style == "rule":
+        body = (
+            r"\protect\vspace{0.8em}\protect\noindent"
+            r"\protect\rule{\protect\linewidth}{0.4pt}"
+            r"\protect\par\protect\vspace{0.6em}"
+        )
+    else:
+        body = (
+            r"\protect\vspace{1em}\protect\noindent{\protect\bfseries "
+            + latex_escape(label or "")
+            + r"}\protect\par\protect\vspace{0.4em}"
+        )
+    return (
+        f"\\providecommand{{\\{macro}}}{{\\addtocontents{{toc}}{{{body}}}}}"
+        f"\n\\{macro}\n"
+    )
+
+
 def write_mode_file(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -346,6 +398,24 @@ def build_volume(
         ordered_entries("back_matter", merged.get("back_matter"), volume_name), volume_dir
     )
 
+    toc_separators = merged.get("toc_separators", DEFAULT_TOC_SEPARATORS)
+    if toc_separators not in TOC_SEPARATORS:
+        die(
+            f"volume '{volume_name}': 'toc_separators' must be one of"
+            f" {', '.join(TOC_SEPARATORS)} (got {toc_separators!r})"
+        )
+    toc_labels = merged.get("toc_labels") or {}
+    if not isinstance(toc_labels, dict):
+        die(f"volume '{volume_name}': 'toc_labels' must be a map of label names")
+    if toc_separators == "label":
+        needed = ["chapters"] + (["appendices"] if back else [])
+        missing = [name for name in needed if not str(toc_labels.get(name, "")).strip()]
+        if missing:
+            die(
+                f"volume '{volume_name}': 'toc_separators: label' needs a"
+                f" 'toc_labels' entry for {', '.join(missing)}"
+            )
+
     # Generated mode files live in the run output, never inside the content
     # directories. explicit_files resolves against the volume directory
     # (input.chapters_dir is "."), so the tool computes the relative hops.
@@ -356,6 +426,9 @@ def build_volume(
         # The first chapter of this volume gets the declared number: the
         # counter is set to N-1 because the chapter command steps it.
         mainmatter_text += f"\\setcounter{{chapter}}{{{chapter_start - 1}}}\n"
+    mainmatter_text += toc_separator_block(
+        toc_separators, toc_labels.get("chapters"), "BookTocSeparatorChapters"
+    )
     write_mode_file(mainmatter_file, mainmatter_text)
 
     # 00 and 01 name the two structural switches; the contents guards start at
@@ -366,7 +439,13 @@ def build_volume(
     explicit_files += list(chapters)
     if back:
         appendix_file = generated_dir / "01-appendix.md"
-        write_mode_file(appendix_file, "\\appendix\n")
+        write_mode_file(
+            appendix_file,
+            "\\appendix\n"
+            + toc_separator_block(
+                toc_separators, toc_labels.get("appendices"), "BookTocSeparatorAppendices"
+            ),
+        )
         explicit_files.append(relpath(appendix_file, volume_dir))
         explicit_files += with_toc_guards(back, generated_dir, volume_dir, guard_counter)
 

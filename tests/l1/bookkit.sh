@@ -355,3 +355,73 @@ run_book_command_test() {
 
   rm -rf "$scratch"
 }
+
+# The contents are one list; a book reads better when the front matter, the
+# chapters and the appendices do not run together. The adapter inserts the
+# separation at the two boundaries it already controls, and the style is the
+# volume's choice.
+run_bookkit_toc_separators_test() {
+  local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
+  local single="${ROOT_DIR}/examples/book-kit/single"
+  local scratch out code
+  scratch="$(mktemp -d)"
+
+  # Declares one style on a copy of the example and returns its mainmatter file.
+  mainmatter_for() {
+    local name="$1" style="$2" extra="${3:-}"
+    local dir="$scratch/$name"
+    cp -R "$single" "$dir"
+    printf '\ntoc_separators: %s\n%s' "$style" "$extra" >>"$dir/manifest.yaml"
+    # Half of these cases are expected to fail, so neither the tool nor the
+    # search may end the suite: the exit code is recorded and asserted instead.
+    set +e
+    python3 "$tool" --check --out "$scratch/out-$name" "$dir" >"$scratch/log-$name" 2>&1
+    echo $? >"$scratch/code-$name"
+    set -e
+    find "$scratch/out-$name" -name "00-mainmatter.md" 2>/dev/null | head -1 || true
+  }
+
+  # --- The default separates the blocks ------------------------------------
+
+  local plain="$scratch/plain"
+  cp -R "$single" "$plain"
+  python3 "$tool" --check --out "$scratch/out-plain" "$plain" >/dev/null 2>&1
+  local default_mm
+  default_mm="$(find "$scratch/out-plain" -name "00-mainmatter.md" | head -1)"
+  if grep -q "BookTocSeparatorChapters" "$default_mm" 2>/dev/null; then
+    pass "a volume without toc_separators still separates the contents"
+  else
+    fail "the default toc_separators did not reach the generated mode file"
+  fi
+
+  # --- none emits nothing --------------------------------------------------
+
+  local none_mm
+  none_mm="$(mainmatter_for none none)"
+  if grep -q "BookTocSeparator" "$none_mm" 2>/dev/null; then
+    fail "toc_separators: none must not emit a separator"
+  else
+    pass "toc_separators: none emits no separator"
+  fi
+
+  # --- rule and label reach the contents with their own mark --------------
+
+  local rule_mm label_mm
+  rule_mm="$(mainmatter_for rule rule)"
+  assert_contains "$rule_mm" "protect\\\\rule" "toc_separators: rule draws a rule in the contents"
+
+  label_mm="$(mainmatter_for label label "$(printf 'toc_labels:\n  chapters: "Capítulos"\n  appendices: "Apéndices"\n')")"
+  assert_contains "$label_mm" "Capítulos" "toc_separators: label prints the declared word"
+
+  # --- The two failures a manifest can make -------------------------------
+
+  mainmatter_for label_missing label
+  assert_exit_code "1" "$(cat "$scratch/code-label_missing")" "a label style without labels fails"
+  assert_contains "$scratch/log-label_missing" "toc_labels" "the failure names the field it is missing"
+
+  mainmatter_for bogus bogus
+  assert_exit_code "1" "$(cat "$scratch/code-bogus")" "an unknown style fails"
+  assert_contains "$scratch/log-bogus" "none, space, rule, label" "the failure lists the styles"
+
+  rm -rf "$scratch"
+}

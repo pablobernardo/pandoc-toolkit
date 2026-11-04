@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "bookkit volume manifest (manifest_version 1)",
-  "description": "Contract for one volume's manifest.yaml. Paths are relative to the volume directory. The folder layout (content/front, content/chapters, content/back) is a convention and is not validated.",
+  "description": "Contract for one volume's manifest.yaml. Paths are relative to the volume directory. The folder layout (front-matter, chapters, back-matter at the volume root) is a convention and is not validated.",
   "type": "object",
   "additionalProperties": false,
   "required": ["manifest_version", "profile", "title", "chapters"],
@@ -69,7 +69,21 @@
     "chapters_dir": {
       "type": "string",
       "minLength": 1,
-      "description": "Folder used when 'chapters' is the keyword 'ordered'. Default: content/chapters."
+      "description": "Folder used when 'chapters' is the keyword 'ordered'. Default: chapters."
+    },
+    "toc_separators": {
+      "type": "string",
+      "enum": ["none", "space", "rule", "label"],
+      "description": "Optional. Separates the contents into blocks at the two boundaries the adapter controls: none, space, rule or label. Default: space."
+    },
+    "toc_labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "chapters": { "type": "string", "minLength": 1 },
+        "appendices": { "type": "string", "minLength": 1 }
+      },
+      "description": "Optional. The words toc_separators: label prints, one per boundary. Required by that style."
     },
     "chapters": {
       "anyOf": [

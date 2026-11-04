@@ -17,3 +17,7 @@ language: "en"
 volumes:
   - volume-1
   - volume-2
+
+# Shared by both volumes: the contents separate the front matter, the
+# chapters and the appendices into blocks instead of running them together.
+toc_separators: space
