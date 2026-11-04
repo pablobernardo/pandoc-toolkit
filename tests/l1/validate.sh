@@ -170,6 +170,52 @@ run_validate_order_enum_test() {
   rm -f "$out"
 }
 
+run_validate_top_level_division_test() {
+  local out code
+  out="$(mktemp)"
+
+  # A value outside the four Pandoc values is rejected before it can reach a
+  # render, and the failure names the field and the valid values.
+  set +e
+  "$CLI" validate-config -c "${FIXTURES_DIR}/invalid-top-level-division.yaml" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "validate-config rejects a pandoc.top_level_division outside the enum"
+  assert_contains "$out" "pandoc\.top_level_division" "the enum error names the field"
+  assert_contains "$out" "chapter" "the enum error lists the allowed values"
+  rm -f "$out"
+
+  # The schema enum and the shared module are one vocabulary: if they drift
+  # apart, validation and rendering would disagree about what a value means.
+  if [[ -z "${REAL_PYTHON3}" ]]; then
+    echo "SKIP top-level-division schema/module agreement (python3 not available)"
+    return 0
+  fi
+  out="$(mktemp)"
+  if "${REAL_PYTHON3}" - "${ROOT_DIR}" >"$out" 2>&1 <<'PY'
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "scripts/runtime"))
+import top_level_division_runtime
+
+schema = json.loads((root / "schemas/pdf-config.schema.json").read_text(encoding="utf-8"))
+enum = schema["properties"]["pandoc"]["properties"]["top_level_division"]["enum"]
+assert list(enum) == list(top_level_division_runtime.ALLOWED_VALUES), (
+    f"schema enum {enum} != module values {top_level_division_runtime.ALLOWED_VALUES}"
+)
+print("schema enum and shared module agree")
+PY
+  then
+    pass "the schema enum and the shared module hold one vocabulary"
+  else
+    fail "the schema enum and the shared module disagree: $(cat "$out")"
+  fi
+  rm -f "$out"
+}
+
 run_validate_metadata_contract_tests() {
   local out code
 

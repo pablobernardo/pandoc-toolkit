@@ -19,6 +19,12 @@ except Exception:  # imported as a module from elsewhere: fix the path
     import template_runtime
 
 try:
+    import top_level_division_runtime
+except Exception:  # imported as a module from elsewhere: fix the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import top_level_division_runtime
+
+try:
     import yaml  # type: ignore
 except Exception:  # PyYAML is optional: Ruby's stdlib YAML is the fallback.
     yaml = None
@@ -343,6 +349,24 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
             f"--pdf-engine={pandoc.get('pdf_engine', 'xelatex')}",
             f"--template={template_path}",
         ])
+        # What a top-level Markdown heading becomes (\section, \chapter, ...).
+        # A typesetting decision, so PDF-only like the template; absent, empty
+        # or 'default' passes no flag and Pandoc keeps its own behaviour.
+        try:
+            top_level_division_argument = top_level_division_runtime.argument(
+                pandoc.get("top_level_division")
+            )
+        except ValueError as e:
+            die(
+                t(
+                    top_level_division_runtime.ERROR_KEY,
+                    top_level_division_runtime.ERROR_FALLBACK,
+                    value=e.args[0] if e.args else "",
+                    supported=", ".join(top_level_division_runtime.allowed_values()),
+                )
+            )
+        if top_level_division_argument:
+            cmd.append(top_level_division_argument)
 
     if emoji_enabled:
         cmd.append(f"--lua-filter={root_dir / 'filters/emoji.lua'}")

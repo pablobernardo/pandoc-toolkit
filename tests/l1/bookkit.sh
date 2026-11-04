@@ -38,6 +38,8 @@ run_bookkit_tests() {
     pass "bookkit --check emits the generated configuration"
     assert_contains "$scratch/out-single/single/pdf.config.yaml" 'template: "book"' \
       "the default template is the builtin name, not a project path"
+    assert_contains "$scratch/out-single/single/pdf.config.yaml" 'top_level_division: chapter' \
+      "a book project asks pandoc for chapters, since templates/book.tex no longer shifts headings"
   else
     fail "bookkit --check must emit the generated configuration"
   fi

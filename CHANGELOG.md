@@ -9,6 +9,27 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+### Added
+
+- `pandoc.top_level_division`, an optional, PDF-only field mapping one to one to
+  Pandoc's own `--top-level-division` flag: `default`, `section`, `chapter` or
+  `part`. Absent (or `default`), the renderer passes no flag and existing
+  configurations keep Pandoc's behaviour; any other value fails in
+  `validate-config` and in the renderer, naming the four valid values. `default`
+  is not equivalent to `chapter`: with the `book` class, `chapter` is what
+  produces chapters, while `default` lets Pandoc infer the division and does
+  not guarantee it. The valid values, the error message and how a value becomes an argument live in
+  one shared module (`scripts/runtime/top_level_division_runtime.py`), so the
+  validator and the renderer cannot disagree.
+
+### Changed
+
+- `templates/book.tex` no longer shifts heading levels with a `\let` chain:
+  top-level headings reach it as `\chapter` because the bookkit adapter now
+  emits `top_level_division: chapter` in every generated book configuration.
+  Chapter numbering, the table of contents and `\appendix` behaviour are
+  unchanged.
+
 ### Fixed
 
 - `pandoc-pdf validate-config` no longer dies with a Python traceback on a

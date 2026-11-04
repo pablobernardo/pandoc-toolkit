@@ -91,6 +91,10 @@
         "toc": { "type": "boolean" },
         "toc_depth": { "type": "integer", "minimum": 1 },
         "number_sections": { "type": "boolean" },
+        "top_level_division": {
+          "type": "string",
+          "enum": ["default", "section", "chapter", "part"]
+        },
         "template": { "type": "string", "minLength": 1 },
         "metadata_file": { "type": "string" },
         "resource_path": {

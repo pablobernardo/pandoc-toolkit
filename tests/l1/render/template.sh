@@ -122,6 +122,32 @@ PY
 # Accepting a missing setting is half the job: the renderer has to use the value it
 # documents, or the relaxation only moves the surprise to render time.
 
+# pandoc.top_level_division moved the H1-as-\chapter decision from the template
+# to the contract: the renderer passes the flag, so the template must not
+# redefine heading commands any more.
+
+run_book_template_top_level_division_test() {
+  local template="${ROOT_DIR}/templates/book.tex"
+
+  if grep -qE '^\\let\\(section|subsection|subsubsection|paragraph|subparagraph)\\' "$template"; then
+    fail "templates/book.tex must not shift heading levels with \\let: pandoc.top_level_division replaces it"
+  else
+    pass "templates/book.tex contains no \\let heading shift"
+  fi
+
+  if grep -q 'documentclass\[.*\]{book}' "$template"; then
+    pass "the book template keeps the book class that defines \\chapter"
+  else
+    fail "the book template must keep its book class: --top-level-division=chapter emits \\chapter"
+  fi
+
+  if grep -q 'tableofcontents' "$template"; then
+    pass "the book template keeps its table of contents"
+  else
+    fail "the book template must keep \\tableofcontents"
+  fi
+}
+
 run_builtin_template_test() {
   local sandbox out code cfg
 

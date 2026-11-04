@@ -129,19 +129,12 @@ $endif$
     \begin{minipage}{\linewidth}#1\end{minipage}}
 
 % ---- Book-level headings -------------------------------------------------
-% Pandoc emits top-level Markdown headings as \section (the renderer builds the
-% pandoc command and does not pass --top-level-division). In a book these are
-% chapters, so every heading level is shifted down by one: H1 typesets as
-% \chapter, H2 as \section, H3 as \subsection. Numbering follows from the
-% class automatically: chapters print 1, 2, ... and, after \appendix in the
-% content, A, B, ...
-\makeatletter
-\let\subparagraph\paragraph
-\let\paragraph\subsubsection
-\let\subsubsection\subsection
-\let\subsection\section
-\let\section\chapter
-\makeatother
+% Top-level Markdown headings become \chapter through the configuration: the
+% renderer passes --top-level-division=chapter (pandoc.top_level_division in
+% pdf.config.yaml, which the bookkit adapter emits for every book project), so
+% the template redefines no heading command. Numbering follows from the class
+% automatically: chapters print 1, 2, ... and, after \appendix in the content,
+% A, B, ...
 
 % ---- Links ----
 \usepackage[hidelinks]{hyperref}

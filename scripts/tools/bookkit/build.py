@@ -447,6 +447,9 @@ def emit_config(
             "  toc: true",
             "  toc_depth: 2",
             "  number_sections: true",
+            # The book template receives \chapter for top-level headings through
+            # the contract instead of a \let heading shift in the template.
+            "  top_level_division: chapter",
             f"  template: {quoted(template if is_bare_name(template) else relpath(Path(template), volume_dir))}",
             "  resource_path:",
             '    - "content"',
