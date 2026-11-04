@@ -73,9 +73,15 @@ jobs:
     # single test. Keeping it out of the pull-request path means a merge never
     # waits on it, and it still runs every week and on demand — where a release
     # candidate dispatches it and records the result. See docs/releasing.md.
-    name: L1 tests (macos-latest)
+    name: L1 tests (macos-15)
     if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_l1_macos == true) }}
-    runs-on: macos-latest
+    # Pinned, not `latest`. `macos-latest` moved to macOS 26 in June 2026, and the
+    # newest image is the smallest and most contended pool: a job can wait fifteen
+    # minutes and then be cancelled without ever running. What this job validates
+    # is the BSD userland and how paths resolve on macOS, not a particular version,
+    # so an established image gives the same signal and does not change under us on
+    # the next migration. Revisit when macOS 15 approaches retirement.
+    runs-on: macos-15
 
     steps:
       - name: Checkout
