@@ -19,7 +19,7 @@ that failed for a year of releases; it is not a claim that today's runner still
 uses that older Pandoc.
 
 Two things hold the line: the toolkit template defines `\pandocbounded`, and
-`tests/l1/render.sh` fails if that definition disappears. If you change the
+the tests under `tests/l1/render/` fail if that definition disappears. If you change the
 template, render a document with an image on a current Pandoc before trusting CI.
 
 ### CI rendering prerequisites
@@ -131,8 +131,8 @@ maintainers never validate with different versions.
 
 `make gate` runs on every pull request and must stay runnable with no extra
 setup. EPUBCheck validates a *finished* publication, needs a JVM, and says
-nothing in a pull request that the dependency-free structural checks in
-`tests/l1/epub.sh` do not already say. It belongs to release acceptance, where
+nothing in a pull request that the dependency-free structural checks under
+`tests/l1/epub/` do not already say. It belongs to release acceptance, where
 the question is "is this publication conformant", not "is this diff correct".
 
 ### Current state
