@@ -16,8 +16,9 @@ The project follows semantic versioning and keeps two versioned contracts:
   `label` — with the words in `toc_labels` — or `none` for the previous output.
   The block is written at the two boundaries the adapter already controls and
   defines the LaTeX it uses, so a volume built with its own template compiles
-  unchanged. The examples declare `space`, which leaves their page counts at 8
-  and 6.
+  unchanged. The examples declare `label` with `Chapters` and `Appendices`, which
+  leaves their page counts at 8 and 6 while the contents stops reading as one
+  run of entries.
 
 ### Changed
 

@@ -360,6 +360,31 @@ run_book_command_test() {
 # chapters and the appendices do not run together. The adapter inserts the
 # separation at the two boundaries it already controls, and the style is the
 # volume's choice.
+# A case states its own contents style: the example declares one, so a copy has
+# to drop it first or the appended key would simply duplicate it.
+strip_toc_fields() {
+  python3 - "$1" <<'PYEOF'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+kept = []
+in_labels = False
+for line in path.read_text(encoding="utf-8").splitlines():
+    if line.startswith("toc_separators:"):
+        in_labels = False
+        continue
+    if line.startswith("toc_labels:"):
+        in_labels = True
+        continue
+    if in_labels and line.startswith("  "):
+        continue
+    in_labels = False
+    kept.append(line)
+path.write_text("\n".join(kept) + "\n", encoding="utf-8")
+PYEOF
+}
+
 run_bookkit_toc_separators_test() {
   local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
   local single="${ROOT_DIR}/examples/book-kit/single"
@@ -371,6 +396,7 @@ run_bookkit_toc_separators_test() {
     local name="$1" style="$2" extra="${3:-}"
     local dir="$scratch/$name"
     cp -R "$single" "$dir"
+    strip_toc_fields "$dir/manifest.yaml"
     printf '\ntoc_separators: %s\n%s' "$style" "$extra" >>"$dir/manifest.yaml"
     # Half of these cases are expected to fail, so neither the tool nor the
     # search may end the suite: the exit code is recorded and asserted instead.
@@ -385,6 +411,7 @@ run_bookkit_toc_separators_test() {
 
   local plain="$scratch/plain"
   cp -R "$single" "$plain"
+  strip_toc_fields "$plain/manifest.yaml"
   python3 "$tool" --check --out "$scratch/out-plain" "$plain" >/dev/null 2>&1
   local default_mm
   default_mm="$(find "$scratch/out-plain" -name "00-mainmatter.md" | head -1)"
@@ -437,9 +464,8 @@ run_bookkit_series_defaults_test() {
   scratch="$(mktemp -d)"
 
   cp -R "$series" "$scratch/series"
-  sed 's|^toc_separators: space$|toc_separators: rule|' "$scratch/series/series.yaml" \
-    >"$scratch/series/series.yaml.tmp"
-  mv "$scratch/series/series.yaml.tmp" "$scratch/series/series.yaml"
+  strip_toc_fields "$scratch/series/series.yaml"
+  printf '\ntoc_separators: rule\n' >>"$scratch/series/series.yaml"
 
   out="$(mktemp)"
   set +e
