@@ -91,7 +91,8 @@
                 "properties": {
                   "file": { "type": "string", "minLength": 1 },
                   "print": { "type": "boolean" },
-                  "optional": { "type": "boolean" }
+                  "optional": { "type": "boolean" },
+                  "toc": { "type": "boolean" }
                 }
               }
             ]
@@ -112,7 +113,8 @@
             "properties": {
               "file": { "type": "string", "minLength": 1 },
               "print": { "type": "boolean" },
-              "optional": { "type": "boolean" }
+              "optional": { "type": "boolean" },
+                  "toc": { "type": "boolean" }
             }
           }
         ]
@@ -131,7 +133,8 @@
             "properties": {
               "file": { "type": "string", "minLength": 1 },
               "print": { "type": "boolean" },
-              "optional": { "type": "boolean" }
+              "optional": { "type": "boolean" },
+                  "toc": { "type": "boolean" }
             }
           }
         ]

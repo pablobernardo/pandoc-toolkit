@@ -18,6 +18,10 @@ The project follows semantic versioning and keeps two versioned contracts:
   front matter, numbered chapters and lettered appendices. An unknown bare name
   fails naming the valid ones instead of being read as a path. The validator and
   the renderer share one rule, so both agree on what a value means.
+- A bookkit entry accepts `toc: false`, so a page can print without being listed
+  in the table of contents. It is the right choice for a dedication and the
+  wrong one for a prologue, which is why it is a per-entry option rather than a
+  rule about front matter. Listed by default.
 
 ### Changed
 

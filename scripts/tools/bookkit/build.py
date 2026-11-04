@@ -137,6 +137,7 @@ class Entry:
     file: str
     do_print: bool
     optional: bool
+    listed: bool
 
     def __init__(self, section: str, logical: str, raw: object, volume: str) -> None:
         self.section = section
@@ -146,6 +147,7 @@ class Entry:
             self.file = raw
             self.do_print = True
             self.optional = False
+            self.listed = True
             return
         if not isinstance(raw, dict):
             die(
@@ -167,6 +169,10 @@ class Entry:
         if not isinstance(optional, bool):
             die(f"volume '{volume}': entry '{logical}' ({section}): 'optional' must be a boolean")
         self.optional = optional
+        listed = raw.get("toc", True)
+        if not isinstance(listed, bool):
+            die(f"volume '{volume}': entry '{logical}' ({section}): 'toc' must be a boolean")
+        self.listed = listed
 
     def resolve(self, volume_dir: Path) -> str | None:
         """The declared path when it belongs in the PDF, else None.
@@ -240,6 +246,46 @@ def resolve_entries(entries: list[Entry], volume_dir: Path) -> list[str]:
     return resolved
 
 
+def resolve_listed(entries: list[Entry], volume_dir: Path) -> list[tuple[str, bool]]:
+    """The same resolution, keeping whether each entry belongs in the contents."""
+    resolved: list[tuple[str, bool]] = []
+    for entry in entries:
+        path = entry.resolve(volume_dir)
+        if path is not None:
+            resolved.append((path, entry.listed))
+    return resolved
+
+
+def with_toc_guards(
+    pairs: list[tuple[str, bool]],
+    generated_dir: Path,
+    volume_dir: Path,
+    counter: list[int],
+) -> list[str]:
+    """Interleave the switches the template understands around unlisted entries.
+
+    An entry declared ``toc: false`` is surrounded by two generated mode files,
+    so its heading stays out of the contents without the tool reading or
+    rewriting the Markdown. The template keeps the quoted chapter command out of
+    the table of contents until the switch is turned back on.
+    """
+    files: list[str] = []
+    for path, listed in pairs:
+        if listed:
+            files.append(path)
+            continue
+        off = generated_dir / f"{counter[0]:02d}-toc-off.md"
+        counter[0] += 1
+        write_mode_file(off, "\\BookChaptersUnlisted\n")
+        on = generated_dir / f"{counter[0]:02d}-toc-on.md"
+        counter[0] += 1
+        write_mode_file(on, "\\BookChaptersListed\n")
+        files.append(relpath(off, volume_dir))
+        files.append(path)
+        files.append(relpath(on, volume_dir))
+    return files
+
+
 def write_mode_file(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -287,7 +333,7 @@ def build_volume(
             f" {', '.join(LANG_CODES)} (got {language!r})"
         )
 
-    front = resolve_entries(
+    front = resolve_listed(
         ordered_entries("front_matter", merged.get("front_matter"), volume_name), volume_dir
     )
     chapters_raw = merged.get("chapters")
@@ -296,7 +342,7 @@ def build_volume(
         chapters = resolve_entries(ordered_chapters(chapters_dir, volume_name, volume_dir), volume_dir)
     else:
         chapters = resolve_entries(chapter_entries(chapters_raw, volume_name), volume_dir)
-    back = resolve_entries(
+    back = resolve_listed(
         ordered_entries("back_matter", merged.get("back_matter"), volume_name), volume_dir
     )
 
@@ -312,11 +358,17 @@ def build_volume(
         mainmatter_text += f"\\setcounter{{chapter}}{{{chapter_start - 1}}}\n"
     write_mode_file(mainmatter_file, mainmatter_text)
 
-    explicit_files = list(front) + [relpath(mainmatter_file, volume_dir)] + list(chapters)
+    # 00 and 01 name the two structural switches; the contents guards start at
+    # 10 so the numbering never collides as entries are added.
+    guard_counter = [10]
+    explicit_files = with_toc_guards(front, generated_dir, volume_dir, guard_counter)
+    explicit_files.append(relpath(mainmatter_file, volume_dir))
+    explicit_files += list(chapters)
     if back:
         appendix_file = generated_dir / "01-appendix.md"
         write_mode_file(appendix_file, "\\appendix\n")
-        explicit_files += [relpath(appendix_file, volume_dir)] + list(back)
+        explicit_files.append(relpath(appendix_file, volume_dir))
+        explicit_files += with_toc_guards(back, generated_dir, volume_dir, guard_counter)
 
     out_volume_dir.mkdir(parents=True, exist_ok=True)
     config_path = out_volume_dir / "pdf.config.yaml"

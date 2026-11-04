@@ -17,7 +17,9 @@ isbn: "978-0-000000-00-0"
 date: "2026"
 
 front_matter:
-  dedication: "content/front-matter/00-dedication.md"
+  dedication:
+    file: "content/front-matter/00-dedication.md"
+    toc: false
   the-two-lights: "content/front-matter/01-the-two-lights.md"
 
 chapters:

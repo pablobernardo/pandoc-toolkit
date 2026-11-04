@@ -89,6 +89,7 @@ An entry is either a path string, or a mapping with:
 | `file` | Required path, relative to the volume directory. |
 | `print` | Optional boolean, default `true`. `false` excludes the entry from the PDF silently: it is not read, not checked and not mentioned. |
 | `optional` | Optional boolean, default `false`. `true` means the file may be absent: the tool skips it with a warning instead of failing. |
+| `toc` | Optional boolean, default `true`. `false` prints the page but keeps it out of the table of contents: the adapter wraps the entry with the template's hide and show switches, so the page keeps its front-matter numbering and simply is not listed. |
 
 The three entry rules, exactly:
 
@@ -98,6 +99,10 @@ The three entry rules, exactly:
 2. An `optional: true` entry whose file is missing is **skipped with a
    warning** and the volume still plans (and renders).
 3. A `print: false` entry is excluded **silently**.
+
+`toc: false` is orthogonal to those three: the page still prints and only its
+contents entry is dropped. A dedication usually wants `toc: false`; a prologue
+usually does not, because readers navigate to it.
 
 ## How the mode files work
 
