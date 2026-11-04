@@ -18,17 +18,17 @@ date: "2026"
 
 front_matter:
   dedication:
-    file: "content/front-matter/00-dedication.md"
+    file: "front-matter/00-dedication.md"
     toc: false
-  the-two-lights: "content/front-matter/01-the-two-lights.md"
+  the-two-lights: "front-matter/01-the-two-lights.md"
 
 chapters:
-  - "content/chapters/01-the-north-road.md"
-  - "content/chapters/02-the-tower.md"
-  - "content/chapters/03-the-keeper.md"
+  - "chapters/01-the-north-road.md"
+  - "chapters/02-the-tower.md"
+  - "chapters/03-the-keeper.md"
 
 back_matter:
-  glossary: "content/back-matter/01-glossary.md"
+  glossary: "back-matter/01-glossary.md"
   review-request:
-    file: "content/back-matter/02-review-request.md"
+    file: "back-matter/02-review-request.md"
     print: false

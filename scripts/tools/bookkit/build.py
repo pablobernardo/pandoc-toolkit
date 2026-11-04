@@ -338,7 +338,7 @@ def build_volume(
     )
     chapters_raw = merged.get("chapters")
     if isinstance(chapters_raw, str):
-        chapters_dir = merged.get("chapters_dir", "content/chapters")
+        chapters_dir = merged.get("chapters_dir", "chapters")
         chapters = resolve_entries(ordered_chapters(chapters_dir, volume_name, volume_dir), volume_dir)
     else:
         chapters = resolve_entries(chapter_entries(chapters_raw, volume_name), volume_dir)
@@ -452,7 +452,9 @@ def emit_config(
             "  top_level_division: chapter",
             f"  template: {quoted(template if is_bare_name(template) else relpath(Path(template), volume_dir))}",
             "  resource_path:",
-            '    - "content"',
+            # Assets a chapter references resolve from the volume root, which is
+            # where the content folders and any media directory now live.
+            '    - "."',
             "",
             "filters:",
             "  emoji:",

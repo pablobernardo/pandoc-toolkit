@@ -17,14 +17,14 @@ date: "2026"
 chapter_start: 4
 
 front_matter:
-  dedication: "content/front-matter/00-dedication.md"
+  dedication: "front-matter/00-dedication.md"
 
 chapters:
-  - "content/chapters/04-the-crossing.md"
-  - "content/chapters/05-the-south-tower.md"
+  - "chapters/04-the-crossing.md"
+  - "chapters/05-the-south-tower.md"
 
 back_matter:
-  glossary: "content/back-matter/01-glossary.md"
+  glossary: "back-matter/01-glossary.md"
   excerpt:
-    file: "content/back-matter/99-excerpt.md"
+    file: "back-matter/99-excerpt.md"
     optional: true
