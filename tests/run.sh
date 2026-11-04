@@ -56,11 +56,13 @@ main() {
   run_validate_metadata_file_test
   run_schema_keyword_support_test
   run_validate_order_enum_test
+  run_validate_top_level_division_test
   run_render_legacy_flag_rejected_test
   run_render_no_yaml_parser_hints_i18n_test
   run_render_native_test
   run_render_native_advanced_paths_test
   run_render_missing_explicit_file_test
+  run_render_top_level_division_test
   run_no_hidden_defaults_test
   run_render_order_semantics_test
   run_render_keep_merged_markdown_test
@@ -73,6 +75,7 @@ main() {
   run_template_wrapping_test
   run_template_unicode_symbol_fallback_test
   run_builtin_template_test
+  run_book_template_top_level_division_test
   run_render_filter_defaults_test
   run_render_output_file_name_test
   run_render_slug_accents_test

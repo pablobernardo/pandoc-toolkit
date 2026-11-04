@@ -136,6 +136,7 @@ pandoc-toolkit/
       i18n_runtime.py
       schema_runtime.py      # YAML loading and the schema subset
       template_runtime.py    # what a pandoc.template value means
+      top_level_division_runtime.py  # what a pandoc.top_level_division value means
     tools/
       bookkit/               # ships: the versioned book tool
     dev/                     # repository only, never shipped

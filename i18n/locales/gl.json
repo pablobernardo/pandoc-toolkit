@@ -148,6 +148,7 @@
   "validate.error.minimum": "'{label}' debe ser >= {minimum}",
   "validate.error.boolean_type": "'{label}' debe ser do tipo boolean",
   "template.error.unknown_name": "Nome de plantilla descoñecido '{name}'; usa unha ruta ou un de: {allowed}",
+  "top_level_division.error.invalid_value": "Valor de 'pandoc.top_level_division' non válido: {value}. Valores admitidos: {supported}",
   "validate.error.base_dir_required": "'project.base_dir' é obrigatorio",
   "validate.error.invalid_chapters_dir": "Ruta inválida en 'input.chapters_dir': o directorio non existe ({path})",
   "validate.error.invalid_template": "Ruta inválida en 'pandoc.template': o arquivo non existe ({path})",

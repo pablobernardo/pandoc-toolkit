@@ -34,6 +34,12 @@ except Exception:  # imported as a module from elsewhere: fix the path
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import template_runtime
 
+try:
+    import top_level_division_runtime
+except Exception:  # imported as a module from elsewhere: fix the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import top_level_division_runtime
+
 # The toolkit root, so a builtin template name resolves where the renderer looks
 # for it: a name is a shipped template, not a project file.
 TOOLKIT_ROOT = Path(__file__).resolve().parents[2]
@@ -107,6 +113,23 @@ def validate_runtime_paths(data: dict[str, Any], cfg_path: Path) -> None:
                     "validate.error.invalid_template",
                     "Invalid path in 'pandoc.template': file does not exist ({path})",
                     path=template_path,
+                )
+            )
+
+    top_level_division_raw = pandoc_cfg.get("top_level_division")
+    if top_level_division_raw is not None:
+        # The schema enum already rejects a value outside the four Pandoc
+        # choices; this check keeps the shared module load-bearing on both
+        # sides, so validation cannot drift from what the renderer passes.
+        try:
+            top_level_division_runtime.argument(top_level_division_raw)
+        except ValueError as e:
+            fail(
+                t(
+                    top_level_division_runtime.ERROR_KEY,
+                    top_level_division_runtime.ERROR_FALLBACK,
+                    value=e.args[0] if e.args else "",
+                    supported=", ".join(top_level_division_runtime.allowed_values()),
                 )
             )
 

@@ -13,6 +13,7 @@ run_render_native_test() {
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/top_level_division_runtime.py" "${sandbox}/scripts/runtime/top_level_division_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
@@ -122,6 +123,7 @@ run_render_native_advanced_paths_test() {
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/top_level_division_runtime.py" "${sandbox}/scripts/runtime/top_level_division_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
@@ -205,6 +207,7 @@ run_render_missing_explicit_file_test() {
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/top_level_division_runtime.py" "${sandbox}/scripts/runtime/top_level_division_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
@@ -248,3 +251,94 @@ EOF
 #   input.order / output.keep_merged_markdown / document.* template vars /
 #   filters.emoji.include_ballot_icons / runtime.strict
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# pandoc.top_level_division — the contract addition that lets a book template
+# receive \chapter for top-level headings instead of relying on a \let shift.
+# ---------------------------------------------------------------------------
+
+run_render_top_level_division_test() {
+  local sandbox tmpbin capture out cfg
+
+  sandbox="$(mktemp -d)"
+  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
+
+  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
+  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
+  cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
+  cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/top_level_division_runtime.py" "${sandbox}/scripts/runtime/top_level_division_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
+  cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
+  cp "${FIXTURES_DIR}/render-top-level-division.config.yaml" "${sandbox}/render-top-level-division.config.yaml"
+
+  cat >"${sandbox}/chapters/title-a.md" <<'EOF2'
+# Chapter A
+
+Content A
+EOF2
+
+  cat >"${sandbox}/chapters/title-b.md" <<'EOF2'
+# Chapter B
+
+Content B
+EOF2
+
+  cat >"${sandbox}/templates/default.tex" <<'EOF2'
+\documentclass{article}
+\begin{document}
+$body$
+\end{document}
+EOF2
+
+  cat >"${sandbox}/metadata.yaml" <<'EOF2'
+title: Render Test
+EOF2
+
+  tmpbin="$(mktemp -d)"
+  write_pandoc_capture_mock "$tmpbin"
+
+  capture="$(mktemp)"
+  out="$(mktemp)"
+
+  # (a) A valid value reaches pandoc's argv as the exact CLI flag.
+  cfg="${sandbox}/render-top-level-division.config.yaml"
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "$cfg" >"$out" 2>&1; then
+    pass "a render with top_level_division runs pandoc"
+  else
+    fail "a render with top_level_division should run pandoc ($(cat "$out"))"
+  fi
+  assert_contains "$capture" "--top-level-division=chapter" "a valid value reaches pandoc as --top-level-division=chapter"
+
+  # (c) Absence of the field changes nothing: no flag is passed at all.
+  cfg="${sandbox}/render-absent.config.yaml"
+  sed '/top_level_division:/d' "${sandbox}/render-top-level-division.config.yaml" >"$cfg"
+  : >"$capture"
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "$cfg" >"$out" 2>&1; then
+    pass "a render without top_level_division runs pandoc"
+  else
+    fail "a render without top_level_division should run pandoc ($(cat "$out"))"
+  fi
+  assert_not_contains "$capture" "top-level-division" "an absent field passes no top-level-division flag"
+  assert_contains "$capture" "--number-sections" "an absent field leaves the rest of the command unchanged"
+
+  # (b) An invalid value fails clearly, naming the valid ones.
+  cfg="${sandbox}/render-invalid.config.yaml"
+  sed 's/top_level_division: chapter/top_level_division: bogus/' "${sandbox}/render-top-level-division.config.yaml" >"$cfg"
+  : >"$out"
+  set +e
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "$cfg" >"$out" 2>&1
+  local code=$?
+  set -e
+  assert_exit_code "1" "$code" "an invalid top_level_division fails the render"
+  assert_contains "$out" "pandoc\\.top_level_division" "the failure names the field"
+  assert_contains "$out" "section" "the failure names the valid values"
+  assert_not_contains "$out" "Traceback" "the failure is a message, not a crash"
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$capture" "$out"
+}

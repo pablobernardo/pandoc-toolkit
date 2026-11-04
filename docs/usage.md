@@ -153,6 +153,7 @@ renderer applies the value in the middle column when they are absent:
 | `filters.mermaid.output_dir` | `output/mermaid` under `project.base_dir` | the mermaid filter is enabled |
 | `filters.mermaid.background` | `transparent` | the mermaid filter is enabled |
 | `pandoc.metadata_file` | absent: `document.*` reaches the template | always |
+| `pandoc.top_level_division` | absent: Pandoc's own choice | the template typesets top-level headings differently from Pandoc's default |
 | `output.file_prefix` | a slug of `document.title` | always |
 | `output.formats` | `[pdf]` | you want EPUB or multiple formats |
 
@@ -256,6 +257,12 @@ pandoc-pdf validate-config -c pdf.config.yaml
 The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`, `anyOf`), shared with the bookkit tool through `scripts/runtime/schema_runtime.py`. A test fails if the schema starts using any other keyword, so one can never be silently ignored.
 
 `pandoc.template` is optional. Omitted, the render uses the toolkit's `templates/default.tex`. A **bare name — no path separator and no dot — selects a template that ships with the toolkit**: `book` resolves to `templates/book.tex`, which travels in the artifact, so the same configuration works in a checkout and in an installation. An unknown bare name fails naming the valid ones instead of being read as a path; anything else is a path resolved against `project.base_dir`.
+
+`pandoc.top_level_division` is optional and **PDF-only**. It maps one to one to Pandoc's own `--top-level-division` flag, so a top-level Markdown heading becomes the LaTeX command you name: `section` (Pandoc's default), `chapter` or `part`. `default` and an absent field pass no flag at all, so existing configurations keep Pandoc's behaviour. Any other value is rejected by `validate-config` naming the four valid ones.
+
+**`default` is not equivalent to `chapter`.** It is `chapter` that makes the `book` class typeset a top-level heading as `\chapter` — the one that prints "Chapter 1" and lists the entry in the contents with a chapter number. `default` only lets Pandoc infer the division from the class, which does not guarantee a `\chapter`: a template that expects chapters must say `top_level_division: chapter` explicitly, the way `templates/book.tex` relies on the value the bookkit adapter emits.
+
+Templates that expect chapters — the builtin `book` — pair with `top_level_division: chapter`; `templates/book.tex` relies on that and defines no heading commands of its own. The valid values, the error message and how a value becomes an argument live in one shared module (`scripts/runtime/top_level_division_runtime.py`), so `validate-config` and the renderer cannot disagree.
 
 Render the PDF:
 
