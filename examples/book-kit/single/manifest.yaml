@@ -35,3 +35,6 @@ chapters:
 back_matter:
   glossary: "back-matter/01-glossary.md"
   about: "back-matter/02-about-this-guide.md"
+
+# The same contents separation the series declares in series.yaml.
+toc_separators: space

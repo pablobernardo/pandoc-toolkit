@@ -41,6 +41,26 @@ explicitly, so a project can use any folder names it likes; the tool never
 validates the layout. Only `chapters_dir` has a default (`chapters`), and only
 because the `ordered` chapters keyword needs somewhere to look.
 
+
+### `toc_separators`
+
+The contents are a single list, so the front matter, the chapters and the
+appendices run together. The adapter separates them where it already writes the
+structural switches — before the first chapter and before the first appendix —
+and the volume chooses the mark:
+
+| Value | What the contents shows |
+| --- | --- |
+| `none` | Nothing; the list stays as it is. |
+| `space` (default) | A vertical gap before each block. |
+| `rule` | A gap and a thin horizontal rule. |
+| `label` | A gap and a bold word, from `toc_labels`. |
+
+The block is self-contained: it defines the LaTeX it uses before using it, so a
+volume built with a `--template` of its own compiles without that template
+declaring anything. `toc_labels` is only read by `label`, and a volume without
+back matter needs no `appendices` entry.
+
 ## `series.yaml` (series shape only)
 
 Validated against `scripts/tools/bookkit/series.schema.json`.
@@ -70,6 +90,8 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 | `chapters` | Required, non-empty: either the keyword `ordered` or an ordered list of entries. |
 | `chapters_dir` | Optional string, default `chapters`. Only read when `chapters` is `ordered`. |
 | `front_matter`, `back_matter` | Optional ordered maps of **logical name to entry**; the render order follows the manifest order. |
+| `toc_separators` | Optional, default `space`. Separates the contents into blocks at the two boundaries the adapter controls: none, space, a thin rule, or a bold label. |
+| `toc_labels` | Optional map of `chapters` and `appendices` to the words `toc_separators: label` prints. Required by that style, and only for the boundaries the volume actually has. |
 
 Every path in a manifest is relative to **the volume directory**.
 

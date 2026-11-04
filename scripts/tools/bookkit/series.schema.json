@@ -31,6 +31,20 @@
       "type": "string",
       "description": "Shared default; a volume's language overrides it. The tool restricts it to the toolkit's supported codes (en, es, pt, gl)."
     },
+    "toc_separators": {
+      "type": "string",
+      "enum": ["none", "space", "rule", "label"],
+      "description": "Optional. Separates the contents into blocks at the two boundaries the adapter controls: none, space, rule or label. Default: space."
+    },
+    "toc_labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "chapters": { "type": "string", "minLength": 1 },
+        "appendices": { "type": "string", "minLength": 1 }
+      },
+      "description": "Optional. The words toc_separators: label prints, one per boundary. Required by that style."
+    },
     "volumes": {
       "type": "array",
       "minItems": 1,
