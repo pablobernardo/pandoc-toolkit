@@ -11,6 +11,11 @@ the actual release candidate still need to run and be recorded.
   with its thresholds at zero. Record which CI levels ran; skipped L2/L3 jobs
   are not integration evidence. If CI cannot start, record that limitation and
   provide local verification for the maintainer's decision.
+- [ ] **macOS exercised**: the macOS job does not run on pull requests, so
+  dispatch `CI` on the candidate with `workflow_dispatch` and
+  `run_l1_macos=true`, then attach the run.
+  A pull-request check alone is Linux evidence, and the toolkit ships BSD
+  tooling differences that only macOS exercises.
 - [ ] **Version and notes ready**: `VERSION` holds a new, unpublished version;
   `CHANGELOG.md` describes what upgrades change and any known limits. Corrections
   to a published release go into a new patch version, not a replacement tag.
