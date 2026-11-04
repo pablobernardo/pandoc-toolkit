@@ -122,12 +122,16 @@ Notes:
 - `l3-local.sh` requires `mmdc` and Chromium (`PUPPETEER_EXECUTABLE_PATH` if it is not auto-detected).
 
 The assertions under `tests/l1/` are the source of truth for suite coverage.
-The suite runs automatically in GitHub Actions for PR/push on a macOS/Linux
-matrix as **L1**.
+The suite runs automatically in GitHub Actions on Linux for every pull request
+and push as **L1**. The same suite runs on macOS **weekly and on demand**, not on
+every pull request: hosted macOS capacity can leave a job unacquired for fifteen
+minutes and then fail it without running a single test, so it does not sit in the
+path of a merge. A release candidate dispatches it and records the result.
 
 CI levels:
 
-- **L1 (fast, mandatory on PR/push):** `tests/run.sh`.
+- **L1 (fast, mandatory on PR/push):** `tests/run.sh` on Linux; the macOS job is
+  weekly and on demand, and mandatory evidence for a release.
 - **L2 (semi-real, manual):** real render on Ubuntu against integration fixtures.
 - **L3 (full, manual or scheduled):** integration with the extended stack (includes the Mermaid CLI).
   - includes a real Mermaid fixture in `tests/integration/l3-mermaid-project/`.

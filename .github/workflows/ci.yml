@@ -3,6 +3,13 @@ name: CI
 permissions:
   contents: read
 
+# A pull request that is pushed twice leaves two runs competing for the same
+# runners, and the scarce ones are macOS. Superseded pull-request runs are
+# cancelled; a run on main is never cancelled, because it is the record.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   pull_request:
   push:
@@ -10,6 +17,11 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      run_l1_macos:
+        description: "Run L1 on macOS (weekly otherwise; release evidence)"
+        required: false
+        default: false
+        type: boolean
       run_render_integration:
         description: "Run L2 semi-real render integration job (Ubuntu)"
         required: false
@@ -30,17 +42,48 @@ on:
 
 jobs:
   l1-tests:
-    name: L1 tests (${{ matrix.os }})
+    name: L1 tests (ubuntu-latest)
     if: ${{ github.event_name != 'schedule' }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # No job here pushes, so the token does not need to survive the
+          # checkout in the local git config.
+          persist-credentials: false
+
+      - name: Ensure scripts are executable
+        run: |
+          chmod +x bin/pandoc-pdf
+          chmod +x tests/run.sh
+          chmod +x scripts/runtime/validate-config.py
+          chmod +x scripts/runtime/render-native.py
+          chmod +x scripts/runtime/prepare-emojis.py
+          chmod +x scripts/runtime/preflight.sh
+          chmod +x scripts/runtime/preflight.py
+
+      - name: Run L1 CLI test suite
+        run: tests/run.sh
+
+  l1-tests-macos:
+    # Hosted macOS capacity is the one resource this workflow cannot rely on: a
+    # job can sit unacquired for fifteen minutes and then fail without running a
+    # single test. Keeping it out of the pull-request path means a merge never
+    # waits on it, and it still runs every week and on demand — where a release
+    # candidate dispatches it and records the result. See docs/releasing.md.
+    name: L1 tests (macos-latest)
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_l1_macos == true) }}
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # No job here pushes, so the token does not need to survive the
+          # checkout in the local git config.
+          persist-credentials: false
 
       - name: Ensure scripts are executable
         run: |
@@ -63,6 +106,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # No job here pushes, so the token does not need to survive the
+          # checkout in the local git config.
+          persist-credentials: false
 
       - name: Install runtime dependencies
         run: |
@@ -106,6 +153,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # No job here pushes, so the token does not need to survive the
+          # checkout in the local git config.
+          persist-credentials: false
 
       - name: Install full runtime dependencies
         run: |
@@ -155,6 +206,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # No job here pushes, so the token does not need to survive the
+          # checkout in the local git config.
+          persist-credentials: false
 
       - name: Install publication dependencies
         run: |
