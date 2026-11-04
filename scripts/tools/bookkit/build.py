@@ -345,7 +345,18 @@ def write_mode_file(path: Path, text: str) -> None:
 
 def merge_defaults(manifest: dict, defaults: dict) -> dict:
     """Series facts sit under the volume's own overrides."""
-    shared = ("collection", "author", "publisher", "rights", "language")
+    # Every field a series may set once for all of its volumes. A field missing
+    # from this tuple is silently ignored at series level, which is why the two
+    # contents fields belong here: the examples declare them exactly there.
+    shared = (
+        "collection",
+        "author",
+        "publisher",
+        "rights",
+        "language",
+        "toc_separators",
+        "toc_labels",
+    )
     merged = dict(manifest)
     for key in shared:
         if key not in merged and key in defaults:

@@ -425,3 +425,37 @@ run_bookkit_toc_separators_test() {
 
   rm -rf "$scratch"
 }
+
+# A series may set a field once instead of repeating it per volume, so the
+# example declares the contents separation in series.yaml. The merge copies a
+# fixed list of shared fields, and a field missing from it is ignored without a
+# word, which is worth its own assertion.
+run_bookkit_series_defaults_test() {
+  local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
+  local series="${ROOT_DIR}/examples/book-kit/series"
+  local scratch out code
+  scratch="$(mktemp -d)"
+
+  cp -R "$series" "$scratch/series"
+  sed 's|^toc_separators: space$|toc_separators: rule|' "$scratch/series/series.yaml" \
+    >"$scratch/series/series.yaml.tmp"
+  mv "$scratch/series/series.yaml.tmp" "$scratch/series/series.yaml"
+
+  out="$(mktemp)"
+  set +e
+  python3 "$tool" --check --out "$scratch/out" "$scratch/series" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a series-level toc_separators is accepted"
+
+  local mainmatter
+  mainmatter="$(find "$scratch/out" -name "00-mainmatter.md" | head -1)"
+  if grep -q "protect\\\\rule" "$mainmatter" 2>/dev/null; then
+    pass "a series-level toc_separators reaches every volume"
+  else
+    fail "a series-level toc_separators was ignored by the volume"
+  fi
+
+  rm -f "$out"
+  rm -rf "$scratch"
+}
