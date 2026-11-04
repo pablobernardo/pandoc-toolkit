@@ -11,7 +11,10 @@ run_suite_registration_test() {
   registered="$(mktemp)"
 
   # shellcheck disable=SC2129  # one redirection per pipeline keeps each list separate
-  grep -hoE '^run_[a-z0-9_]+\(\)' "${ROOT_DIR}"/tests/l1/*.sh 2>/dev/null \
+  # Areas are files under tests/l1 plus one directory per artifact type
+  # (render/, epub/), so both levels must be scanned: a nested file the guard
+  # cannot see is exactly the blind spot this test exists to prevent.
+  grep -hoE '^run_[a-z0-9_]+\(\)' "${ROOT_DIR}"/tests/l1/*.sh "${ROOT_DIR}"/tests/l1/*/*.sh 2>/dev/null \
     | sed 's/()$//' | sort -u >"$defined" || true
   grep -oE '^[[:space:]]+run_[a-z0-9_]+' "${ROOT_DIR}/tests/run.sh" 2>/dev/null \
     | tr -d ' ' | sort -u >"$registered" || true

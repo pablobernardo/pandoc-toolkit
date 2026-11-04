@@ -59,8 +59,11 @@ The full picture, with the render pipeline and the reasons behind it, is
   `pandoc-pdf doctor`) and `scripts/runtime/validate-config.py`.
 - **Contract**: `schemas/pdf-config.schema.json`. Anything about configuration
   is answered there, not here.
-- **Tests**: `tests/run.sh` (orchestrator) plus `tests/l1/<area>.sh`. Add an
-  assertion to the file for the area you touched.
+- **Tests**: `tests/run.sh` (orchestrator) plus one file per area under
+  `tests/l1/`. The two areas with many independent subjects (rendering and
+  EPUB) keep one directory each, with one file per subject: add an assertion to
+  the file whose name answers where it belongs, and register the test function
+  in the orchestrator, which fails if a defined test is never called.
 
 YAML is read with PyYAML when available and otherwise through Ruby's stdlib in a
 subprocess; both paths must keep producing the same result.

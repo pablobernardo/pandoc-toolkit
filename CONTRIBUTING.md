@@ -41,7 +41,8 @@ working copy.
 put its output in the pull request so the decision to merge is recorded rather
 than assumed.
 
-The suite is one process: `tests/run.sh` sources every `tests/l1/<area>.sh` and
+The suite is one process: `tests/run.sh` sources every area file under `tests/l1/`
+(and, for rendering and EPUB, every file in their subject directories) and
 runs them in order. There is no per-area flag, so when you touch one area, read
 its file and expect the whole suite to tell you what else broke.
 
@@ -78,7 +79,7 @@ the others are translations, not copies.
 | --- | --- |
 | The configuration contract | `schemas/pdf-config.schema.json`, then `scripts/runtime/validate-config.py`, then `tests/l1/validate.sh` |
 | The CLI surface | `bin/pandoc-pdf` and its catalog keys, then `tests/l1/help.sh`, then `docs/usage.md` |
-| Rendering | `scripts/runtime/render-native.py`, plus the checks in `scripts/runtime/preflight.py`; `tests/l1/render.sh` |
+| Rendering | `scripts/runtime/render-native.py`, plus the checks in `scripts/runtime/preflight.py`; the matching file under `tests/l1/render/` |
 | A filter | `filters/<name>.lua`; a failure must be loud, never silent |
 | Dependencies | `scripts/delivery/bootstrap.sh`, `.github/workflows/`, `docs/dependency-policy.md` |
 | A breaking change | The affected areas, an explicit migration guide, updated examples and a `CHANGELOG.md` entry; apply the toolkit and contract version rules in `AGENTS.md` |

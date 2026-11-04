@@ -15,7 +15,10 @@ FAIL=0
 # Shared assertions plus one file per area; this file only orchestrates.
 source "${ROOT_DIR}/tests/lib.sh"
 # shellcheck disable=SC1090,SC1091  # area paths are resolved at runtime
-for area in "${ROOT_DIR}"/tests/l1/*.sh; do
+# One file per area, plus one directory per artifact type where the subject
+# count justifies it (render/, epub/). Both levels are sourced here and both
+# are scanned by the registration test.
+for area in "${ROOT_DIR}"/tests/l1/*.sh "${ROOT_DIR}"/tests/l1/*/*.sh; do
   [[ -e "$area" ]] || continue
   source "$area"
 done
