@@ -9,6 +9,7 @@ marked with an arrow.
 | --- | --- |
 | → [`install.md`](install.md) | How do I install it, and which system dependencies does it need? |
 | → [`usage.md`](usage.md) | How do I configure a repository, run the commands and wire it into CI? |
+| [`books.md`](books.md) | How do I build a book: the template, manifests, `pandoc-pdf book`, the cover and the contents. |
 
 ## Maintaining the toolkit
 
