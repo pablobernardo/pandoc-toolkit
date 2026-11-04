@@ -1,6 +1,6 @@
 # Introduction
 
-This chapter exists so that `examples/test/pdf.config.yaml` has something to
+This chapter exists so that `examples/no-titlepage/pdf.config.yaml` has something to
 render: it is the smallest configuration in the repository, and it doubles as the
 demonstration of `document.titlepage: false`.
 

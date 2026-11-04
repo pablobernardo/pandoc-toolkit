@@ -12,7 +12,7 @@ if [[ ! -x "$PANDOC_PDF_BIN" ]]; then
 fi
 
 "$PANDOC_PDF_BIN" render -c ohmyfake/pdf.config.yaml
-"$PANDOC_PDF_BIN" render -c test/pdf.config.yaml
+"$PANDOC_PDF_BIN" render -c no-titlepage/pdf.config.yaml
 "$PANDOC_PDF_BIN" render -c manual/pdf.config.yaml
 "$PANDOC_PDF_BIN" render -c documentation/pdf.config.yaml
 # The book example declares manifests instead of a configuration, so it goes

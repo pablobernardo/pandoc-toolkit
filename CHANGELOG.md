@@ -47,6 +47,11 @@ The project follows semantic versioning and keeps two versioned contracts:
   emits `top_level_division: chapter` in every generated book configuration.
   Chapter numbering, the table of contents and `\appendix` behaviour are
   unchanged.
+- `examples/test/` is now `examples/no-titlepage/`. The old name said "fixture
+  for the tests" about the example that is neither: it is the smallest valid
+  configuration, and it demonstrates `document.titlepage: false`, which the new
+  name states. Every configuration example now declares `output.formats: [pdf,
+  epub]`, so `examples/toPDF.sh` produces the PDFs its name promises.
 
 ### Fixed
 

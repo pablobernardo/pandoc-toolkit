@@ -12,8 +12,8 @@ document:
   date: "2026-04-21"
   rights: "Internal Use"
   language: "en"
-  # The smallest example also shows the cover switch: no title page, the
-  # document opens on the table of contents.
+  # The smallest example also shows the cover switch: no typeset title page,
+  # so the document opens on the table of contents.
   titlepage: false
   # Arbitrary Pandoc metadata no longer needs a side file.
   metadata:
@@ -27,8 +27,8 @@ input:
   explicit_files: []
 
 output:
-  formats: [epub]
-  dir: "../.output/test"
+  formats: [pdf, epub]
+  dir: "../.output/no-titlepage"
   suffix: "${date:YYYYMMDD}"
   keep_merged_markdown: true
 
