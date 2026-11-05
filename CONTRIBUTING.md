@@ -9,7 +9,7 @@ stable rules live in [`AGENTS.md`](AGENTS.md).
 
 ```bash
 git clone <your fork>
-cd pandoc-toolkit
+cd skelepress
 make bootstrap   # pandoc, a TeX engine, mermaid-cli and the Python helpers
 make test        # the whole suite
 ```
@@ -17,7 +17,7 @@ make test        # the whole suite
 `make bootstrap` installs system dependencies and is slow the first time. For
 everything except an actual render, `make test` needs no extra setup.
 
-For managed local installations, the `pandoc-pdf-dev` development symlink and
+For managed local installations, the `skelepress-dev` development symlink and
 bootstrap options (dry-run, non-interactive and CI), see
 [development installation](docs/install.md#development-installation-from-the-repo).
 `make install-release` installs the latest published release instead of the
@@ -29,7 +29,7 @@ working copy.
 | --- | --- |
 | `make test` | Runs `bash tests/run.sh`, the whole suite |
 | `make gate` | Everything a pull request is verified with: suite, catalogs, docs, plan conformance |
-| `make validate CONFIG=path/to/pdf.config.yaml` | Validates a configuration against the schema |
+| `make validate CONFIG=path/to/skelepress.config.yaml` | Validates a configuration against the schema |
 | `make doctor` | Checks the local toolchain |
 | `make epubcheck FILE=path/to/publication.epub` | Validates a finished publication with EPUBCheck. Optional, needs a JVM; see [dependency policy](docs/dependency-policy.md) |
 | `make install-local-dev` | Puts the working copy on `PATH` for manual testing |
@@ -60,7 +60,7 @@ Documentation needs no behaviour test, but it must keep `check-docs.py` green.
 When the guides change, regenerate the documentation PDF for visual review:
 
 ```bash
-bin/pandoc-pdf render -c examples/documentation/pdf.config.yaml
+bin/skelepress render -c examples/documentation/skelepress.config.yaml
 ```
 
 For configuration input, subprocesses or dependency changes, follow the review
@@ -77,12 +77,12 @@ the others are translations, not copies.
 
 | Changing | Touch |
 | --- | --- |
-| The configuration contract | `schemas/pdf-config.schema.json`, then `scripts/runtime/validate-config.py`, then `tests/l1/validate.sh` |
-| The CLI surface | `bin/pandoc-pdf` and its catalog keys, then `tests/l1/help.sh`, then `docs/usage.md` |
+| The configuration contract | `schemas/skelepress-config.schema.json`, then `scripts/runtime/validate-config.py`, then `tests/l1/validate.sh` |
+| The CLI surface | `bin/skelepress` and its catalog keys, then `tests/l1/help.sh`, then `docs/usage.md` |
 | Rendering | `scripts/runtime/render-native.py`, plus the checks in `scripts/runtime/preflight.py`; the matching file under `tests/l1/render/` |
 | A filter | `filters/<name>.lua`; a failure must be loud, never silent |
 | Dependencies | `scripts/delivery/bootstrap.sh`, `.github/workflows/`, `docs/dependency-policy.md` |
-| A breaking change | The affected areas, an explicit migration guide, updated examples and a `CHANGELOG.md` entry; apply the toolkit and contract version rules in `AGENTS.md` |
+| A breaking change | The affected areas, an explicit migration guide when the change reaches a consumer other than the maintainer, updated examples and a `CHANGELOG.md` entry; apply the toolkit and contract version rules in `AGENTS.md` |
 
 [`docs/README.md`](docs/README.md) maps every document to the question it answers.
 
@@ -161,5 +161,5 @@ To keep the toolkit clean and reusable:
 
 - **Do not** add local system artifacts (`.DS_Store`, etc.).
 - **Do not** reintroduce legacy scripts coupled to the consumer repository.
-- Always use the official entrypoint: `bin/pandoc-pdf`.
+- Always use the official entrypoint: `bin/skelepress`.
 - Keep examples and docs neutral (no private data or client paths).

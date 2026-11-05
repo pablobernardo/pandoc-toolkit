@@ -4,15 +4,15 @@
   "cli.error.no_yaml_parser.option2": "Option 2: install Ruby with stdlib YAML",
   "cli.error.preflight_not_found": "Executable preflight script not found: {path}",
   "cli.error.unknown_arg": "Unknown argument: {arg}",
-  "cli.error.config_required": "You must provide -c <pdf.config.yaml>",
+  "cli.error.config_required": "You must provide -c <skelepress.config.yaml>",
   "cli.error.unknown_command": "Unknown command: {command}",
   "cli.help.usage": "Usage:",
   "cli.help.notes": "Notes:",
   "cli.help.note.render_native": "render uses native implementation.",
   "cli.help.note.yaml_parsing": "Config parsing supports Python+PyYAML or Ruby stdlib YAML.",
   "cli.help.note.book": "book forwards to the shipped bookkit tool (scripts/tools/bookkit/build.py).",
-  "cli.help.note.update_resolution": "update honours PANDOC_PDF_UPDATE_HOME or PANDOC_PDF_INSTALL_HOME for the managed root and --install-dir or PANDOC_PDF_INSTALL_DIR for the binary; a declared install dir beats the pandoc-pdf found on PATH.",
-  "cli.locale.error.missing_target": "You must provide a locale (for example: pandoc-pdf locale set --project es)",
+  "cli.help.note.update_resolution": "update honours SKELEPRESS_UPDATE_HOME or SKELEPRESS_INSTALL_HOME for the managed root and --install-dir or SKELEPRESS_INSTALL_DIR for the binary; a declared install dir beats the skelepress found on PATH.",
+  "cli.locale.error.missing_target": "You must provide a locale (for example: skelepress locale set --project es)",
   "cli.locale.error.unsupported": "Unsupported locale: {locale}. Supported: {supported}",
   "cli.locale.show.language": "language",
   "cli.locale.show.source": "source",
@@ -24,7 +24,7 @@
   "cli.update.error.fetch_status": "GitHub answered {status} while fetching {url}",
   "cli.update.error.fetch_unreachable": "could not reach {url}",
   "cli.update.error.invalid_latest": "latest release payload has no valid tag_name",
-  "cli.update.error.phase1_only": "update install is not available yet; use 'pandoc-pdf update --check'",
+  "cli.update.error.phase1_only": "update install is not available yet; use 'skelepress update --check'",
   "cli.update.error.invalid_semver": "could not compare versions: local={local}, latest={latest}",
   "cli.update.error.download": "could not download {url}",
   "cli.update.error.checksum_entry": "checksums.txt does not include {artifact}",
@@ -34,9 +34,9 @@
   "cli.update.error.asset_not_found": "artifact not found in release: {artifact}",
   "cli.update.error.checksums_missing": "release does not provide checksums.txt",
   "cli.update.error.extract": "could not extract downloaded artifact",
-  "cli.update.error.invalid_artifact": "downloaded artifact does not contain an executable pandoc-pdf",
+  "cli.update.error.invalid_artifact": "downloaded artifact does not contain an executable skelepress",
   "cli.update.error.install_failed": "update installation failed",
-  "cli.update.error.dev_blocked": "update is disabled for pandoc-pdf-dev; use pandoc-pdf",
+  "cli.update.error.dev_blocked": "update is disabled for skelepress-dev; use skelepress",
   "cli.update.confirm": "Install {version} to {path}? [y/N]",
   "cli.update.cancelled": "Update cancelled",
   "cli.update.installed": "Updated to version {version}",
@@ -64,7 +64,7 @@
   "doctor.mermaid.hint1": "   Fix A: install the Puppeteer browser: npx puppeteer browsers install chrome-headless-shell",
   "doctor.mermaid.hint2": "   Fix B: point Puppeteer at an installed Chrome: export PUPPETEER_EXECUTABLE_PATH=/path/to/chrome",
   "render.error.mermaid_failed": "❌ {count} Mermaid diagram(s) could not be rendered and would print as code: {diagrams}",
-  "render.error.mermaid_failed.hint": "   Run `pandoc-pdf doctor` to diagnose, or set filters.mermaid.enabled: false to drop the diagrams on purpose.",
+  "render.error.mermaid_failed.hint": "   Run `skelepress doctor` to diagnose, or set filters.mermaid.enabled: false to drop the diagrams on purpose.",
   "validate.ok": "Config valid",
   "validate.error.config_not_found": "Config not found: {path}",
   "validate.error.schema_not_found": "Schema not found: {path}",
@@ -77,12 +77,12 @@
   "render.plan.title": "Render plan (dry run, nothing written)",
   "render.plan.command": "Command: {command}",
   "render.warn.emoji_prepare": "Could not auto-prepare emojis; continuing with fallback",
-  "bootstrap.title": "Installation bootstrap — Pandoc PDF Toolkit",
+  "bootstrap.title": "Installation bootstrap — Skelepress",
   "bootstrap.usage": "Usage:",
   "bootstrap.options": "Options:",
   "bootstrap.opt.dryrun": "Show commands without executing",
   "bootstrap.opt.noinstall": "Do not install dependencies (verify only)",
-  "bootstrap.opt.skiplink": "Do not create symlink in ~/.local/bin/pandoc-pdf",
+  "bootstrap.opt.skiplink": "Do not create symlink in ~/.local/bin/skelepress",
   "bootstrap.opt.yes": "Non-interactive mode (auto-accept installation)",
   "bootstrap.opt.ci": "CI alias: equivalent to --yes --skip-link",
   "bootstrap.non_interactive": "Non-interactive mode enabled (--yes): continuing without prompt",
@@ -116,7 +116,7 @@
   "bootstrap.skip_install": "Skipping installation due to --no-install"
   ,"preflight.error.config_parse": "Could not parse config for preflight: {error}"
   ,"preflight.error.ruby_yaml_parse": "Error parsing YAML converted by Ruby: {error}"
-  ,"preflight.error.usage": "Usage: preflight.py [-c <pdf.config.yaml>]"
+  ,"preflight.error.usage": "Usage: preflight.py [-c <skelepress.config.yaml>]"
   ,"preflight.error.config_not_found": "Config not found for preflight: {path}"
   ,"preflight.error.no_yaml_parser": "Preflight with -c requires PyYAML or Ruby YAML available"
   ,"preflight.error.invalid_required_command": "Invalid command name in runtime.required_commands: {cmd}"

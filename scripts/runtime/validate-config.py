@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract validator for pdf.config.yaml.
+"""Contract validator for skelepress.config.yaml.
 
 The YAML loader and the JSON-Schema-subset validator live in the shared
 schema_runtime module so the bookkit tool (scripts/tools/bookkit) applies

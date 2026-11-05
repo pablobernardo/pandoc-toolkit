@@ -1,49 +1,49 @@
-# Pandoc PDF Toolkit
+# Skelepress
 
-[![CI](https://github.com/pablobernardo/pandoc-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/pablobernardo/pandoc-toolkit/actions/workflows/ci.yml)
+[![CI](https://github.com/pablobernardo/skelepress/actions/workflows/ci.yml/badge.svg)](https://github.com/pablobernardo/skelepress/actions/workflows/ci.yml)
 
-Agnostic toolkit for generating PDFs with Pandoc via a CLI (`pandoc-pdf`) using declarative configuration per consumer repository (`pdf.config.yaml`).
+Agnostic toolkit for generating PDFs with Pandoc via a CLI (`skelepress`) using declarative configuration per consumer repository (`skelepress.config.yaml`).
 
 ## Install
 
 On macOS or Linux, no clone and no token:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/delivery/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pablobernardo/skelepress/main/scripts/delivery/install.sh | bash
 ```
 
-It installs the latest release into `~/.local/share/pandoc-pdf/versions/<tag>` behind a
-`current` pointer and links `pandoc-pdf` into `~/.local/bin`; `pandoc-pdf update`
+It installs the latest release into `~/.local/share/skelepress/versions/<tag>` behind a
+`current` pointer and links `skelepress` into `~/.local/bin`; `skelepress update`
 replaces it later. Piping a script into a shell is a choice, not a requirement, so if
 you would rather read it first:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/pablobernardo/pandoc-toolkit/main/scripts/delivery/install.sh
+curl -fsSLO https://raw.githubusercontent.com/pablobernardo/skelepress/main/scripts/delivery/install.sh
 less install.sh
 bash install.sh
 ```
 
-Then `pandoc-pdf doctor` checks that `pandoc`, a TeX engine and `mmdc` are where the
+Then `skelepress doctor` checks that `pandoc`, a TeX engine and `mmdc` are where the
 toolkit expects them. System dependencies are in [the installation guide](docs/install.md).
 
 ## First render and main commands
 
-Start with a `pdf.config.yaml` for your repository; the
+Start with a `skelepress.config.yaml` for your repository; the
 [examples](docs/usage.md#examples-in-this-repository) show complete configurations
 and the documents they render.
 
 ```bash
-pandoc-pdf doctor                              # check the local toolchain
-pandoc-pdf validate-config -c pdf.config.yaml  # validate a configuration
-pandoc-pdf render -c pdf.config.yaml           # produce the PDF
+skelepress doctor                              # check the local toolchain
+skelepress validate-config -c skelepress.config.yaml  # validate a configuration
+skelepress render -c skelepress.config.yaml           # produce the PDF
 ```
 
-`pandoc-pdf --help` lists every command; [the usage guide](docs/usage.md)
+`skelepress --help` lists every command; [the usage guide](docs/usage.md)
 documents them, including CI integration for consuming repositories.
 
 ## Optional agent skill
 
-The [documentation-to-PDF skill](skills/pandoc-pdf-documentation/SKILL.md) uses the
+The [documentation-to-PDF skill](skills/skelepress-documentation/SKILL.md) uses the
 Agent Skills format to guide compatible agents through existing Markdown,
 configuration, preflight and PDF review.
 See [skill installation](docs/install.md#optional-agent-skill); it does not install

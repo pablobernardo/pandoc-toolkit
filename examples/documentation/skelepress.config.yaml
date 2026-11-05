@@ -6,7 +6,7 @@ project:
   base_dir: "../.."
 
 document:
-  title: "Pandoc PDF Toolkit"
+  title: "Skelepress"
   subtitle: "Documentation"
   author: "The Example Maintainers"
   publisher: "Public Domain Press"

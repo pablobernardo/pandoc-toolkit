@@ -10,15 +10,15 @@ run_epub_metadata_precedence_test() {
   local sandbox out code=0
   sandbox="$(new_epub_sandbox)"
   out="$(mktemp)"
-  write_epub_config "${sandbox}/pdf.config.yaml" epub
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub
   printf '\ntitle: File Title\nauthor: File Author\nlang: pt\n' >"${sandbox}/work/metadata.yaml"
-  "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" <<'PYTEST'
+  "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" <<'PYTEST'
 import sys
 from pathlib import Path
 p = Path(sys.argv[1])
 p.write_text(p.read_text().replace("pandoc:\n", 'pandoc:\n  metadata_file: "metadata.yaml"\n'))
 PYTEST
-  "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+  "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "EPUB renders with a metadata file"
   if "${REAL_PYTHON3}" - "${sandbox}/work/out/epub-guide-manual.epub" <<'PYTEST'
 import sys, zipfile
@@ -58,7 +58,7 @@ run_epub_document_metadata_cover_test() {
 
   # A duplicated --metadata cover-image pair reaches pandoc as a MetaList and the
   # EPUB writer refuses it, so the plan must carry the key exactly once.
-  "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$plan" 2>"$out" || code=$?
+  "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" --dry-run --json >"$plan" 2>"$out" || code=$?
   assert_exit_code "0" "$code" "an epub plan with a document.metadata cover renders"
   assert_json_expr "$plan" \
     'len([a for a in d["pandoc"]["argv"] if a.startswith("cover-image=")]) == 1' \
@@ -69,7 +69,7 @@ run_epub_document_metadata_cover_test() {
 
   code=0
   (
-    cd "$elsewhere" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml"
+    cd "$elsewhere" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
   ) >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "a document.metadata cover renders from an unrelated directory"
 

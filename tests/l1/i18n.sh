@@ -47,7 +47,7 @@ run_unknown_command_test() {
   local out
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en "$CLI" unknown-command >"$out" 2>&1
+  SKELEPRESS_LANG=en "$CLI" unknown-command >"$out" 2>&1
   local code=$?
   set -e
   assert_exit_code "1" "$code" "unknown command returns exit 1"
@@ -62,7 +62,7 @@ run_i18n_default_fallback_english_test() {
   local project_env_backup
   out="$(mktemp)"
   tmp_home="$(mktemp -d)"
-  project_env="${ROOT_DIR}/.pandoc-pdf.env"
+  project_env="${ROOT_DIR}/.skelepress.env"
   project_env_backup=""
 
   if [[ -f "$project_env" ]]; then
@@ -72,7 +72,7 @@ run_i18n_default_fallback_english_test() {
   fi
 
   set +e
-  HOME="$tmp_home" XDG_CONFIG_HOME="$tmp_home/.config" env -u PANDOC_PDF_LANG -u LC_ALL -u LANG "$CLI" unknown-command >"$out" 2>&1
+  HOME="$tmp_home" XDG_CONFIG_HOME="$tmp_home/.config" env -u SKELEPRESS_LANG -u LC_ALL -u LANG "$CLI" unknown-command >"$out" 2>&1
   local code=$?
   set -e
 
@@ -91,7 +91,7 @@ run_i18n_force_english_unknown_command_test() {
   local out
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en "$CLI" unknown-command >"$out" 2>&1
+  SKELEPRESS_LANG=en "$CLI" unknown-command >"$out" 2>&1
   local code=$?
   set -e
   assert_exit_code "1" "$code" "unknown command keeps exit 1 in English"
@@ -108,7 +108,7 @@ run_shared_i18n_runtime_test() {
   pass "scripts/runtime/i18n.sh exists"
 
   local entry
-  for entry in bin/pandoc-pdf scripts/delivery/bootstrap.sh; do
+  for entry in bin/skelepress scripts/delivery/bootstrap.sh; do
     if grep -q 'scripts/runtime/i18n.sh' "${ROOT_DIR}/${entry}"; then
       pass "${entry} sources the shared i18n runtime"
     else
@@ -123,7 +123,7 @@ run_shared_i18n_runtime_test() {
 
   local out
   out="$(mktemp)"
-  if PANDOC_PDF_LANG=es bash "${ROOT_DIR}/scripts/delivery/bootstrap.sh" --help >"$out" 2>&1; then
+  if SKELEPRESS_LANG=es bash "${ROOT_DIR}/scripts/delivery/bootstrap.sh" --help >"$out" 2>&1; then
     pass "bootstrap --help runs with the shared runtime"
   else
     fail "bootstrap --help should run with the shared runtime"

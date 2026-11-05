@@ -12,7 +12,7 @@
 # consumer should read as supported.
 
 # Shipped whole, from the repository root.
-PANDOC_PDF_PAYLOAD=(
+SKELEPRESS_PAYLOAD=(
   "bin"
   "filters"
   "i18n"
@@ -24,7 +24,7 @@ PANDOC_PDF_PAYLOAD=(
 )
 
 # The only directories under `scripts/` an installation runs.
-PANDOC_PDF_SCRIPT_DIRS=(
+SKELEPRESS_SCRIPT_DIRS=(
   "runtime"
   "tools"
 )
@@ -50,12 +50,12 @@ populate_payload() {
   if [[ "$source_mode" == "tracked" ]]; then
     populate_payload_from_commit "$target" "$root" || return 1
   else
-    for dir in "${PANDOC_PDF_SCRIPT_DIRS[@]}"; do
+    for dir in "${SKELEPRESS_SCRIPT_DIRS[@]}"; do
       if [[ -e "${root}/scripts/${dir}" ]]; then
         cp -R "${root}/scripts/${dir}" "${target}/scripts/${dir}"
       fi
     done
-    for asset in "${PANDOC_PDF_PAYLOAD[@]}"; do
+    for asset in "${SKELEPRESS_PAYLOAD[@]}"; do
       if [[ -e "${root}/${asset}" ]]; then
         cp -R "${root}/${asset}" "${target}/"
       fi
@@ -77,10 +77,10 @@ populate_payload_from_commit() {
   local root="$2"
   local paths=() present=() dir asset entry
 
-  for dir in "${PANDOC_PDF_SCRIPT_DIRS[@]}"; do
+  for dir in "${SKELEPRESS_SCRIPT_DIRS[@]}"; do
     paths+=("scripts/${dir}")
   done
-  paths+=("${PANDOC_PDF_PAYLOAD[@]}")
+  paths+=("${SKELEPRESS_PAYLOAD[@]}")
 
   if ! git -C "${root}" rev-parse --git-dir >/dev/null 2>&1; then
     echo "payload: ${root} is not a Git work tree; a release payload is built from committed content" >&2

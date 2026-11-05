@@ -12,7 +12,7 @@ path_dirname() {
 
 SCRIPT_DIR="$(cd -- "$(path_dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-CLI="${ROOT_DIR}/bin/pandoc-pdf"
+CLI="${ROOT_DIR}/bin/skelepress"
 
 require_cmd() {
   local cmd="$1"
@@ -55,11 +55,11 @@ main() {
   rm -rf "${ROOT_DIR}/tests/integration/enabled-filters-project/output"
   rm -rf "${ROOT_DIR}/tests/integration/l3-mermaid-project/output"
 
-  PUPPETEER_EXECUTABLE_PATH="$chromium_path" "${CLI}" doctor -c "${ROOT_DIR}/tests/integration/enabled-filters-project/pdf.config.yaml"
-  "${CLI}" validate-config -c "${ROOT_DIR}/tests/integration/enabled-filters-project/pdf.config.yaml"
+  PUPPETEER_EXECUTABLE_PATH="$chromium_path" "${CLI}" doctor -c "${ROOT_DIR}/tests/integration/enabled-filters-project/skelepress.config.yaml"
+  "${CLI}" validate-config -c "${ROOT_DIR}/tests/integration/enabled-filters-project/skelepress.config.yaml"
 
-  PUPPETEER_EXECUTABLE_PATH="$chromium_path" "${CLI}" render -c "${ROOT_DIR}/tests/integration/enabled-filters-project/pdf.config.yaml"
-  PUPPETEER_EXECUTABLE_PATH="$chromium_path" "${CLI}" render -c "${ROOT_DIR}/tests/integration/l3-mermaid-project/pdf.config.yaml"
+  PUPPETEER_EXECUTABLE_PATH="$chromium_path" "${CLI}" render -c "${ROOT_DIR}/tests/integration/enabled-filters-project/skelepress.config.yaml"
+  PUPPETEER_EXECUTABLE_PATH="$chromium_path" "${CLI}" render -c "${ROOT_DIR}/tests/integration/l3-mermaid-project/skelepress.config.yaml"
 
   test -n "$(ls -1 "${ROOT_DIR}/tests/integration/enabled-filters-project/output"/*.pdf 2>/dev/null)"
   test -n "$(ls -1 "${ROOT_DIR}/tests/integration/enabled-filters-project/output"/*.md 2>/dev/null)"

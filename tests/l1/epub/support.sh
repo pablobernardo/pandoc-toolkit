@@ -175,7 +175,7 @@ EOF
 Text only.
 EOF
 
-  write_epub_resource_config "${sandbox}/pdf.config.yaml"
+  write_epub_resource_config "${sandbox}/skelepress.config.yaml"
   printf '%s\n' "$sandbox"
 }
 
@@ -184,7 +184,7 @@ new_epub_document_metadata_sandbox() {
   sandbox="$(new_epub_resource_sandbox)"
   # The same project, with the cover declared through document.metadata instead
   # of a metadata file: the two routes must behave the same.
-  "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" <<'PY'
+  "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" <<'PY'
 import sys
 from pathlib import Path
 

@@ -1,4 +1,4 @@
-# AGENTS.md — Pandoc PDF Toolkit
+# AGENTS.md — Skelepress
 
 ## Mission
 
@@ -7,8 +7,8 @@ PDFs with Pandoc across multiple consuming repositories.
 
 ## Architectural goal
 
-Standardise the flow behind a stable CLI (`pandoc-pdf`) plus declarative
-configuration (`pdf.config.yaml`) per consuming repository, with no local
+Standardise the flow behind a stable CLI (`skelepress`) plus declarative
+configuration (`skelepress.config.yaml`) per consuming repository, with no local
 coupling.
 
 ## Scope
@@ -51,13 +51,13 @@ Architecture decisions live in `docs/architecture.md`; release history lives in
 The full picture, with the render pipeline and the reasons behind it, is
 `docs/architecture.md`. What an agent needs to know before touching anything:
 
-- **Entry point**: `bin/pandoc-pdf` (bash). Every user-facing string comes from
+- **Entry point**: `bin/skelepress` (bash). Every user-facing string comes from
   `i18n/locales/`; see the language policy above.
 - **One renderer**: `scripts/runtime/render-native.py`. There is no second renderer, and
   adding one back is a regression.
 - **Checks before rendering**: `scripts/runtime/preflight.py` (invoked by
-  `pandoc-pdf doctor`) and `scripts/runtime/validate-config.py`.
-- **Contract**: `schemas/pdf-config.schema.json`. Anything about configuration
+  `skelepress doctor`) and `scripts/runtime/validate-config.py`.
+- **Contract**: `schemas/skelepress-config.schema.json`. Anything about configuration
   is answered there, not here.
 - **Tests**: `tests/run.sh` (orchestrator) plus one file per area under
   `tests/l1/`. The two areas with many independent subjects (rendering and
@@ -73,9 +73,9 @@ subprocess; both paths must keep producing the same result.
   cannot break the current CLI contract, and the current bash entry point is the
   blocker, not the scripts.
 
-## Configuration contract (`pdf.config.yaml`)
+## Configuration contract (`skelepress.config.yaml`)
 
-`schemas/pdf-config.schema.json` is the single source of truth: it lists the
+`schemas/skelepress-config.schema.json` is the single source of truth: it lists the
 sections and the required fields, and it is what `validate-config` applies.
 There is no defaults baseline to merge.
 
@@ -93,7 +93,7 @@ Three rules that are not visible in the schema:
   `VERSION`; see the breaking change policy below.
 ## CLI surface
 
-`pandoc-pdf --help` prints the commands and `docs/usage.md` documents them. The
+`skelepress --help` prints the commands and `docs/usage.md` documents them. The
 CLI is a contract for humans, CI and integrations, so adding a command is free
 while changing or removing one follows the breaking change policy below.
 ## Breaking change policy
@@ -107,7 +107,7 @@ requires:
 
 ## Delivery criteria (definition of done)
 
-- One working entry point (`pandoc-pdf`).
+- One working entry point (`skelepress`).
 - Configuration validated against the JSON schema.
 - Declarative paths, with no coupling to specific folders.
 - Compatibility proven on at least two repositories with different structures.

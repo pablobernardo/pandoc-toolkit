@@ -2,12 +2,12 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-CLI="${ROOT_DIR}/bin/pandoc-pdf"
+CLI="${ROOT_DIR}/bin/skelepress"
 FIXTURES_DIR="${ROOT_DIR}/tests/fixtures"
 REAL_PYTHON3="$(command -v python3 || true)"
 
 # Keep functional tests deterministic in English.
-export PANDOC_PDF_LANG="en"
+export SKELEPRESS_LANG="en"
 
 PASS=0
 FAIL=0
@@ -24,8 +24,10 @@ for area in "${ROOT_DIR}"/tests/l1/*.sh "${ROOT_DIR}"/tests/l1/*/*.sh; do
 done
 
 main() {
-  echo "== Running pandoc-pdf tests =="
+  echo "== Running skelepress tests =="
   run_suite_registration_test
+  run_rename_contract_tests
+  run_rename_symlink_root_test
   run_help_test
   run_help_i18n_notes_test
   run_version_tests
@@ -121,6 +123,7 @@ main() {
   run_chapter_link_rewrite_test
   run_multi_format_export_test
   run_plan_conformance_tests
+  run_book_default_output_test
   run_bookkit_tests
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test

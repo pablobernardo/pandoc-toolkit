@@ -12,9 +12,9 @@ path_dirname() {
 
 SCRIPT_DIR="$(cd -- "$(path_dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
-CLI_PATH="${ROOT_DIR}/bin/pandoc-pdf"
+CLI_PATH="${ROOT_DIR}/bin/skelepress"
 LOCAL_BIN_DIR="${HOME}/.local/bin"
-LINK_PATH="${LOCAL_BIN_DIR}/pandoc-pdf"
+LINK_PATH="${LOCAL_BIN_DIR}/skelepress"
 
 DRY_RUN=false
 NO_INSTALL=false
@@ -40,7 +40,7 @@ i18n_load_catalog "$LANG_CODE"
 
 usage() {
   cat <<EOF
-$(t "bootstrap.title" "Installation bootstrap — Pandoc PDF Toolkit")
+$(t "bootstrap.title" "Installation bootstrap — Skelepress")
 
 $(t "bootstrap.usage" "Usage:")
   scripts/delivery/bootstrap.sh [--dry-run] [--no-install] [--skip-link] [--yes] [--ci]
@@ -48,7 +48,7 @@ $(t "bootstrap.usage" "Usage:")
 $(t "bootstrap.options" "Options:")
   --dry-run    $(t "bootstrap.opt.dryrun" "Show commands without executing")
   --no-install $(t "bootstrap.opt.noinstall" "Do not install dependencies (verify only)")
-  --skip-link  $(t "bootstrap.opt.skiplink" "Do not create symlink in ~/.local/bin/pandoc-pdf")
+  --skip-link  $(t "bootstrap.opt.skiplink" "Do not create symlink in ~/.local/bin/skelepress")
   --yes        $(t "bootstrap.opt.yes" "Non-interactive mode (auto-accept installation)")
   --ci         $(t "bootstrap.opt.ci" "CI alias: equivalent to --yes --skip-link")
 EOF

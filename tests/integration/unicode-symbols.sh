@@ -9,7 +9,7 @@
 #
 # This script is OPTIONAL and is not part of `make gate`: it needs a real
 # Pandoc, a TeX engine, pdftotext and pdffonts. It renders through the public
-# CLI (`bin/pandoc-pdf render`) and checks the observed effects:
+# CLI (`bin/skelepress render`) and checks the observed effects:
 #
 #   1. all six symbols (☐ ☑ ☒ ✅ ❌ ⚠) appear in prose, inline code, untagged
 #      fenced code and highlighted fenced code, with the emoji filter disabled,
@@ -52,7 +52,7 @@ path_dirname() {
 
 SCRIPT_DIR="$(cd -- "$(path_dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
-CLI="${ROOT_DIR}/bin/pandoc-pdf"
+CLI="${ROOT_DIR}/bin/skelepress"
 OUT="${ROOT_DIR}/examples/.output/unicode-font-u1"
 ENGINE="${UNICODE_SYMBOLS_ENGINE:-xelatex}"
 
@@ -241,8 +241,8 @@ render() {
 }
 
 # --- 1) Supported-font run: the prose and inline matrix ----------------------
-write_pdf_config "${FIXTURE}/pdf.config.yaml" "symbols" "templates/default.tex"
-code="$(render "${FIXTURE}/pdf.config.yaml" "${RUN_DIR}/render-symbols.log")"
+write_pdf_config "${FIXTURE}/skelepress.config.yaml" "symbols" "templates/default.tex"
+code="$(render "${FIXTURE}/skelepress.config.yaml" "${RUN_DIR}/render-symbols.log")"
 [[ "$code" == "0" ]] || fail "supported-font render exited ${code} (log: ${RUN_DIR}/render-symbols.log)"
 
 local_pdf="${FIXTURE}/out/symbols-u1.pdf"

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MANAGED_HOME="${PANDOC_PDF_INSTALL_HOME:-${HOME}/.local/share/pandoc-pdf}"
-INSTALL_BIN_DIR="${PANDOC_PDF_INSTALL_DIR:-${HOME}/.local/bin}"
-REPO_ROOT="${PANDOC_PDF_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+MANAGED_HOME="${SKELEPRESS_INSTALL_HOME:-${HOME}/.local/share/skelepress}"
+INSTALL_BIN_DIR="${SKELEPRESS_INSTALL_DIR:-${HOME}/.local/bin}"
+REPO_ROOT="${SKELEPRESS_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 VERSION_FILE="${REPO_ROOT}/VERSION"
 
 if [[ ! -f "$VERSION_FILE" ]]; then
@@ -11,8 +11,8 @@ if [[ ! -f "$VERSION_FILE" ]]; then
   exit 1
 fi
 
-if [[ ! -x "${REPO_ROOT}/bin/pandoc-pdf" ]]; then
-  echo "❌ ${REPO_ROOT}/bin/pandoc-pdf not found or not executable" >&2
+if [[ ! -x "${REPO_ROOT}/bin/skelepress" ]]; then
+  echo "❌ ${REPO_ROOT}/bin/skelepress not found or not executable" >&2
   exit 1
 fi
 
@@ -45,17 +45,17 @@ populate_payload "$version_dir" "$REPO_ROOT"
 
 if [[ "$mode" == "dev" ]]; then
   # A development install must not displace the stable one: `current` and
-  # `pandoc-pdf` keep pointing wherever they pointed, and the development
+  # `skelepress` keep pointing wherever they pointed, and the development
   # entrypoint is its own name.
-  dev_link="${INSTALL_BIN_DIR}/pandoc-pdf-dev"
-  ln -sfn "${REPO_ROOT}/bin/pandoc-pdf" "$dev_link"
-  echo "✅ Installed pandoc-pdf ${version} (development) from local repo"
-  echo "   Dev link: ${dev_link} -> ${REPO_ROOT}/bin/pandoc-pdf"
+  dev_link="${INSTALL_BIN_DIR}/skelepress-dev"
+  ln -sfn "${REPO_ROOT}/bin/skelepress" "$dev_link"
+  echo "✅ Installed skelepress ${version} (development) from local repo"
+  echo "   Dev link: ${dev_link} -> ${REPO_ROOT}/bin/skelepress"
 else
   ln -sfn "$version_dir" "$current_link"
-  ln -sfn "${current_link}/bin/pandoc-pdf" "${INSTALL_BIN_DIR}/pandoc-pdf"
-  echo "✅ Installed pandoc-pdf ${version} from local repo"
-  echo "   Binary: ${INSTALL_BIN_DIR}/pandoc-pdf"
+  ln -sfn "${current_link}/bin/skelepress" "${INSTALL_BIN_DIR}/skelepress"
+  echo "✅ Installed skelepress ${version} from local repo"
+  echo "   Binary: ${INSTALL_BIN_DIR}/skelepress"
 fi
 
 echo "   Managed root: ${MANAGED_HOME}"

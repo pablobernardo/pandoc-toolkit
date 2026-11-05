@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Shared i18n runtime for the bash entry points (bin/pandoc-pdf, scripts/delivery/bootstrap.sh).
+# Shared i18n runtime for the bash entry points (bin/skelepress, scripts/delivery/bootstrap.sh).
 #
 # Sourced, never executed. Contract: set I18N_ROOT to the toolkit root before
 # sourcing. Optionally set GLOBAL_ENV_FILE / PROJECT_ENV_FILE to override where
-# `pandoc-pdf locale set` persists the language.
+# `skelepress locale set` persists the language.
 #
 # The catalog is loaded once per process and lookups are pure bash parameter
 # expansion, so translating a message costs no subprocess. Before this helper
@@ -59,7 +59,7 @@ read_lang_from_env_file() {
   while IFS= read -r line || [[ -n "$line" ]]; do
     line="${line%%#*}"
     case "$line" in
-      *PANDOC_PDF_LANG=*)
+      *SKELEPRESS_LANG=*)
         value="${line#*=}"
         value="${value%\"}"
         value="${value#\"}"
@@ -77,22 +77,22 @@ read_lang_from_env_file() {
 }
 
 read_global_lang() {
-  read_lang_from_env_file "${GLOBAL_ENV_FILE:-${XDG_CONFIG_HOME:-${HOME}/.config}/pandoc-pdf/config.env}"
+  read_lang_from_env_file "${GLOBAL_ENV_FILE:-${XDG_CONFIG_HOME:-${HOME}/.config}/skelepress/config.env}"
 }
 
 # The project locale belongs to the consuming repository, not to the toolkit
 # installation. Look it up from the current directory upwards so running the CLI
 # from a subdirectory still finds it.
 project_env_file() {
-  if [[ -n "${PANDOC_PDF_PROJECT_ENV:-}" ]]; then
-    printf '%s\n' "${PANDOC_PDF_PROJECT_ENV}"
+  if [[ -n "${SKELEPRESS_PROJECT_ENV:-}" ]]; then
+    printf '%s\n' "${SKELEPRESS_PROJECT_ENV}"
     return 0
   fi
 
   local dir="$PWD"
   while :; do
-    if [[ -f "${dir}/.pandoc-pdf.env" ]]; then
-      printf '%s\n' "${dir}/.pandoc-pdf.env"
+    if [[ -f "${dir}/.skelepress.env" ]]; then
+      printf '%s\n' "${dir}/.skelepress.env"
       return 0
     fi
     [[ "$dir" == "/" ]] && break
@@ -131,13 +131,13 @@ normalize_lang_or_fail() {
   return 1
 }
 
-# Resolves the active locale: explicit argument, PANDOC_PDF_LANG, project file,
+# Resolves the active locale: explicit argument, SKELEPRESS_LANG, project file,
 # global file, LC_ALL, LANG, then English.
 resolve_lang() {
   local raw="${1:-}"
   if [[ -z "$raw" ]]; then
-    if [[ -n "${PANDOC_PDF_LANG:-}" ]]; then
-      raw="${PANDOC_PDF_LANG}"
+    if [[ -n "${SKELEPRESS_LANG:-}" ]]; then
+      raw="${SKELEPRESS_LANG}"
     else
       local from_project=""
       local from_global=""

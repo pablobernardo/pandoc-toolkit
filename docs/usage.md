@@ -1,8 +1,8 @@
-# Usage — Pandoc PDF Toolkit
+# Usage — Skelepress
 
 This guide explains how to consume the toolkit from any repository.
 
-> Before you start: see `docs/install.md` to get `pandoc-pdf` on your PATH.
+> Before you start: see `docs/install.md` to get `skelepress` on your PATH.
 
 ## Minimum requirements
 
@@ -13,7 +13,7 @@ This guide explains how to consume the toolkit from any repository.
 - `curl`
 - `mmdc` (if you use the Mermaid filter)
 
-> Recommendation: always run `pandoc-pdf doctor` before `render`.
+> Recommendation: always run `skelepress doctor` before `render`.
 
 ## Examples in this repository
 
@@ -26,12 +26,12 @@ together they cover it instead of repeating it:
 | `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
 | `examples/no-titlepage/` | The smallest valid configuration, rendered in both formats, with `titlepage: false`: the document opens on the table of contents instead of a typeset title page |
 | `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
-| `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the `pandoc-pdf book` subcommand |
+| `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the `skelepress book` subcommand |
 
 `examples/toPDF.sh` renders every example: the four configuration-driven ones
 (`ohmyfake`, `manual`, `no-titlepage` and `documentation`) through
-`pandoc-pdf render`,
-and the book example through `pandoc-pdf book`, because its volumes are declared
+`skelepress render`,
+and the book example through `skelepress book`, because its volumes are declared
 as manifests rather than as a configuration. The
 content examples (`ohmyfake`, `manual`, `no-titlepage` and `book-kit`) are
 original and released under CC0: they exercise the toolkit rather than serve
@@ -42,25 +42,25 @@ documentation, which is MIT licensed.
 
 A book is the same renderer with a `book`-class template and, when the volumes
 are declared as manifests, one configuration per volume. The whole story —
-manifests, the volume layout, `pandoc-pdf book`, the fields that shape a book,
+manifests, the volume layout, `skelepress book`, the fields that shape a book,
 the cover image and how the contents is separated — is
 [`books.md`](books.md).
 
 In short:
 
 ```bash
-pandoc-pdf book --check examples/book-kit/single   # validate and emit the configurations
-pandoc-pdf book --out ../.output examples/book-kit/single examples/book-kit/series
+skelepress book --check examples/book-kit/single   # validate and emit the configurations
+skelepress book --out ../.output examples/book-kit/single examples/book-kit/series
 ```
 
 The field reference for a manifest lives with the tool, in
-[`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/pandoc-toolkit/blob/main/scripts/tools/bookkit/README.md).
+[`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/skelepress/blob/main/scripts/tools/bookkit/README.md).
 
 ## Configuration contract
 
-Each consumer repository defines its own `pdf.config.yaml`.
+Each consumer repository defines its own `skelepress.config.yaml`.
 
-There is no hidden baseline: the contract is exactly what `schemas/pdf-config.schema.json` validates. The toolkit does not merge any defaults file, so everything the render needs is declared in your `pdf.config.yaml`. Use `examples/ohmyfake/pdf.config.yaml` as a starting template.
+There is no hidden baseline: the contract is exactly what `schemas/skelepress-config.schema.json` validates. The toolkit does not merge any defaults file, so everything the render needs is declared in your `skelepress.config.yaml`. Use `examples/ohmyfake/skelepress.config.yaml` as a starting template.
 
 The only values the renderer applies on its own are historical in-code fallbacks for missing keys (engine `xelatex`, TOC enabled, template `templates/default.tex`); a valid config does not depend on them because the schema forces those keys to be declared.
 
@@ -79,7 +79,7 @@ Expected minimum fields:
 
 ### Semantics of the declarative fields
 
-These fields are required in `schemas/pdf-config.schema.json` and the runtime actually applies them. When they are missing, the renderer and the preflight use the defaults listed below (which match `examples/ohmyfake/pdf.config.yaml`).
+These fields are required in `schemas/skelepress-config.schema.json` and the runtime actually applies them. When they are missing, the renderer and the preflight use the defaults listed below (which match `examples/ohmyfake/skelepress.config.yaml`).
 
 `input.order` — chapter ordering:
 
@@ -174,8 +174,8 @@ Optional `make` shortcuts:
 
 ```bash
 make doctor
-make validate CONFIG=pdf.config.yaml
-make render CONFIG=pdf.config.yaml
+make validate CONFIG=skelepress.config.yaml
+make render CONFIG=skelepress.config.yaml
 make bootstrap-yes
 make bootstrap-ci
 ```
@@ -183,39 +183,39 @@ make bootstrap-ci
 Check the CLI version:
 
 ```bash
-pandoc-pdf --version
+skelepress --version
 ```
 
 Show toolkit environment information:
 
 ```bash
-pandoc-pdf info
-pandoc-pdf info --json
+skelepress info
+skelepress info --json
 ```
 
 Manage the CLI locale:
 
 ```bash
-pandoc-pdf locale show
-pandoc-pdf locale set es
-pandoc-pdf locale set pt
-pandoc-pdf locale set gl
-pandoc-pdf locale set --project es
+skelepress locale show
+skelepress locale set es
+skelepress locale set pt
+skelepress locale set gl
+skelepress locale set --project es
 ```
 
 Currently supported locales: `en`, `es`, `pt`, `gl`.
 
-`locale set <lang>` saves the global language in `~/.config/pandoc-pdf/config.env` (or `XDG_CONFIG_HOME/pandoc-pdf/config.env`) so it applies by default in future runs.
+`locale set <lang>` saves the global language in `~/.config/skelepress/config.env` (or `XDG_CONFIG_HOME/skelepress/config.env`) so it applies by default in future runs.
 
-`locale set --project <lang>` writes `.pandoc-pdf.env` in the directory you run it from, so each consuming repository keeps its own language. The CLI looks for that file from the current directory upwards, which means running it from a subdirectory still finds the repository's setting. `PANDOC_PDF_PROJECT_ENV` overrides the path when you need it.
+`locale set --project <lang>` writes `.skelepress.env` in the directory you run it from, so each consuming repository keeps its own language. The CLI looks for that file from the current directory upwards, which means running it from a subdirectory still finds the repository's setting. `SKELEPRESS_PROJECT_ENV` overrides the path when you need it.
 
 Check whether there is a new stable version of the toolkit:
 
 ```bash
-pandoc-pdf update --check
-pandoc-pdf update
-pandoc-pdf update --to v1.2.3
-pandoc-pdf update --install-dir <path>
+skelepress update --check
+skelepress update
+skelepress update --to v1.2.3
+skelepress update --install-dir <path>
 ```
 
 `update --check` reports the local version, the latest stable version and whether an update is available.
@@ -226,21 +226,21 @@ pandoc-pdf update --install-dir <path>
 
 Layout managed by the updater (default paths):
 
-- Toolkit versions under `~/.local/share/pandoc-pdf/versions/<tag>/`
-- Active pointer at `~/.local/share/pandoc-pdf/current`
-- Entrypoint at `~/.local/bin/pandoc-pdf`
+- Toolkit versions under `~/.local/share/skelepress/versions/<tag>/`
+- Active pointer at `~/.local/share/skelepress/current`
+- Entrypoint at `~/.local/bin/skelepress`
 
 Notes:
 
-- `pandoc-pdf-dev` is reserved for local development and **does not allow** installation with `update`.
-- The managed root comes from `PANDOC_PDF_UPDATE_HOME`, then `PANDOC_PDF_INSTALL_HOME` (the variable `install.sh` and `make install-local` already honour), then `~/.local/share/pandoc-pdf`.
-- The binary directory comes from `--install-dir`, then `PANDOC_PDF_INSTALL_DIR`, then the directory of the `pandoc-pdf` found on `PATH` when it is writable, then `~/.local/bin`. A declared location beats the `PATH` heuristic: the updater never relocates an installation that declared where it lives.
+- `skelepress-dev` is reserved for local development and **does not allow** installation with `update`.
+- The managed root comes from `SKELEPRESS_UPDATE_HOME`, then `SKELEPRESS_INSTALL_HOME` (the variable `install.sh` and `make install-local` already honour), then `~/.local/share/skelepress`.
+- The binary directory comes from `--install-dir`, then `SKELEPRESS_INSTALL_DIR`, then the directory of the `skelepress` found on `PATH` when it is writable, then `~/.local/bin`. A declared location beats the `PATH` heuristic: the updater never relocates an installation that declared where it lives.
 
 Useful flags:
 
 - `--yes`: skips the interactive confirmation.
 - `--dry-run`: shows the plan without writing to disk.
-- `--install-dir <path>`: writes the entrypoint symlink into `<path>`. It does **not** move the managed root, which comes from `PANDOC_PDF_UPDATE_HOME` or `PANDOC_PDF_INSTALL_HOME` (default `~/.local/share/pandoc-pdf`); an isolated run needs the binary directory **and** the managed root declared, or the update acts on the real installation.
+- `--install-dir <path>`: writes the entrypoint symlink into `<path>`. It does **not** move the managed root, which comes from `SKELEPRESS_UPDATE_HOME` or `SKELEPRESS_INSTALL_HOME` (default `~/.local/share/skelepress`); an isolated run needs the binary directory **and** the managed root declared, or the update acts on the real installation.
 
 No token is needed: the update reads the public release metadata and downloads the
 asset from the public release URL. Anonymous requests to the GitHub API are limited
@@ -252,16 +252,16 @@ of the releases is not supported by this updater.
 Validate the environment and dependencies:
 
 ```bash
-pandoc-pdf doctor
+skelepress doctor
 ```
 
 Validate the configuration:
 
 ```bash
-pandoc-pdf validate-config -c pdf.config.yaml
+skelepress validate-config -c skelepress.config.yaml
 ```
 
-`validate-config` applies strict contract validation (required, types and disallowed fields), aligned with `schemas/pdf-config.schema.json`, plus functional validation of critical paths (`input.chapters_dir`, `pandoc.template`, `pandoc.metadata_file` when set, `filters.extra_lua_filters`). `input.order` is additionally validated against its `enum`: a value other than `natural` or `alphabetical` is rejected here, before it reaches the render.
+`validate-config` applies strict contract validation (required, types and disallowed fields), aligned with `schemas/skelepress-config.schema.json`, plus functional validation of critical paths (`input.chapters_dir`, `pandoc.template`, `pandoc.metadata_file` when set, `filters.extra_lua_filters`). `input.order` is additionally validated against its `enum`: a value other than `natural` or `alphabetical` is rejected here, before it reaches the render.
 
 The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`, `anyOf`), shared with the bookkit tool through `scripts/runtime/schema_runtime.py`. A test fails if the schema starts using any other keyword, so one can never be silently ignored.
 
@@ -276,14 +276,14 @@ Templates that expect chapters — the builtin `book` — pair with `top_level_d
 Render the PDF:
 
 ```bash
-pandoc-pdf render -c pdf.config.yaml
+skelepress render -c skelepress.config.yaml
 ```
 
 Inspect the render plan without executing anything:
 
 ```bash
-pandoc-pdf render -c pdf.config.yaml --dry-run
-pandoc-pdf render -c pdf.config.yaml --dry-run --json
+skelepress render -c skelepress.config.yaml --dry-run
+skelepress render -c skelepress.config.yaml --dry-run --json
 ```
 
 `--dry-run` prints the human-readable plan (chapters in effective order, merged markdown, output PDF and the pandoc invocation) and **writes nothing**: it creates no directories, generates no merged markdown, prepares no emojis and invokes no pandoc.
@@ -294,7 +294,7 @@ pandoc-pdf render -c pdf.config.yaml --dry-run --json
 {
   "plan_version": 1,
   "toolkit": { "version": "2.0.0", "root": "/path/toolkit" },
-  "config": { "path": "/path/pdf.config.yaml", "base_dir": "/path/project" },
+  "config": { "path": "/path/skelepress.config.yaml", "base_dir": "/path/project" },
   "chapters": ["/path/project/chapters/chapter-2.md"],
   "pandoc": {
     "target": { "markdown": "...", "pdf": "..." },
@@ -320,7 +320,7 @@ The plan is the verifiable contract of the render: it is what makes it possible 
 
 ## Recommended flow
 
-1. Prepare/update `pdf.config.yaml`.
+1. Prepare/update `skelepress.config.yaml`.
 2. Run `doctor` to check dependencies.
 3. Run `validate-config` to catch contract errors.
 4. Run `render`.
@@ -364,14 +364,14 @@ The plan is the verifiable contract of the render: it is what makes it possible 
   behavior and keeps the Missing-character warnings. Text extraction keeps the
   base symbols but not the invisible presentation selector: an input `⚠️`
   extracts as `⚠`.
-- `render` fails with Mermaid: `mmdc` is on PATH but cannot launch a browser. `mermaid-cli` needs a Chromium that Puppeteer can find, and its own download is separate from the npm package. `pandoc-pdf doctor` renders a test diagram and reports the exact fix:
+- `render` fails with Mermaid: `mmdc` is on PATH but cannot launch a browser. `mermaid-cli` needs a Chromium that Puppeteer can find, and its own download is separate from the npm package. `skelepress doctor` renders a test diagram and reports the exact fix:
   - install the browser Puppeteer expects: `npx puppeteer browsers install chrome-headless-shell`;
   - or point it at a browser you already have: `export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.
   A dropped diagram is not ignored: the merged markdown keeps the code block, `render` reports which diagrams failed and exits non-zero. To drop diagrams on purpose, set `filters.mermaid.enabled: false`. See `docs/install.md` for which of the two browser options to use and what not to hardcode.
 
 ## Configuration security
 
-- Do not run `render` or `doctor -c` with a `pdf.config.yaml` from an untrusted source.
+- Do not run `render` or `doctor -c` with a `skelepress.config.yaml` from an untrusted source.
 - Pay special attention to `runtime.required_commands` and `filters.extra_lua_filters`.
 - See the security policy in `.github/SECURITY.md`.
 
@@ -379,9 +379,9 @@ The plan is the verifiable contract of the render: it is what makes it possible 
 
 Suggested sequence:
 
-1. `pandoc-pdf doctor`
-2. `pandoc-pdf validate-config -c pdf.config.yaml`
-3. `pandoc-pdf render -c pdf.config.yaml`
+1. `skelepress doctor`
+2. `skelepress validate-config -c skelepress.config.yaml`
+3. `skelepress render -c skelepress.config.yaml`
 
 If `runtime.strict: true` (default), any missing dependency must fail the pipeline.
 

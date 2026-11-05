@@ -17,7 +17,7 @@ run_epub_resource_path_test() {
   # The cover image and the content image are declared relative to the project,
   # so the command must not depend on where it is invoked.
   (
-    cd "$elsewhere" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml"
+    cd "$elsewhere" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
   ) >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "EPUB resources resolve when the command runs outside the project"
 

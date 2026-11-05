@@ -155,7 +155,7 @@ run_builtin_template_test() {
   cp "${ROOT_DIR}/templates/book.tex" "${sandbox}/templates/book.tex"
   printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
 
-  cfg="${sandbox}/pdf.config.yaml"
+  cfg="${sandbox}/skelepress.config.yaml"
   write_contract_config "$cfg" natural true "" true
   python3 - "$cfg" <<'PY'
 import sys
@@ -168,14 +168,14 @@ open(path, "w", encoding="utf-8").write(
 PY
 
   set +e
-  "${sandbox}/bin/pandoc-pdf" validate-config -c "$cfg" >/dev/null 2>&1
+  "${sandbox}/bin/skelepress" validate-config -c "$cfg" >/dev/null 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "a builtin template name validates"
 
   out="$(mktemp)"
   set +e
-  "${sandbox}/bin/pandoc-pdf" render --dry-run --json -c "$cfg" >"$out" 2>&1
+  "${sandbox}/bin/skelepress" render --dry-run --json -c "$cfg" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "a builtin template name plans a render"
@@ -191,7 +191,7 @@ open(path, "w", encoding="utf-8").write(text.replace("template: book", "template
 PY
 
   set +e
-  "${sandbox}/bin/pandoc-pdf" validate-config -c "$cfg" >"$out" 2>&1
+  "${sandbox}/bin/skelepress" validate-config -c "$cfg" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "an unknown template name is rejected"

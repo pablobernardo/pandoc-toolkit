@@ -8,15 +8,15 @@ run_epub_render_structure_test() {
     return 0
   fi
 
-  local sandbox out epub md pdf code=0
+  local sandbox out epub md pdf result message code=0
   sandbox="$(new_epub_sandbox)"
   out="$(mktemp)"
   epub="${sandbox}/work/out/epub-guide-manual.epub"
   md="${sandbox}/work/out/epub-guide-manual.md"
   pdf="${sandbox}/work/out/epub-guide-manual.pdf"
 
-  write_epub_config "${sandbox}/pdf.config.yaml" epub
-  "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" <<'PY'
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub
+  "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" <<'PY'
 import sys
 from pathlib import Path
 path = Path(sys.argv[1])
@@ -27,7 +27,7 @@ chapter = path.parent / 'work/chapters/chapter-1.md'
 rows = '\n'.join(f'| `filters.example.setting_{i}` | default {i} | enabled |' for i in range(1, 9))
 chapter.write_text(chapter.read_text() + '\n| Setting | Default | When |\n|---|---|---|\n' + rows + '\n\nAfter table.\n')
 PY
-  "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+  "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "render produces an EPUB from the public CLI"
 
   if [[ -s "$epub" ]]; then
@@ -47,9 +47,7 @@ PY
   fi
   assert_contains "$out" "epub-guide-manual\.epub" "the renderer reports the epub output path"
 
-  while IFS=$'\t' read -r result message; do
-    if [[ "$result" == "0" ]]; then pass "$message"; else fail "$message"; fi
-  done < <("${REAL_PYTHON3}" - "$epub" <<'PY'
+  if "${REAL_PYTHON3}" - "$epub" >"$out" <<'PY'
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -190,7 +188,16 @@ check('After table.' in ''.join(chapter_root.itertext()),
       "EPUB retains the paragraph following a table")
 archive.close()
 PY
-)
+  then
+    while IFS=$'\t' read -r result message; do
+      if [[ "$result" == "0" ]]; then pass "$message"; else fail "$message"; fi
+    done < "$out"
+  else
+    rm -rf "$sandbox"
+    rm -f "$out"
+    fail "EPUB structure producer failed"
+    return 1
+  fi
 
   rm -rf "$sandbox"
   rm -f "$out"
@@ -222,8 +229,8 @@ Inline emoji in a paragraph ✅ stays an image.
 EOF
   printf '# Second Chapter\n\nText only.\n' >"${sandbox}/work/chapters/chapter-2.md"
 
-  write_epub_config "${sandbox}/pdf.config.yaml" epub
-  "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" <<'PY'
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub
+  "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" <<'PY'
 import sys
 from pathlib import Path
 
@@ -235,7 +242,7 @@ path.write_text(text)
 PY
 
   (
-    cd "${sandbox}/work" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml"
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
   ) >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "EPUB renders with an emoji in a heading"
 
@@ -288,7 +295,7 @@ root = Path(sys.argv[1])
 sys.path.insert(0, str(root / "scripts" / "runtime"))
 from schema_runtime import load_yaml  # noqa: E402
 
-config = load_yaml(root / "examples" / "documentation" / "pdf.config.yaml")
+config = load_yaml(root / "examples" / "documentation" / "skelepress.config.yaml")
 given = config["input"]
 chapters = given.get("chapters_dir") or "."
 rendered = given.get("explicit_files") or []

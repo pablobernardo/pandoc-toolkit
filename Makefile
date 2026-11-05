@@ -25,21 +25,21 @@ package-release:
 	bash scripts/delivery/package-release.sh dist
 
 doctor:
-	bin/pandoc-pdf doctor
+	bin/skelepress doctor
 
 validate:
 	@if [ -z "$(CONFIG)" ]; then \
-		echo "Usage: make validate CONFIG=pdf.config.yaml"; \
+		echo "Usage: make validate CONFIG=skelepress.config.yaml"; \
 		exit 1; \
 	fi
-	bin/pandoc-pdf validate-config -c "$(CONFIG)"
+	bin/skelepress validate-config -c "$(CONFIG)"
 
 render:
 	@if [ -z "$(CONFIG)" ]; then \
-		echo "Usage: make render CONFIG=pdf.config.yaml"; \
+		echo "Usage: make render CONFIG=skelepress.config.yaml"; \
 		exit 1; \
 	fi
-	bin/pandoc-pdf render -c "$(CONFIG)"
+	bin/skelepress render -c "$(CONFIG)"
 
 test:
 	bash tests/run.sh

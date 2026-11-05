@@ -1,4 +1,4 @@
-name: Release
+name: Skelepress Release
 
 permissions:
   contents: write
@@ -39,10 +39,10 @@ jobs:
         with:
           tag_name: ${{ steps.vars.outputs.tag }}
           files: |
-            dist/pandoc-pdf_darwin_amd64.tar.gz
-            dist/pandoc-pdf_darwin_arm64.tar.gz
-            dist/pandoc-pdf_linux_amd64.tar.gz
-            dist/pandoc-pdf_linux_arm64.tar.gz
+            dist/skelepress_darwin_amd64.tar.gz
+            dist/skelepress_darwin_arm64.tar.gz
+            dist/skelepress_linux_amd64.tar.gz
+            dist/skelepress_linux_arm64.tar.gz
             dist/checksums.txt
           generate_release_notes: true
           fail_on_unmatched_files: true
