@@ -68,7 +68,7 @@ SERIES_SCHEMA = TOOL_DIR / "series.schema.json"
 # inside the artifact, so one generated configuration works in a checkout and in
 # an installation. --template still accepts a path.
 DEFAULT_TEMPLATE = "book"
-DEFAULT_OUT = Path(".output") / "bookkit"
+DEFAULT_OUT = Path(".skelepress")
 
 LANG_CODES = ("en", "es", "pt", "gl")
 

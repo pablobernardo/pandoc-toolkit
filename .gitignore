@@ -16,3 +16,5 @@ __pycache__/
 examples/.output/
 # Output del bookkit cuando se ejecuta desde la raíz del repo
 /.output/
+# Default book output when invoked from the repository root
+/.skelepress/

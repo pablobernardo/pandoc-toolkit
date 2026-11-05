@@ -44,7 +44,16 @@ Build it:
 ```bash
 skelepress book my-book                  # one configuration per volume, then render
 skelepress book --check my-book          # validate and emit the configurations only
+skelepress book --out build my-book      # override the output root
 ```
+
+By default, generated configurations and rendered PDFs go under
+`.skelepress/<project>/` for a single volume, or
+`.skelepress/<project>/<volume>/` for a series. The root is relative to the
+working directory where you invoke the command, not the project directory.
+`--out` replaces that root without changing the layout. Existing `.output/`
+artifacts are not moved or removed; renderer paths in your own configurations
+are unchanged.
 
 `skelepress book` forwards every argument to the shipped bookkit tool and
 reports its own output and exit code, so anything the tool accepts works here.
@@ -133,8 +142,9 @@ directory and in both formats.
 ## See it work
 
 ```bash
-skelepress book --out .output examples/book-kit/single    # one volume
-skelepress book --out .output examples/book-kit/series    # two volumes, shared defaults
+skelepress book examples/book-kit/single                 # default: .skelepress/single/
+skelepress book examples/book-kit/series                 # default: .skelepress/series/<volume>/
+skelepress book --out build examples/book-kit/single     # explicit: build/single/
 ```
 
 The examples are the reference for both shapes: a single volume with every field
