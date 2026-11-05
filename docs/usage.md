@@ -215,6 +215,7 @@ Check whether there is a new stable version of the toolkit:
 pandoc-pdf update --check
 pandoc-pdf update
 pandoc-pdf update --to v1.2.3
+pandoc-pdf update --install-dir <path>
 ```
 
 `update --check` reports the local version, the latest stable version and whether an update is available.
@@ -223,7 +224,7 @@ pandoc-pdf update --to v1.2.3
 
 `update --to <tag>` installs a specific version (for example `v1.2.3`).
 
-Layout managed by the updater:
+Layout managed by the updater (default paths):
 
 - Toolkit versions under `~/.local/share/pandoc-pdf/versions/<tag>/`
 - Active pointer at `~/.local/share/pandoc-pdf/current`
@@ -232,13 +233,14 @@ Layout managed by the updater:
 Notes:
 
 - `pandoc-pdf-dev` is reserved for local development and **does not allow** installation with `update`.
-- You can customize the managed root with `PANDOC_PDF_UPDATE_HOME`.
+- The managed root comes from `PANDOC_PDF_UPDATE_HOME`, then `PANDOC_PDF_INSTALL_HOME` (the variable `install.sh` and `make install-local` already honour), then `~/.local/share/pandoc-pdf`.
+- The binary directory comes from `--install-dir`, then `PANDOC_PDF_INSTALL_DIR`, then the directory of the `pandoc-pdf` found on `PATH` when it is writable, then `~/.local/bin`. A declared location beats the `PATH` heuristic: the updater never relocates an installation that declared where it lives.
 
 Useful flags:
 
 - `--yes`: skips the interactive confirmation.
 - `--dry-run`: shows the plan without writing to disk.
-- `--install-dir <path>`: writes the entrypoint symlink into `<path>`. It does **not** move the managed root, which comes from `PANDOC_PDF_UPDATE_HOME` (default `~/.local/share/pandoc-pdf`); an isolated run needs both set, or the update acts on the real installation.
+- `--install-dir <path>`: writes the entrypoint symlink into `<path>`. It does **not** move the managed root, which comes from `PANDOC_PDF_UPDATE_HOME` or `PANDOC_PDF_INSTALL_HOME` (default `~/.local/share/pandoc-pdf`); an isolated run needs the binary directory **and** the managed root declared, or the update acts on the real installation.
 
 No token is needed: the update reads the public release metadata and downloads the
 asset from the public release URL. Anonymous requests to the GitHub API are limited

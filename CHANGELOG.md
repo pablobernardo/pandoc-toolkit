@@ -11,6 +11,8 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Fixed
 
+- `pandoc-pdf update` honours `PANDOC_PDF_INSTALL_HOME` and `PANDOC_PDF_INSTALL_DIR`, the variables `install.sh` and `install-local.sh` already declare. An installation in a non-standard location no longer finds the updater silently writing to `~/.local/share/pandoc-pdf`. Resolution order: managed root `PANDOC_PDF_UPDATE_HOME` → `PANDOC_PDF_INSTALL_HOME` → `~/.local/share/pandoc-pdf`; binary directory `--install-dir` → `PANDOC_PDF_INSTALL_DIR` → the writable directory of the `pandoc-pdf` found on `PATH` → `~/.local/bin`, so a declared location beats the `PATH` heuristic. Installations that declare neither variable resolve exactly as before.
+
 - The release packager builds its payload from the committed tree instead of the
   working copy. An untracked file inside a shipped directory no longer travels
   into the artifact, and an uncommitted edit no longer changes the hash a release

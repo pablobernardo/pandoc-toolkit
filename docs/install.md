@@ -103,13 +103,11 @@ development entrypoint.
 
 Three variables decide where an installation lives, and they are independent:
 
-- `PANDOC_PDF_INSTALL_HOME` — managed root used by `scripts/delivery/install.sh` and `make install-local`.
-- `PANDOC_PDF_INSTALL_DIR` — directory that receives the entrypoint symlink.
-- `PANDOC_PDF_UPDATE_HOME` — managed root used by `pandoc-pdf update`.
+- `PANDOC_PDF_INSTALL_HOME` — managed root used by `scripts/delivery/install.sh` and `make install-local`, and honoured by `pandoc-pdf update` as a fallback.
+- `PANDOC_PDF_INSTALL_DIR` — directory that receives the entrypoint symlink, also honoured by `pandoc-pdf update` (it beats the `pandoc-pdf` found on `PATH`).
+- `PANDOC_PDF_UPDATE_HOME` — managed root used by `pandoc-pdf update`; it wins over `PANDOC_PDF_INSTALL_HOME`.
 
-`pandoc-pdf update --install-dir <path>` only moves the symlink. Export
-`PANDOC_PDF_UPDATE_HOME` as well when an update must stay inside a disposable
-directory; without it the update writes to `~/.local/share/pandoc-pdf`.
+`pandoc-pdf update` reads the same declarations the installers write, so it updates the installation it finds instead of writing to the default locations behind your back. `pandoc-pdf update --install-dir <path>` only moves the symlink; the managed root still comes from `PANDOC_PDF_UPDATE_HOME` or `PANDOC_PDF_INSTALL_HOME` (default `~/.local/share/pandoc-pdf`), so an isolated acceptance run needs both declared.
 
 ## System dependencies
 

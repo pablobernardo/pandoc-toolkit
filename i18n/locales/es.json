@@ -11,6 +11,7 @@
   "cli.help.note.render_native": "render usa implementación nativa.",
   "cli.help.note.yaml_parsing": "El parseo de config soporta Python+PyYAML o Ruby stdlib YAML.",
   "cli.help.note.book": "book reenvía a la herramienta bookkit incluida (scripts/tools/bookkit/build.py).",
+  "cli.help.note.update_resolution": "update respeta PANDOC_PDF_UPDATE_HOME o PANDOC_PDF_INSTALL_HOME para la raíz gestionada y --install-dir o PANDOC_PDF_INSTALL_DIR para el binario; un directorio declarado tiene prioridad sobre el pandoc-pdf encontrado en PATH.",
   "cli.locale.error.missing_target": "Debes indicar un locale (por ejemplo: pandoc-pdf locale set --project es)",
   "cli.locale.error.unsupported": "Locale no soportado: {locale}. Soportados: {supported}",
   "cli.locale.show.language": "idioma",

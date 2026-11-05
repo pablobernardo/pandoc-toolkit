@@ -219,6 +219,110 @@ run_update_dev_command_blocked_test() {
   rm -f "$out"
 }
 
+# The installers declare where they put things with PANDOC_PDF_INSTALL_HOME and
+# PANDOC_PDF_INSTALL_DIR; the updater used to ignore both and silently write to
+# the default locations. The resolution order is: the variable named for this
+# command, then the installer variable, then the historical default; for the
+# binary directory --install-dir comes first, then PANDOC_PDF_INSTALL_DIR (a
+# declared directory beats the pandoc-pdf found on PATH), then the writable
+# directory of the pandoc-pdf on PATH, then ~/.local/bin.
+run_update_resolution_precedence_tests() {
+  local sandbox tmpbin out code
+  sandbox="$(mktemp -d)"
+  tmpbin="$(mktemp -d)"
+  out="$(mktemp)"
+
+  local os arch artifact_name
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  arch="$(uname -m | tr '[:upper:]' '[:lower:]')"
+  case "$os" in
+    darwin) os="darwin" ;;
+    linux) os="linux" ;;
+    *) os="linux" ;;
+  esac
+  case "$arch" in
+    x86_64|amd64) arch="amd64" ;;
+    arm64|aarch64) arch="arm64" ;;
+    *) arch="amd64" ;;
+  esac
+  artifact_name="pandoc-pdf_${os}_${arch}.tar.gz"
+
+  local release_json
+  release_json="${sandbox}/release.json"
+  cat >"$release_json" <<EOF
+{"tag_name":"v9.9.9","assets":[{"name":"${artifact_name}","browser_download_url":"https://downloads.invalid/${artifact_name}"},{"name":"checksums.txt","browser_download_url":"https://downloads.invalid/checksums.txt"}]}
+EOF
+
+  cat >"${tmpbin}/curl" <<'MOCK'
+#!/bin/bash
+cat "$TMP_UPDATE_RELEASE_JSON"
+printf '200\n'
+MOCK
+  chmod +x "${tmpbin}/curl"
+  export TMP_UPDATE_RELEASE_JSON="$release_json"
+
+  local home_dir update_home install_home path_dir declared_dir flag_dir readonly_dir
+  home_dir="${sandbox}/home"
+  update_home="${sandbox}/update-home"
+  install_home="${sandbox}/install-home"
+  path_dir="${sandbox}/path-bin"
+  declared_dir="${sandbox}/declared-bin"
+  flag_dir="${sandbox}/flag-bin"
+  readonly_dir="${sandbox}/readonly-bin"
+  mkdir -p "$home_dir" "$path_dir" "$declared_dir" "$flag_dir" "$readonly_dir"
+  printf '#!/bin/bash\n' >"${path_dir}/pandoc-pdf"
+  printf '#!/bin/bash\n' >"${readonly_dir}/pandoc-pdf"
+  chmod +x "${path_dir}/pandoc-pdf" "${readonly_dir}/pandoc-pdf"
+  chmod 555 "$readonly_dir"
+
+  set +e
+  PANDOC_PDF_UPDATE_HOME="$update_home" PANDOC_PDF_INSTALL_HOME="$install_home" HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "update --dry-run resolves with both managed-home variables set"
+  assert_contains "$out" "Managed root: ${update_home}" "PANDOC_PDF_UPDATE_HOME beats PANDOC_PDF_INSTALL_HOME"
+
+  set +e
+  PANDOC_PDF_INSTALL_HOME="$install_home" HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  code=$?
+  set -e
+  assert_contains "$out" "Managed root: ${install_home}" "PANDOC_PDF_INSTALL_HOME sets the managed root"
+
+  set +e
+  HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  code=$?
+  set -e
+  assert_contains "$out" "Managed root: ${home_dir}/\.local/share/pandoc-pdf" "without variables the managed root is the default under HOME"
+
+  set +e
+  PANDOC_PDF_INSTALL_DIR="$declared_dir" HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:${path_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  code=$?
+  set -e
+  assert_contains "$out" "Install path: ${declared_dir}/pandoc-pdf" "PANDOC_PDF_INSTALL_DIR beats the pandoc-pdf found on PATH"
+
+  set +e
+  PANDOC_PDF_INSTALL_DIR="$declared_dir" HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run --install-dir "$flag_dir" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_contains "$out" "Install path: ${flag_dir}/pandoc-pdf" "--install-dir beats PANDOC_PDF_INSTALL_DIR"
+
+  set +e
+  HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:${path_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  code=$?
+  set -e
+  assert_contains "$out" "Install path: ${path_dir}/pandoc-pdf" "the writable directory of the pandoc-pdf on PATH is the install dir"
+
+  set +e
+  HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:${readonly_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  code=$?
+  set -e
+  assert_contains "$out" "Install path: ${home_dir}/\.local/bin/pandoc-pdf" "an unwritable PATH directory falls back to HOME/.local/bin"
+
+  chmod 755 "$readonly_dir"
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$out"
+}
+
 run_update_rollback_on_validation_failure_test() {
   local sandbox
   sandbox="$(mktemp -d)"
