@@ -7,6 +7,29 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
+## [3.0.0] - Unreleased
+
+### Changed — breaking
+
+- The toolkit and repository are now **Skelepress**. The command is
+  `skelepress` (`skelepress-dev` for development), configuration files generated
+  by bookkit are `skelepress.config.yaml`, and the schema is
+  `schemas/skelepress-config.schema.json`. The configuration structure and its
+  `version` field are unchanged, as are commands, flags and rendering semantics.
+- All `PANDOC_PDF_*` variables become `SKELEPRESS_*`. Managed installations use
+  `~/.local/share/skelepress`, global locale settings use
+  `~/.config/skelepress/config.env`, and project locale settings use
+  `.skelepress.env`. The repository and documentation URLs use `skelepress`.
+  Release assets are named `skelepress_<os>_<arch>.tar.gz`; the documentation
+  skill is `skelepress-documentation`.
+- This is a clean break with no migration path: no old command shim, environment
+  aliases, fallback configuration loader, duplicate release assets or managed
+  root adoption. Existing installations and their settings are left untouched;
+  the maintainer removes them manually and installs 3.0.0 cleanly. The 2.5.2
+  updater hardcodes the old artifact names and cannot update to 3.0.0. No
+  compatibility upgrade from 2.5.2 is supported. Explicit `--config` paths remain
+  arbitrary filenames; rendering and validation still require that flag.
+
 ## [2.5.2] - 2026-11-05
 
 ### Fixed

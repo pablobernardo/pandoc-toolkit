@@ -16,7 +16,7 @@ document:
   titlepage: true
   metadata:
     keywords: "manual, verification, evidence, fictional device"
-    subject: "Example manual for the pandoc-pdf toolkit"
+    subject: "Example manual for the skelepress toolkit"
 
 input:
   chapters_dir: "chapters"

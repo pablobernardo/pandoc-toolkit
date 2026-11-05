@@ -1,6 +1,6 @@
 # Building a book
 
-A book is not a second renderer. It is the same `pandoc-pdf render`, with a
+A book is not a second renderer. It is the same `skelepress render`, with a
 `book`-class template and, when the book is declared as volumes, a manifest that
 turns into one configuration per volume.
 
@@ -42,15 +42,15 @@ around.
 Build it:
 
 ```bash
-pandoc-pdf book my-book                  # one configuration per volume, then render
-pandoc-pdf book --check my-book          # validate and emit the configurations only
+skelepress book my-book                  # one configuration per volume, then render
+skelepress book --check my-book          # validate and emit the configurations only
 ```
 
-`pandoc-pdf book` forwards every argument to the shipped bookkit tool and
+`skelepress book` forwards every argument to the shipped bookkit tool and
 reports its own output and exit code, so anything the tool accepts works here.
 The complete field reference — every manifest key, its type and its default —
 lives with the tool, in
-[`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/pandoc-toolkit/blob/main/scripts/tools/bookkit/README.md). This
+[`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/skelepress/blob/main/scripts/tools/bookkit/README.md). This
 page is the story; that page is the contract.
 
 ## What a volume prints
@@ -133,8 +133,8 @@ directory and in both formats.
 ## See it work
 
 ```bash
-pandoc-pdf book --out .output examples/book-kit/single    # one volume
-pandoc-pdf book --out .output examples/book-kit/series    # two volumes, shared defaults
+skelepress book --out .output examples/book-kit/single    # one volume
+skelepress book --out .output examples/book-kit/series    # two volumes, shared defaults
 ```
 
 The examples are the reference for both shapes: a single volume with every field

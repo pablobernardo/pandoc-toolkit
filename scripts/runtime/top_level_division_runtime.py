@@ -19,7 +19,7 @@ from __future__ import annotations
 DEFAULT = "default"
 
 # Pandoc's own accepted values, in the order the error message lists them. The
-# schema enum in schemas/pdf-config.schema.json mirrors this tuple; a test
+# schema enum in schemas/skelepress-config.schema.json mirrors this tuple; a test
 # fails if the two ever drift apart.
 ALLOWED_VALUES = (DEFAULT, "section", "chapter", "part")
 

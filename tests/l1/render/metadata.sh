@@ -12,8 +12,8 @@ run_render_document_vars_test() {
 
   printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
 
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render succeeds without metadata_file"
   else
     fail "render should succeed without metadata_file ($(tail -2 "$out"))"
@@ -27,8 +27,8 @@ run_render_document_vars_test() {
   assert_contains "$capture" "-V rights=S1 Rights" "document.rights is passed as a template variable"
 
   printf 'title: Metadata Title\nauthor: Metadata Author\n' >"${sandbox}/work/metadata.yaml"
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "metadata.yaml" true
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "metadata.yaml" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render succeeds with metadata_file"
   else
     fail "render should succeed with metadata_file ($(tail -2 "$out"))"

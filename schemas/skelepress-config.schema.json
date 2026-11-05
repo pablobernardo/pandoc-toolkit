@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pandoc-toolkit.dev/schemas/pdf-config.schema.json",
-  "title": "Pandoc PDF Toolkit Config",
+  "$id": "https://skelepress.dev/schemas/skelepress-config.schema.json",
+  "title": "Skelepress Config",
   "type": "object",
   "additionalProperties": false,
   "required": [

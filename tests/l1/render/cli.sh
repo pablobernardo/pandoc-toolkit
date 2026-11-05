@@ -19,8 +19,8 @@ run_render_no_yaml_parser_hints_i18n_test() {
   sandbox="$(mktemp -d)"
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates" "${sandbox}/i18n/locales"
 
-  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
-  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
@@ -29,7 +29,7 @@ run_render_no_yaml_parser_hints_i18n_test() {
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
-  cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
+  cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
   cp "${ROOT_DIR}/i18n/locales/es.json" "${sandbox}/i18n/locales/es.json"
   cp "${ROOT_DIR}/i18n/locales/en.json" "${sandbox}/i18n/locales/en.json"
   cp "${FIXTURES_DIR}/render.config.yaml" "${sandbox}/render.config.yaml"
@@ -84,7 +84,7 @@ EOF
   out="$(mktemp)"
 
   set +e
-  PANDOC_PDF_LANG=es PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=es PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1
   local code=$?
   set -e
 

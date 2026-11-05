@@ -24,7 +24,7 @@ except Exception:  # imported as a module from elsewhere: fix the path
 
 DEFAULT_REQUIRED = ["pandoc", "python3", "curl", "mmdc"]
 # The minimum interpreter the renderer runs on: the Python macOS ships
-# (3.9.6). bin/pandoc-pdf starts render-native.py with `python3` from PATH, so
+# (3.9.6). bin/skelepress starts render-native.py with `python3` from PATH, so
 # doctor checks that resolved interpreter, and an older one cannot render.
 PYTHON_MINIMUM = (3, 9)
 TEX_ENGINES = ["xelatex", "lualatex", "pdflatex"]
@@ -248,7 +248,7 @@ def parse_config_path(argv: list[str]) -> Path | None:
     if len(argv) == 2 and argv[0] in {"-c", "--config"}:
         return Path(argv[1])
 
-    fail(f"❌ {t('preflight.error.usage', 'Usage: preflight.py [-c <pdf.config.yaml>]')}")
+    fail(f"❌ {t('preflight.error.usage', 'Usage: preflight.py [-c <skelepress.config.yaml>]')}")
 
 
 def mermaid_cli_version() -> str | None:

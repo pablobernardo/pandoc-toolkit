@@ -18,11 +18,11 @@ run_render_plan_json_test() {
 
   printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
   printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true
 
   set +e
-  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
-    -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$plan" 2>"$out"
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render \
+    -c "${sandbox}/skelepress.config.yaml" --dry-run --json >"$plan" 2>"$out"
   code=$?
   set -e
   assert_exit_code "0" "$code" "render --dry-run --json exits 0"
@@ -67,11 +67,11 @@ run_render_dry_run_human_test() {
   out="$(mktemp)"
 
   printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true
 
   set +e
-  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
-    -c "${sandbox}/pdf.config.yaml" --dry-run >"$out" 2>&1
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render \
+    -c "${sandbox}/skelepress.config.yaml" --dry-run >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "render --dry-run exits 0"

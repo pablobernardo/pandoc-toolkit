@@ -34,11 +34,11 @@ run_bookkit_tests() {
   set -e
   assert_exit_code "0" "$code" "bookkit --check passes for the single-volume project"
   assert_contains "$out" "Check ok: 1 volume" "bookkit --check reports the planned volume"
-  if [[ -f "$scratch/out-single/single/pdf.config.yaml" ]]; then
+  if [[ -f "$scratch/out-single/single/skelepress.config.yaml" ]]; then
     pass "bookkit --check emits the generated configuration"
-    assert_contains "$scratch/out-single/single/pdf.config.yaml" 'template: "book"' \
+    assert_contains "$scratch/out-single/single/skelepress.config.yaml" 'template: "book"' \
       "the default template is the builtin name, not a project path"
-    assert_contains "$scratch/out-single/single/pdf.config.yaml" 'top_level_division: chapter' \
+    assert_contains "$scratch/out-single/single/skelepress.config.yaml" 'top_level_division: chapter' \
       "a book project asks pandoc for chapters, since templates/book.tex no longer shifts headings"
   else
     fail "bookkit --check must emit the generated configuration"
@@ -113,7 +113,7 @@ run_bookkit_tests() {
   assert_exit_code "0" "$code" "an optional entry with an absent file does not fail the plan"
   assert_contains "$out" "volume 'volume-2': back_matter entry 'excerpt' is optional and its file was not found, skipped: back-matter/99-excerpt\.md" \
     "the optional skip names the volume, the entry and the path"
-  if [[ -f "$scratch/out-optional/series/volume-2/pdf.config.yaml" ]]; then
+  if [[ -f "$scratch/out-optional/series/volume-2/skelepress.config.yaml" ]]; then
     pass "the volume with the optional absent file still plans"
   else
     fail "the volume with an optional absent file must still plan"
@@ -122,7 +122,7 @@ run_bookkit_tests() {
 
   # --- print: false is excluded from the generated configuration ----------
 
-  local v1config="$scratch/out-series/series/volume-1/pdf.config.yaml"
+  local v1config="$scratch/out-series/series/volume-1/skelepress.config.yaml"
   if [[ -f "$v1config" ]]; then
     if grep -q "review-request" "$v1config"; then
       fail "a print: false entry must be excluded from the generated configuration"
@@ -206,7 +206,7 @@ YAML
   set -e
   assert_exit_code "0" "$code" "the chapters: ordered keyword plans from chapters_dir"
   rm -f "$out"
-  local orderedconfig="$scratch/out-ordered/ordered/pdf.config.yaml"
+  local orderedconfig="$scratch/out-ordered/ordered/skelepress.config.yaml"
   if [[ -f "$orderedconfig" ]]; then
     assert_contains "$orderedconfig" "chapters/01-clouds\.md" "ordered picks up the first chapter"
     assert_contains "$orderedconfig" "chapters/03-rain\.md" "ordered picks up the last chapter"
@@ -228,7 +228,7 @@ YAML
   code=$?
   set -e
   assert_exit_code "0" "$code" "a project without its own template still plans"
-  assert_contains "$scratch/out-bare/no-template/pdf.config.yaml" 'template: "book"' \
+  assert_contains "$scratch/out-bare/no-template/skelepress.config.yaml" 'template: "book"' \
     "the generated configuration carries the builtin name"
   rm -f "$out"
 
@@ -270,7 +270,7 @@ YAML
   # The resolved project name decides the output directory, so find the
   # configuration instead of assuming which spelling it uses.
   local linked_config
-  linked_config="$(find "$scratch/out-linked" -name pdf.config.yaml | head -1)"
+  linked_config="$(find "$scratch/out-linked" -name skelepress.config.yaml | head -1)"
   if python3 - "$linked_config" <<'PY'
 import re
 import sys
@@ -294,7 +294,7 @@ PY
   rm -rf "$scratch"
 }
 
-# `pandoc-pdf book` is the front door to the shipped tool: the same arguments,
+# `skelepress book` is the front door to the shipped tool: the same arguments,
 # the same stdout and the same exit code as invoking build.py directly. No PDF
 # renders here: --check exercises the whole forwarding path.
 run_book_command_test() {
@@ -311,7 +311,7 @@ run_book_command_test() {
   local help_out
   help_out="$(mktemp)"
   "$CLI" --help >"$help_out" 2>&1
-  assert_contains "$help_out" "pandoc-pdf book" "--help lists the book subcommand"
+  assert_contains "$help_out" "skelepress book" "--help lists the book subcommand"
   rm -f "$help_out"
 
   # --- The subcommand matches the direct tool invocation ------------------
@@ -327,11 +327,11 @@ run_book_command_test() {
   local cli_code=$?
   set -e
   assert_exit_code "0" "$direct_code" "the direct tool invocation passes for the example project"
-  assert_exit_code "$direct_code" "$cli_code" "pandoc-pdf book exits with the tool's own exit code"
+  assert_exit_code "$direct_code" "$cli_code" "skelepress book exits with the tool's own exit code"
   if cmp -s "$direct_out" "$cli_out"; then
-    pass "pandoc-pdf book prints exactly what the direct tool invocation prints"
+    pass "skelepress book prints exactly what the direct tool invocation prints"
   else
-    fail "pandoc-pdf book must forward stdout unchanged to the tool"
+    fail "skelepress book must forward stdout unchanged to the tool"
   fi
   rm -f "$direct_out" "$cli_out"
 
@@ -348,7 +348,7 @@ run_book_command_test() {
   "$CLI" book --check --out "$scratch/out-broken" "$broken" >"$out" 2>&1
   local broken_code=$?
   set -e
-  assert_exit_code "1" "$broken_code" "pandoc-pdf book fails when the tool fails"
+  assert_exit_code "1" "$broken_code" "skelepress book fails when the tool fails"
   assert_contains "$out" "required fields are missing: title" \
     "the failure carries the tool's own message"
   rm -f "$out"

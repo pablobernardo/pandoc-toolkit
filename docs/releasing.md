@@ -46,7 +46,7 @@ perform for the release, not claims that a future candidate has passed:
   so do it from a clean checkout of the approved commit that you have verified
   with `git status`, and treat the checkout, not the machine, as the input.
 - [ ] **Clean install**: install the candidate artifact in a clean managed layout,
-  confirm `pandoc-pdf --version`, and run `doctor` and `validate-config`. Follow
+  confirm `skelepress --version`, and run `doctor` and `validate-config`. Follow
   `docs/install.md`; use disposable state rather than an everyday installation.
 - [ ] **Upgrade**: from the previous published version, exercise the updater
   against the candidate artifact; confirm checksum verification, the installed
@@ -89,12 +89,12 @@ test -z "$remote_tags"
 Only after the acceptance evidence and explicit publishing approval:
 
 ```bash
-git tag -a "$tag" -m "pandoc-pdf $version"
+git tag -a "$tag" -m "skelepress $version"
 git push origin "$tag"
 ```
 
 The tag triggers `.github/workflows/release.yml`, which builds the four
-`dist/pandoc-pdf_{darwin,linux}_{amd64,arm64}.tar.gz` assets and
+`dist/skelepress_{darwin,linux}_{amd64,arm64}.tar.gz` assets and
 `dist/checksums.txt`, creates or updates the GitHub release with generated notes,
 and fails if an expected asset is missing. `workflow_dispatch` can also publish
 an existing tag. A pull request does not exercise this tag/manual workflow.
@@ -104,7 +104,7 @@ an existing tag. A pull request does not exercise this tag/manual workflow.
 1. Verify the release tag, notes, asset contents and checksums against the
    approved candidate.
 2. In a disposable installation of the previous published version, run
-   `pandoc-pdf update --check`, then `pandoc-pdf update`, and confirm the version
+   `skelepress update --check`, then `skelepress update`, and confirm the version
    and a smoke render. Also verify a clean install from the published assets.
 3. Preserve published tags and assets. If a correction is needed, document it
    and publish a new patch release through the same checks and approval.

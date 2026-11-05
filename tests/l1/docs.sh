@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
-path = root / "skills/pandoc-pdf-documentation/SKILL.md"
+path = root / "skills/skelepress-documentation/SKILL.md"
 text = path.read_text(encoding="utf-8")
 frontmatter = re.match(r"\A---\n(.*?)\n---\n", text, re.S)
 assert frontmatter, "skill needs YAML frontmatter"
@@ -23,7 +23,7 @@ description = json.loads(fields["description"])
 assert isinstance(description, str) and 0 < len(description) <= 1024
 assert "Markdown" in description and "PDF" in description
 links = re.findall(r"\]\(([^)]+)\)", text[frontmatter.end():])
-assert links and all(link.startswith("https://github.com/pablobernardo/pandoc-toolkit/") for link in links), "references must survive installation outside the toolkit"
+assert links and all(link.startswith("https://github.com/pablobernardo/skelepress/") for link in links), "references must survive installation outside the toolkit"
 print("skill structure OK")
 PY
   code=$?
@@ -163,12 +163,12 @@ run_examples_validate_test() {
     [[ -f "$f" ]] || continue
     count=$((count + 1))
     set +e
-    PANDOC_PDF_LANG=en "$CLI" validate-config -c "$f" >/dev/null 2>&1
+    SKELEPRESS_LANG=en "$CLI" validate-config -c "$f" >/dev/null 2>&1
     code=$?
     set -e
     assert_exit_code "0" "$code" "example config validates: ${f#"${ROOT_DIR}/"}"
   done < <(git -C "$ROOT_DIR" ls-files -z --cached --others --exclude-standard -- examples \
-             | tr '\0' '\n' | grep -E '^examples/(.+/)?pdf\.config[^/]*\.yaml$' \
+             | tr '\0' '\n' | grep -E '^examples/(.+/)?skelepress\.config[^/]*\.yaml$' \
              | sed "s|^|${ROOT_DIR}/|" | sort)
 
   if [[ "$count" -ge 1 ]]; then
@@ -188,7 +188,7 @@ run_documentation_example_coverage_test() {
   # would be a bare version-1 plan. Read both shapes instead of assuming one, and
   # never let a failing helper abort the suite silently: an empty result is
   # reported by the assertion below.
-  planned="$(PANDOC_PDF_LANG=en "$CLI" render -c "${ROOT_DIR}/examples/documentation/pdf.config.yaml" \
+  planned="$(SKELEPRESS_LANG=en "$CLI" render -c "${ROOT_DIR}/examples/documentation/skelepress.config.yaml" \
     --dry-run --json 2>/dev/null \
     | "${REAL_PYTHON3}" -c '
 import json

@@ -11,24 +11,24 @@ run_install_local_dev_link_test() {
   install_home="${sandbox}/managed"
   install_bin="${sandbox}/bin"
 
-  if PANDOC_PDF_INSTALL_HOME="$install_home" PANDOC_PDF_INSTALL_DIR="$install_bin" /bin/bash "${ROOT_DIR}/scripts/delivery/install-local.sh" dev >"$out" 2>&1; then
+  if SKELEPRESS_INSTALL_HOME="$install_home" SKELEPRESS_INSTALL_DIR="$install_bin" /bin/bash "${ROOT_DIR}/scripts/delivery/install-local.sh" dev >"$out" 2>&1; then
     pass "install-local dev completes successfully"
   else
     fail "install-local dev should complete successfully"
   fi
 
-  if [[ -L "${install_bin}/pandoc-pdf-dev" ]]; then
-    pass "install-local dev creates pandoc-pdf-dev symlink"
+  if [[ -L "${install_bin}/skelepress-dev" ]]; then
+    pass "install-local dev creates skelepress-dev symlink"
   else
-    fail "install-local dev should create pandoc-pdf-dev symlink"
+    fail "install-local dev should create skelepress-dev symlink"
   fi
 
   set +e
-  "${install_bin}/pandoc-pdf-dev" --version >>"$out" 2>&1
+  "${install_bin}/skelepress-dev" --version >>"$out" 2>&1
   local code=$?
   set -e
-  assert_exit_code "0" "$code" "pandoc-pdf-dev symlink is executable"
-  assert_contains "$out" "^pandoc-pdf [0-9]+\.[0-9]+\.[0-9]+$" "pandoc-pdf-dev reports toolkit version"
+  assert_exit_code "0" "$code" "skelepress-dev symlink is executable"
+  assert_contains "$out" "^skelepress [0-9]+\.[0-9]+\.[0-9]+$" "skelepress-dev reports toolkit version"
 
   # A development install owns its own directory and leaves the stable one
   # alone: the managed layout is named after the release tag, with the `v` the
@@ -72,7 +72,7 @@ run_install_local_release_layout_test() {
   install_bin="${sandbox}/bin"
 
   set +e
-  PANDOC_PDF_INSTALL_HOME="$install_home" PANDOC_PDF_INSTALL_DIR="$install_bin" \
+  SKELEPRESS_INSTALL_HOME="$install_home" SKELEPRESS_INSTALL_DIR="$install_bin" \
     /bin/bash "${ROOT_DIR}/scripts/delivery/install-local.sh" >"$out" 2>&1
   local code=$?
   set -e
@@ -85,7 +85,7 @@ run_install_local_release_layout_test() {
   else
     fail "a release-shaped local install must use versions/v${version} and point current at it"
   fi
-  assert_contains "$out" "Installed pandoc-pdf ${version} from local repo" \
+  assert_contains "$out" "Installed skelepress ${version} from local repo" \
     "the release-shaped install reports the version it installed"
 
   rm -rf "$sandbox"

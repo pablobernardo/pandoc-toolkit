@@ -2,16 +2,16 @@
 
 One tool, two book shapes. This example proves that a single-volume book
 and a multi-volume series are the same pattern: a series is a book with more
-than one volume, and both render through the same public `pandoc-pdf` CLI
+than one volume, and both render through the same public `skelepress` CLI
 with the same template, the same configuration shape and the same shipped
 tool.
 
 ```bash
-pandoc-pdf book --out ../.output/book-kit single series
+skelepress book --out ../.output/book-kit single series
 ```
 
 The command above runs from this directory and writes everything into
-`../.output/book-kit/` (gitignored): one `pdf.config.yaml` per volume, the
+`../.output/book-kit/` (gitignored): one `skelepress.config.yaml` per volume, the
 generated mode files, and one PDF per volume. From any other working
 directory, pass the project paths and `--out` as you would to the tool
 itself — the subcommand forwards them unchanged.
@@ -30,9 +30,9 @@ folders beside it. There are two shapes:
 
 The manifests describe **what** each volume contains, never how it is
 rendered. The shipped tool, `scripts/tools/bookkit/build.py`, turns that
-model into one standard `pdf.config.yaml` per volume and calls
-`bin/pandoc-pdf render`. The toolkit never learns that manifests or series
-exist. The `pandoc-pdf book` subcommand is the front door to that tool: it
+model into one standard `skelepress.config.yaml` per volume and calls
+`bin/skelepress render`. The toolkit never learns that manifests or series
+exist. The `skelepress book` subcommand is the front door to that tool: it
 forwards every argument and reports the tool's own output and exit code.
 
 ## The folder convention
@@ -109,7 +109,7 @@ state the toolkit keeps.
 
 ## Requirements
 
-The same as any `pandoc-pdf` render (`pandoc`, a TeX engine, `python3`).
+The same as any `skelepress` render (`pandoc`, a TeX engine, `python3`).
 The tool reuses the toolkit's own YAML loader: PyYAML when importable,
 otherwise Ruby's stdlib YAML through a subprocess — exactly like the
 toolkit's own fallback. Without either, the tool fails with a clear

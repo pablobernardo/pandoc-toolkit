@@ -17,10 +17,10 @@ local coupling.
 
 ## Configuration contract (per repository)
 
-Each consuming repository keeps a `pdf.config.yaml` file. The single source of
-truth for the contract is `schemas/pdf-config.schema.json`; there is no
+Each consuming repository keeps a `skelepress.config.yaml` file. The single source of
+truth for the contract is `schemas/skelepress-config.schema.json`; there is no
 defaults baseline to merge. The example below mirrors
-`examples/ohmyfake/pdf.config.yaml`:
+`examples/ohmyfake/skelepress.config.yaml`:
 
 ```yaml
 version: 1
@@ -119,9 +119,9 @@ The schema requires `version`, `project`, `document`, `input`, `output`,
 ## Toolkit structure (as built)
 
 ```text
-pandoc-toolkit/
+skelepress/
   bin/
-    pandoc-pdf               # main CLI
+    skelepress               # main CLI
   templates/
     default.tex
   filters/
@@ -153,12 +153,12 @@ pandoc-toolkit/
       install-local.sh
       package-release.sh
   schemas/
-    pdf-config.schema.json
+    skelepress-config.schema.json
   i18n/
     locales/                 # en.json, es.json, gl.json, pt.json
     schema/
   examples/
-    documentation/pdf.config.yaml
+    documentation/skelepress.config.yaml
     manual/                  # config + chapters
     ohmyfake/                # config + chapters
     test/                    # config + chapters
@@ -199,12 +199,12 @@ minimal. `doctor` keeps its own minimal reader for the few keys it needs, and
 uses it only when the full parser is unavailable: it is a degradation path, not
 a second definition of what a configuration says.
 
-`pandoc-pdf render -c <config>` validates the config against the schema and
+`skelepress render -c <config>` validates the config against the schema and
 renders. There is no `defaults/default.yaml` and no baseline merge: the schema
 is the only source of truth, and the renderer applies only its historical
 code-level fallbacks for absent keys.
 
-`pandoc-pdf render -c <config> --dry-run [--json]` computes a pure plan
+`skelepress render -c <config> --dry-run [--json]` computes a pure plan
 (nothing is written or created) with `plan_version: 1`, containing the
 selected chapters, output targets, the exact pandoc `argv`, and the filter
 environment. `scripts/runtime/render-native.py` is split into `build_plan` (pure),
@@ -247,7 +247,7 @@ The plan is a conformance contract: four recorded cases in `tests/conformance/`
 cover minimal settings, metadata precedence, explicit chapter order, and custom
 templates/resources/filters. Run `python3 scripts/dev/check-plan-conformance.py` to
 compare normalized plans, or add `--update` to refresh expectations after an
-intentional contract change. Set `PANDOC_PDF_BIN` to compare another implementation;
+intentional contract change. Set `SKELEPRESS_BIN` to compare another implementation;
 an optional positional root selects a different tree of cases and expectations.
 Machine-local paths are normalized as documented in the checker's docstring;
 object key order is ignored, but array order and all non-path values are checked.
@@ -263,7 +263,7 @@ consumer cannot provide Python and a supported YAML parser, signed single-file
 artifacts are needed, or maintaining the Bash updater costs more than a rewrite.
 
 The frozen render plan and its conformance suite provide the comparison boundary
-for a replacement implementation. Use `PANDOC_PDF_BIN` as described above rather
+for a replacement implementation. Use `SKELEPRESS_BIN` as described above rather
 than defining a second rendering contract. Any migration must preserve the CLI
 and configuration compatibility rules in `AGENTS.md`.
 
@@ -273,7 +273,7 @@ and configuration compatibility rules in `AGENTS.md`.
 - ✅ Better maintainability and scalability
 - ✅ Upgrades controlled by version
 - ⚠️ Required designing the config contract up front (done: see
-  `schemas/pdf-config.schema.json`)
+  `schemas/skelepress-config.schema.json`)
 
 ### Option B — Git submodule of `.pandoc` (rejected)
 - ✅ Fast to implement
@@ -313,9 +313,9 @@ The original three-phase migration plan was executed:
    in `scripts/runtime/prepare-emojis.py`, and preflight was completed.
 2. **Extract the toolkit** — scripts, filters and templates moved to this
    repository and published by tag (v1.0.0 onwards). Each consuming repository
-   keeps a `pdf.config.yaml` and invokes the toolkit through `bin/pandoc-pdf`.
+   keeps a `skelepress.config.yaml` and invokes the toolkit through `bin/skelepress`.
 3. **Reuse across repositories** — the toolkit is consumed by tag/version;
-   per-repository customisation is limited to `pdf.config.yaml` plus an
+   per-repository customisation is limited to `skelepress.config.yaml` plus an
    optional template. The toolkit and configuration contract are versioned
    independently; breaking changes follow the policy in `AGENTS.md`.
 
@@ -324,8 +324,8 @@ The original three-phase migration plan was executed:
 These were the "definition of done" criteria for 1.0.0. They now act as
 invariants that future changes must preserve:
 
-- [x] A single entry point (`bin/pandoc-pdf`).
-- [x] Config validated against the JSON schema (`pandoc-pdf validate-config`,
+- [x] A single entry point (`bin/skelepress`).
+- [x] Config validated against the JSON schema (`skelepress validate-config`,
       enforced by `render` before every run).
 - [x] 100% declarative paths (no hardcoded paths in scripts, filters or
       templates).

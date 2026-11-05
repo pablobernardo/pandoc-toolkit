@@ -13,7 +13,7 @@ Known prefixes win over temporary/absolute fallbacks; path suffixes and array
 order are retained. No fields, versions, booleans, or non-path values are ignored.
 Cases use a literal output suffix, not the renderer's current-date substitution.
 The checker does not parse YAML or import the renderer. ROOT is the tree holding
-tests/conformance; PANDOC_PDF_BIN selects a different CLI installation.
+tests/conformance; SKELEPRESS_BIN selects a different CLI installation.
 """
 from __future__ import annotations
 
@@ -97,7 +97,7 @@ def main() -> int:
     if not cases:
         print(f"No conformance cases found in {suite / 'cases'}", file=sys.stderr)
         return 1
-    cli = os.environ.get("PANDOC_PDF_BIN") or str(root / "bin/pandoc-pdf")
+    cli = os.environ.get("SKELEPRESS_BIN") or str(root / "bin/skelepress")
     for case in cases:
         expected = suite / "expected" / f"{case.stem}.plan.json"
         try:
@@ -107,7 +107,7 @@ def main() -> int:
             result = subprocess.run(
                 [cli, "render", "-c", str(case), "--dry-run", "--json"],
                 capture_output=True, text=True,
-                env=dict(os.environ, PANDOC_PDF_LANG="en"),
+                env=dict(os.environ, SKELEPRESS_LANG="en"),
             )
             if result.returncode:
                 print(f"{case.stem}: CLI exited {result.returncode}\n"

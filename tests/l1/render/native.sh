@@ -7,8 +7,8 @@ run_render_native_test() {
   sandbox="$(mktemp -d)"
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
-  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
-  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
@@ -17,7 +17,7 @@ run_render_native_test() {
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
-  cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
+  cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
   cp "${FIXTURES_DIR}/render.config.yaml" "${sandbox}/render.config.yaml"
 
   cat >"${sandbox}/chapters/title-a.md" <<'EOF'
@@ -82,7 +82,7 @@ EOF
   md_file="${sandbox}/custom-output/report-${suffix}.md"
   pdf_file="${sandbox}/custom-output/report-${suffix}.pdf"
 
-  if PANDOC_PDF_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
+  if SKELEPRESS_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
     pass "native render runs pandoc"
   else
     fail "native render should run pandoc"
@@ -117,8 +117,8 @@ run_render_native_advanced_paths_test() {
   sandbox="$(mktemp -d)"
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/filters" "${sandbox}/assets/media" "${sandbox}/templates"
 
-  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
-  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
@@ -127,7 +127,7 @@ run_render_native_advanced_paths_test() {
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
-  cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
+  cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
   cp "${FIXTURES_DIR}/render-extra-filter.config.yaml" "${sandbox}/render-extra-filter.config.yaml"
 
   cat >"${sandbox}/chapters/01-intro.md" <<'EOF'
@@ -167,7 +167,7 @@ EOF
   capture="$(mktemp)"
   out="$(mktemp)"
 
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/render-extra-filter.config.yaml" >"$out" 2>&1; then
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render-extra-filter.config.yaml" >"$out" 2>&1; then
     pass "advanced render runs pandoc"
   else
     fail "advanced render should run pandoc"
@@ -201,8 +201,8 @@ run_render_missing_explicit_file_test() {
   sandbox="$(mktemp -d)"
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
-  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
-  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
@@ -211,7 +211,7 @@ run_render_missing_explicit_file_test() {
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
-  cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
+  cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
   cp "${FIXTURES_DIR}/render-missing-explicit.config.yaml" "${sandbox}/render-missing-explicit.config.yaml"
 
   cat >"${sandbox}/chapters/01-intro.md" <<'EOF'
@@ -235,7 +235,7 @@ EOF
   out="$(mktemp)"
 
   set +e
-  PANDOC_PDF_LANG=es "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/render-missing-explicit.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=es "${sandbox}/bin/skelepress" render -c "${sandbox}/render-missing-explicit.config.yaml" >"$out" 2>&1
   local code=$?
   set -e
 
@@ -263,8 +263,8 @@ run_render_top_level_division_test() {
   sandbox="$(mktemp -d)"
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
-  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
-  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
   cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
   cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
   cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
@@ -273,7 +273,7 @@ run_render_top_level_division_test() {
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
-  cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
+  cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
   cp "${FIXTURES_DIR}/render-top-level-division.config.yaml" "${sandbox}/render-top-level-division.config.yaml"
 
   cat >"${sandbox}/chapters/title-a.md" <<'EOF2'
@@ -307,7 +307,7 @@ EOF2
 
   # (a) A valid value reaches pandoc's argv as the exact CLI flag.
   cfg="${sandbox}/render-top-level-division.config.yaml"
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "$cfg" >"$out" 2>&1; then
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "$cfg" >"$out" 2>&1; then
     pass "a render with top_level_division runs pandoc"
   else
     fail "a render with top_level_division should run pandoc ($(cat "$out"))"
@@ -318,7 +318,7 @@ EOF2
   cfg="${sandbox}/render-absent.config.yaml"
   sed '/top_level_division:/d' "${sandbox}/render-top-level-division.config.yaml" >"$cfg"
   : >"$capture"
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "$cfg" >"$out" 2>&1; then
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "$cfg" >"$out" 2>&1; then
     pass "a render without top_level_division runs pandoc"
   else
     fail "a render without top_level_division should run pandoc ($(cat "$out"))"
@@ -331,7 +331,7 @@ EOF2
   sed 's/top_level_division: chapter/top_level_division: bogus/' "${sandbox}/render-top-level-division.config.yaml" >"$cfg"
   : >"$out"
   set +e
-  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "$cfg" >"$out" 2>&1
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "$cfg" >"$out" 2>&1
   local code=$?
   set -e
   assert_exit_code "1" "$code" "an invalid top_level_division fails the render"
@@ -344,7 +344,7 @@ EOF2
 }
 
 run_render_python39_test() {
-  # macOS ships /usr/bin/python3 (3.9.6) and bin/pandoc-pdf starts the renderer
+  # macOS ships /usr/bin/python3 (3.9.6) and bin/skelepress starts the renderer
   # with `python3` from PATH. Rendering must work on that interpreter, so this
   # test pins the 3.9 path explicitly and skips wherever it does not exist.
   if [[ ! -x /usr/bin/python3 ]]; then
@@ -362,12 +362,12 @@ run_render_python39_test() {
   sandbox="$(mktemp -d)"
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
-  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
-  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
   for f in i18n.sh validate-config.py schema_runtime.py template_runtime.py top_level_division_runtime.py render-native.py prepare-emojis.py; do
     cp "${ROOT_DIR}/scripts/runtime/${f}" "${sandbox}/scripts/runtime/${f}"
   done
-  cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
+  cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
   cp "${FIXTURES_DIR}/render.config.yaml" "${sandbox}/render.config.yaml"
 
   printf '# Chapter A\n\nContenido A\n' >"${sandbox}/chapters/title-a.md"
@@ -412,7 +412,7 @@ EOF
   out="$(mktemp)"
   pdf_file="${sandbox}/custom-output/report-$(date +%Y%m%d).pdf"
 
-  if PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
+  if PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
     pass "render completes under /usr/bin/python3 (3.9.6)"
   else
     fail "render should complete under /usr/bin/python3 (3.9.6)"

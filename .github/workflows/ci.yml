@@ -1,4 +1,4 @@
-name: CI
+name: Skelepress CI
 
 permissions:
   contents: read
@@ -56,7 +56,7 @@ jobs:
 
       - name: Ensure scripts are executable
         run: |
-          chmod +x bin/pandoc-pdf
+          chmod +x bin/skelepress
           chmod +x tests/run.sh
           chmod +x scripts/runtime/validate-config.py
           chmod +x scripts/runtime/render-native.py
@@ -93,7 +93,7 @@ jobs:
 
       - name: Ensure scripts are executable
         run: |
-          chmod +x bin/pandoc-pdf
+          chmod +x bin/skelepress
           chmod +x tests/run.sh
           chmod +x scripts/runtime/validate-config.py
           chmod +x scripts/runtime/render-native.py
@@ -139,7 +139,7 @@ jobs:
 
       - name: Ensure scripts are executable
         run: |
-          chmod +x bin/pandoc-pdf
+          chmod +x bin/skelepress
           chmod +x scripts/runtime/validate-config.py
           chmod +x scripts/runtime/render-native.py
           chmod +x scripts/runtime/prepare-emojis.py
@@ -188,7 +188,7 @@ jobs:
 
       - name: Ensure scripts are executable
         run: |
-          chmod +x bin/pandoc-pdf
+          chmod +x bin/skelepress
           chmod +x scripts/runtime/validate-config.py
           chmod +x scripts/runtime/render-native.py
           chmod +x scripts/runtime/prepare-emojis.py

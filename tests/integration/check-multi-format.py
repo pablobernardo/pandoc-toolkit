@@ -41,12 +41,12 @@ if "-o" in sys.argv:
     target.write_text("fixture artifact")
 ''')
             p.chmod(0o755)
-        self.env = {**os.environ, "PANDOC_PDF_LANG": "en", "PATH": str(self.bin) + os.pathsep + os.environ["PATH"]}
+        self.env = {**os.environ, "SKELEPRESS_LANG": "en", "PATH": str(self.bin) + os.pathsep + os.environ["PATH"]}
 
     def run_cli(self, *args):
-        path = self.root / "pdf.config.yaml"
+        path = self.root / "skelepress.config.yaml"
         path.write_text(json.dumps(self.config))
-        return subprocess.run([str(ROOT / "bin/pandoc-pdf"), *args, "-c", str(path)],
+        return subprocess.run([str(ROOT / "bin/skelepress"), *args, "-c", str(path)],
                               capture_output=True, text=True, env=self.env)
 
     def test_default_and_explicit_pdf_plan(self):
@@ -111,14 +111,14 @@ if "-o" in sys.argv:
         python = self.bin / "python3"
         python.write_text(f'#!/bin/sh\nexec "{sys.executable}" -S "$@"\n')
         python.chmod(0o755)
-        path = self.root / "pdf.config.yaml"
+        path = self.root / "skelepress.config.yaml"
         path.write_text(
             "output:\n  formats: [\n    epub,\n    pdf\n  ]\n"
             "pandoc:\n  pdf_engine: missing-test-engine\n"
             "runtime:\n  required_commands: [pandoc]\n  strict: true\n"
         )
         before = path.read_bytes()
-        result = subprocess.run([str(ROOT / "bin/pandoc-pdf"), "doctor", "-c", str(path)],
+        result = subprocess.run([str(ROOT / "bin/skelepress"), "doctor", "-c", str(path)],
                                 capture_output=True, text=True, env=self.env)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout, "❌ Doctor detected missing dependencies:\n   - missing-test-engine\n")

@@ -24,15 +24,15 @@ done
 
 SCRIPT_DIR="$(cd -P -- "$(path_dirname "$SOURCE_PATH")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-GLOBAL_CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/pandoc-pdf"
+GLOBAL_CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/skelepress"
 GLOBAL_ENV_FILE="${GLOBAL_CONFIG_DIR}/config.env"
 # `locale set --project` writes for the repository you are in, not for the
 # toolkit installation, so two consuming repositories keep independent locales.
-PROJECT_ENV_FILE="${PWD}/.pandoc-pdf.env"
+PROJECT_ENV_FILE="${PWD}/.skelepress.env"
 
 I18N_HELPER="${ROOT_DIR}/scripts/runtime/i18n.sh"
 if [[ ! -f "$I18N_HELPER" ]]; then
-  echo "❌ pandoc-pdf: cannot find ${I18N_HELPER}; the installation looks incomplete" >&2
+  echo "❌ skelepress: cannot find ${I18N_HELPER}; the installation looks incomplete" >&2
   exit 1
 fi
 
@@ -53,24 +53,24 @@ usage() {
   note_render_native="$(t "cli.help.note.render_native" "render uses native implementation.")"
   note_yaml_parsing="$(t "cli.help.note.yaml_parsing" "Config parsing supports Python+PyYAML or Ruby stdlib YAML.")"
   note_book="$(t "cli.help.note.book" "book forwards to the shipped bookkit tool (scripts/tools/bookkit/build.py).")"
-  note_update_resolution="$(t "cli.help.note.update_resolution" "update honours PANDOC_PDF_UPDATE_HOME or PANDOC_PDF_INSTALL_HOME for the managed root and --install-dir or PANDOC_PDF_INSTALL_DIR for the binary; a declared install dir beats the pandoc-pdf found on PATH.")"
+  note_update_resolution="$(t "cli.help.note.update_resolution" "update honours SKELEPRESS_UPDATE_HOME or SKELEPRESS_INSTALL_HOME for the managed root and --install-dir or SKELEPRESS_INSTALL_DIR for the binary; a declared install dir beats the skelepress found on PATH.")"
 
   cat <<EOF
-Pandoc PDF Toolkit CLI
+Skelepress CLI
 
 ${usage_title}
-  pandoc-pdf --version
-  pandoc-pdf version
-  pandoc-pdf info [--json]
-  pandoc-pdf locale [show|set <lang>|set --project <lang>]
-  pandoc-pdf update --check
-  pandoc-pdf update
-  pandoc-pdf update --to vX.Y.Z
-  pandoc-pdf update --install-dir <path>
-  pandoc-pdf doctor [-c <pdf.config.yaml>]
-  pandoc-pdf validate-config -c <pdf.config.yaml>
-  pandoc-pdf render -c <pdf.config.yaml> [--dry-run] [--json]
-  pandoc-pdf book [args...]
+  skelepress --version
+  skelepress version
+  skelepress info [--json]
+  skelepress locale [show|set <lang>|set --project <lang>]
+  skelepress update --check
+  skelepress update
+  skelepress update --to vX.Y.Z
+  skelepress update --install-dir <path>
+  skelepress doctor [-c <skelepress.config.yaml>]
+  skelepress validate-config -c <skelepress.config.yaml>
+  skelepress render -c <skelepress.config.yaml> [--dry-run] [--json]
+  skelepress book [args...]
 
 ${notes_title}
   - ${note_render_native}
@@ -112,7 +112,7 @@ semver_compare() {
 }
 
 update_api_base() {
-  printf '%s\n' "${PANDOC_PDF_UPDATE_API_BASE:-https://api.github.com/repos/pablobernardo/pandoc-toolkit/releases}"
+  printf '%s\n' "${SKELEPRESS_UPDATE_API_BASE:-https://api.github.com/repos/pablobernardo/skelepress/releases}"
 }
 
 fetch_release_json() {
@@ -326,16 +326,16 @@ resolve_install_dir() {
     return 0
   fi
 
-  # The installers put the entrypoint where PANDOC_PDF_INSTALL_DIR says, so a
-  # declared directory beats the pandoc-pdf found on PATH; otherwise the
+  # The installers put the entrypoint where SKELEPRESS_INSTALL_DIR says, so a
+  # declared directory beats the skelepress found on PATH; otherwise the
   # updater would relocate an installation behind the user's back.
-  if [[ -n "${PANDOC_PDF_INSTALL_DIR:-}" ]]; then
-    printf '%s\n' "$PANDOC_PDF_INSTALL_DIR"
+  if [[ -n "${SKELEPRESS_INSTALL_DIR:-}" ]]; then
+    printf '%s\n' "$SKELEPRESS_INSTALL_DIR"
     return 0
   fi
 
   local current_bin
-  current_bin="$(command -v pandoc-pdf || true)"
+  current_bin="$(command -v skelepress || true)"
   if [[ -n "$current_bin" ]]; then
     local current_dir
     current_dir="$(dirname "$current_bin")"
@@ -351,15 +351,15 @@ resolve_install_dir() {
 resolve_managed_home() {
   # Precedence: the variable named for this command wins over the one the
   # installers honour, which wins over the historical default.
-  if [[ -n "${PANDOC_PDF_UPDATE_HOME:-}" ]]; then
-    printf '%s\n' "$PANDOC_PDF_UPDATE_HOME"
+  if [[ -n "${SKELEPRESS_UPDATE_HOME:-}" ]]; then
+    printf '%s\n' "$SKELEPRESS_UPDATE_HOME"
     return 0
   fi
-  if [[ -n "${PANDOC_PDF_INSTALL_HOME:-}" ]]; then
-    printf '%s\n' "$PANDOC_PDF_INSTALL_HOME"
+  if [[ -n "${SKELEPRESS_INSTALL_HOME:-}" ]]; then
+    printf '%s\n' "$SKELEPRESS_INSTALL_HOME"
     return 0
   fi
-  printf '%s\n' "${HOME}/.local/share/pandoc-pdf"
+  printf '%s\n' "${HOME}/.local/share/skelepress"
 }
 
 update_log_event() {
@@ -368,14 +368,14 @@ update_log_event() {
   local ts
   ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
-  if [[ -n "${PANDOC_PDF_UPDATE_LOG_FILE:-}" ]]; then
+  if [[ -n "${SKELEPRESS_UPDATE_LOG_FILE:-}" ]]; then
     local log_dir
-    log_dir="$(dirname "$PANDOC_PDF_UPDATE_LOG_FILE")"
+    log_dir="$(dirname "$SKELEPRESS_UPDATE_LOG_FILE")"
     mkdir -p "$log_dir" 2>/dev/null || true
-    printf '%s [%s] %s\n' "$ts" "$level" "$message" >> "$PANDOC_PDF_UPDATE_LOG_FILE" 2>/dev/null || true
+    printf '%s [%s] %s\n' "$ts" "$level" "$message" >> "$SKELEPRESS_UPDATE_LOG_FILE" 2>/dev/null || true
   fi
 
-  if [[ "${PANDOC_PDF_UPDATE_VERBOSE:-0}" == "1" ]]; then
+  if [[ "${SKELEPRESS_UPDATE_VERBOSE:-0}" == "1" ]]; then
     printf 'ℹ️  [%s] %s\n' "$level" "$message" >&2
   fi
 }
@@ -433,8 +433,8 @@ run_update() {
 
   local invoked_name
   invoked_name="$(basename "$0")"
-  if [[ "$invoked_name" == "pandoc-pdf-dev" && "$check_only" != true ]]; then
-    echo "❌ $(t "cli.update.error.dev_blocked" "update is disabled for pandoc-pdf-dev; use pandoc-pdf")" >&2
+  if [[ "$invoked_name" == "skelepress-dev" && "$check_only" != true ]]; then
+    echo "❌ $(t "cli.update.error.dev_blocked" "update is disabled for skelepress-dev; use skelepress")" >&2
     exit 1
   fi
 
@@ -513,7 +513,7 @@ run_update() {
   fi
 
   local artifact_name checksums_name
-  artifact_name="pandoc-pdf_${os}_${arch}.tar.gz"
+  artifact_name="skelepress_${os}_${arch}.tar.gz"
   checksums_name="checksums.txt"
 
   local artifact_url checksums_url
@@ -534,7 +534,7 @@ run_update() {
   local install_dir managed_home target_bin
   install_dir="$(resolve_install_dir "$install_dir_arg")"
   managed_home="$(resolve_managed_home)"
-  target_bin="${install_dir}/pandoc-pdf"
+  target_bin="${install_dir}/skelepress"
 
   local version_dir current_link
   version_dir="${managed_home}/versions/${release_tag}"
@@ -586,13 +586,13 @@ run_update() {
     exit 1
   fi
 
-  new_bin="${extract_dir}/pandoc-pdf"
-  if [[ ! -x "$new_bin" && -x "${extract_dir}/bin/pandoc-pdf" ]]; then
-    new_bin="${extract_dir}/bin/pandoc-pdf"
+  new_bin="${extract_dir}/skelepress"
+  if [[ ! -x "$new_bin" && -x "${extract_dir}/bin/skelepress" ]]; then
+    new_bin="${extract_dir}/bin/skelepress"
   fi
   if [[ ! -x "$new_bin" ]]; then
-    echo "❌ $(t "cli.update.error.invalid_artifact" "downloaded artifact does not contain an executable pandoc-pdf")"
-    update_log_event "ERROR" "artifact validation failed: no executable pandoc-pdf"
+    echo "❌ $(t "cli.update.error.invalid_artifact" "downloaded artifact does not contain an executable skelepress")"
+    update_log_event "ERROR" "artifact validation failed: no executable skelepress"
     rm -rf "$tmpdir"
     exit 1
   fi
@@ -601,12 +601,12 @@ run_update() {
   install_root="${tmpdir}/install-root"
   mkdir -p "$install_root"
 
-  if [[ -x "${extract_dir}/bin/pandoc-pdf" ]]; then
+  if [[ -x "${extract_dir}/bin/skelepress" ]]; then
     cp -R "${extract_dir}/." "$install_root/"
   else
     mkdir -p "${install_root}/bin"
-    cp "$new_bin" "${install_root}/bin/pandoc-pdf"
-    chmod +x "${install_root}/bin/pandoc-pdf"
+    cp "$new_bin" "${install_root}/bin/skelepress"
+    chmod +x "${install_root}/bin/skelepress"
   fi
 
   if [[ "$non_interactive" != true ]]; then
@@ -657,7 +657,7 @@ run_update() {
   if mkdir -p "$version_dir" \
     && cp -R "$install_root/." "$version_dir/" \
     && ln -sfn "$version_dir" "$current_link" \
-    && ln -sfn "$current_link/bin/pandoc-pdf" "$target_bin"; then
+    && ln -sfn "$current_link/bin/skelepress" "$target_bin"; then
     local version_output
     local installed_version
     version_output="$($target_bin --version 2>/dev/null || true)"
@@ -717,8 +717,8 @@ run_update() {
 }
 
 detect_lang_source() {
-  if [[ -n "${PANDOC_PDF_LANG:-}" ]]; then
-    printf 'PANDOC_PDF_LANG\n'
+  if [[ -n "${SKELEPRESS_LANG:-}" ]]; then
+    printf 'SKELEPRESS_LANG\n'
     return 0
   fi
   if read_project_lang >/dev/null 2>&1; then
@@ -802,13 +802,13 @@ run_locale() {
       fi
 
       if [[ "$scope" == "project" ]]; then
-        printf 'export PANDOC_PDF_LANG=%s\n' "$normalized" > "$PROJECT_ENV_FILE"
+        printf 'export SKELEPRESS_LANG=%s\n' "$normalized" > "$PROJECT_ENV_FILE"
         local saved_msg
         saved_msg="$(t "cli.locale.set.project.saved" "Project locale saved to: {path}")"
         echo "$(interp "$saved_msg" "path" "$PROJECT_ENV_FILE")"
       else
         mkdir -p "$GLOBAL_CONFIG_DIR"
-        printf 'export PANDOC_PDF_LANG=%s\n' "$normalized" > "$GLOBAL_ENV_FILE"
+        printf 'export SKELEPRESS_LANG=%s\n' "$normalized" > "$GLOBAL_ENV_FILE"
         local saved_msg
         saved_msg="$(t "cli.locale.set.global.saved" "Global locale saved to: {path}")"
         echo "$(interp "$saved_msg" "path" "$GLOBAL_ENV_FILE")"
@@ -832,11 +832,11 @@ show_version() {
     local version
     version="$(tr -d '[:space:]' < "$version_file")"
     if [[ -n "$version" ]]; then
-      echo "pandoc-pdf ${version}"
+      echo "skelepress ${version}"
       return 0
     fi
   fi
-  echo "pandoc-pdf 0.0.0-dev"
+  echo "skelepress 0.0.0-dev"
 }
 
 get_version_value() {
@@ -881,7 +881,7 @@ show_info() {
   local output_format="${1:-text}"
   local version
   local yaml_parser
-  local schema_path="$ROOT_DIR/schemas/pdf-config.schema.json"
+  local schema_path="$ROOT_DIR/schemas/skelepress-config.schema.json"
   local template_path="$ROOT_DIR/templates/default.tex"
 
   version="$(get_version_value)"
@@ -894,7 +894,7 @@ show_info() {
 
   if [[ "$output_format" == "json" ]]; then
     printf '{\n'
-    printf '  "name": "%s",\n' "pandoc-pdf"
+    printf '  "name": "%s",\n' "skelepress"
     printf '  "version": "%s",\n' "$(json_escape "$version")"
     printf '  "root_dir": "%s",\n' "$(json_escape "$ROOT_DIR")"
     printf '  "yaml_parser": "%s",\n' "$(json_escape "$yaml_parser")"
@@ -906,7 +906,7 @@ show_info() {
     return 0
   fi
 
-  echo "pandoc-pdf ${version}"
+  echo "skelepress ${version}"
   echo "root_dir: ${ROOT_DIR}"
   echo "yaml_parser: ${yaml_parser}"
   echo "schema_path: ${schema_path} (exists=${schema_exists})"
@@ -950,21 +950,21 @@ run_doctor() {
     exit 1
   fi
   if [[ -n "$config_path" ]]; then
-    PANDOC_PDF_LANG="$CLI_LANG" /bin/bash "$preflight_script" -c "$config_path"
+    SKELEPRESS_LANG="$CLI_LANG" /bin/bash "$preflight_script" -c "$config_path"
   else
-    PANDOC_PDF_LANG="$CLI_LANG" /bin/bash "$preflight_script"
+    SKELEPRESS_LANG="$CLI_LANG" /bin/bash "$preflight_script"
   fi
 }
 
 validate_config_file() {
   local config_path="$1"
-  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/validate-config.py" "$config_path" "$ROOT_DIR/schemas/pdf-config.schema.json"
+  SKELEPRESS_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/validate-config.py" "$config_path" "$ROOT_DIR/schemas/skelepress-config.schema.json"
 }
 
 run_render() {
   local config_path="$1"
   ensure_yaml_parser_available
-  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$config_path" "$ROOT_DIR"
+  SKELEPRESS_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$config_path" "$ROOT_DIR"
 }
 
 run_render_plan() {
@@ -974,7 +974,7 @@ run_render_plan() {
   [[ "$plan_mode" == "json" ]] && plan_flag="--plan-json"
 
   ensure_yaml_parser_available
-  PANDOC_PDF_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
+  SKELEPRESS_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
 }
 
 main() {
@@ -1052,7 +1052,7 @@ main() {
       done
 
       if [[ -z "$config" ]]; then
-        echo "❌ $(t "cli.error.config_required" "You must provide -c <pdf.config.yaml>")"
+        echo "❌ $(t "cli.error.config_required" "You must provide -c <skelepress.config.yaml>")"
         exit 1
       fi
       validate_config_file "$config"
@@ -1086,7 +1086,7 @@ main() {
       done
 
       if [[ -z "$config" ]]; then
-        echo "❌ $(t "cli.error.config_required" "You must provide -c <pdf.config.yaml>")"
+        echo "❌ $(t "cli.error.config_required" "You must provide -c <skelepress.config.yaml>")"
         exit 1
       fi
 
@@ -1108,7 +1108,7 @@ main() {
       # Transparent front door to the shipped bookkit tool: every argument is
       # forwarded unchanged, the environment is inherited untouched, and
       # stdout, stderr and the exit code are exactly what invoking the tool
-      # directly produces. The tool re-enters the CLI itself (bin/pandoc-pdf
+      # directly produces. The tool re-enters the CLI itself (bin/skelepress
       # render), so there is no recursion here.
       exec python3 "${ROOT_DIR}/scripts/tools/bookkit/build.py" "$@"
       ;;

@@ -50,7 +50,7 @@ config = {
 }
 config_path = WORK / "config.json"
 config_path.write_text(json.dumps(config, indent=2) + "\n")
-result = subprocess.run([str(ROOT / "bin/pandoc-pdf"), "render", "-c", str(config_path)],
+result = subprocess.run([str(ROOT / "bin/skelepress"), "render", "-c", str(config_path)],
                         cwd=ROOT, capture_output=True, text=True, timeout=120)
 (WORK / "render.log").write_text(result.stdout + result.stderr)
 if result.returncode:

@@ -1,10 +1,10 @@
-# bookkit — build books with the pandoc-pdf toolkit
+# bookkit — build books with the skelepress toolkit
 
 `scripts/tools/bookkit/build.py` turns declarative book manifests into
-standard `pdf.config.yaml` files and renders them through the public
-`pandoc-pdf` CLI. It is a shipped, versioned tool: a consuming repository
+standard `skelepress.config.yaml` files and renders them through the public
+`skelepress` CLI. It is a shipped, versioned tool: a consuming repository
 uses it as-is instead of writing its own adapter, and the book format it
-reads is governed by this tool's own contract, not by `pdf.config.yaml`.
+reads is governed by this tool's own contract, not by `skelepress.config.yaml`.
 
 ## The model
 
@@ -21,8 +21,8 @@ A **book project** is a directory that is one of two shapes:
 A project without `series.yaml` is a single volume: one adapter handles
 both shapes. The manifests describe **what** each volume contains, never
 how it is rendered: no engine, no output settings. The tool turns that
-model into one standard `pdf.config.yaml` per volume and calls
-`bin/pandoc-pdf render`. The toolkit never learns that manifests or series
+model into one standard `skelepress.config.yaml` per volume and calls
+`bin/skelepress render`. The toolkit never learns that manifests or series
 exist.
 
 ## The folder convention
@@ -67,7 +67,7 @@ Validated against `scripts/tools/bookkit/series.schema.json`.
 
 | Field | Rule |
 | --- | --- |
-| `manifest_version` | Required integer, `1`. The version of this contract, independent of both the toolkit `VERSION` and the `pdf.config.yaml` `version`. |
+| `manifest_version` | Required integer, `1`. The version of this contract, independent of both the toolkit `VERSION` and the `skelepress.config.yaml` `version`. |
 | `collection` | Name of the series; passed to pandoc as the `collection` metadata variable. |
 | `author`, `publisher`, `rights`, `language` | Shared defaults; a volume's manifest overrides each of them. `language` must be one of the toolkit's supported codes (`en`, `es`, `pt`, `gl`). |
 | `volumes` | Required, at least one entry. Ordered list of volume directory names relative to the series directory; the order is the build and reading order. |
@@ -147,10 +147,10 @@ They are inserted into the reading order at the right places as ordinary
 never inside the content directories. A consequence: the rendered document
 is PDF-only, and the generated configuration declares `formats: [pdf]`.
 
-## The tool and `pdf.config.yaml`
+## The tool and `skelepress.config.yaml`
 
-The tool emits a standard `pdf.config.yaml` per volume and nothing else:
-the configuration contract (`schemas/pdf-config.schema.json`, `version: 1`)
+The tool emits a standard `skelepress.config.yaml` per volume and nothing else:
+the configuration contract (`schemas/skelepress-config.schema.json`, `version: 1`)
 is untouched, and the book manifest contract is separate — it has its own
 schemas in this directory and its own `manifest_version`. Changing the book
 format never changes the toolkit's configuration contract, and the tool can
@@ -180,7 +180,7 @@ to the working directory, or absolute — when your book needs its own design.
 
 ## Requirements
 
-The same as any `pandoc-pdf` render (`pandoc`, a TeX engine, `python3`),
+The same as any `skelepress` render (`pandoc`, a TeX engine, `python3`),
 plus one YAML parser for the shared loader: PyYAML when importable,
 otherwise Ruby's stdlib YAML through a subprocess — exactly like the
 toolkit's own fallback. Without either, the tool fails with a clear

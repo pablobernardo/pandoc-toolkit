@@ -24,11 +24,11 @@ possible.
 
 ## Trust model
 
-This toolkit assumes `pdf.config.yaml` is trusted by the consuming repository.
+This toolkit assumes `skelepress.config.yaml` is trusted by the consuming repository.
 
 Recommendations:
 
-- Do not run `pandoc-pdf render` or `pandoc-pdf doctor -c` with untrusted
+- Do not run `skelepress render` or `skelepress doctor -c` with untrusted
   configurations.
 - Review `filters.extra_lua_filters` and `runtime.required_commands` in
   particular.
@@ -36,7 +36,7 @@ Recommendations:
 
 ## Hardening in place
 
-- Strict schema validation (`schemas/pdf-config.schema.json`), including `enum`
+- Strict schema validation (`schemas/skelepress-config.schema.json`), including `enum`
   values, with a test that fails if the schema starts using a keyword the
   validator does not implement.
 - Functional validation of critical paths in `validate-config`.

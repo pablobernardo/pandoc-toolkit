@@ -12,9 +12,9 @@ run_render_mermaid_dir_gate_test() {
 
   printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
 
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true false
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
-    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true false
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render \
+    -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render accepts mermaid.enabled=false"
   else
     fail "render should accept mermaid.enabled=false ($(tail -2 "$out"))"
@@ -26,9 +26,9 @@ run_render_mermaid_dir_gate_test() {
     pass "render skips the mermaid directory when the filter is disabled"
   fi
 
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true true
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
-    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render \
+    -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render accepts mermaid.enabled=true"
   else
     fail "render should accept mermaid.enabled=true ($(tail -2 "$out"))"
@@ -74,11 +74,11 @@ STUB
   chmod +x "${tmpbin}/pandoc"
 
   printf '# One\n\ncontent\n' >"${sandbox}/work/chapters/01-one.md"
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true true
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true true
 
   set +e
-  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
-    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render \
+    -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1
   code=$?
   set -e
 
@@ -88,7 +88,7 @@ STUB
     fail "render must fail when a Mermaid diagram was dropped"
   fi
   assert_contains "$out" "Mermaid diagram" "the render error names the dropped diagrams"
-  assert_contains "$out" "pandoc-pdf doctor" "the render error points at doctor"
+  assert_contains "$out" "skelepress doctor" "the render error points at doctor"
 
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$capture" "$out"

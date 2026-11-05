@@ -251,7 +251,7 @@ runtime:
   strict: true
 CONFIG
 
-  if (cd "$elsewhere" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/cover.config.yaml" >"$out" 2>&1); then
+  if (cd "$elsewhere" && "${sandbox}/bin/skelepress" render -c "${sandbox}/cover.config.yaml" >"$out" 2>&1); then
     pass "render writes a PDF with a cover image from an unrelated working directory"
   else
     fail "render should write a PDF with a cover image from an unrelated working directory ($(tail -3 "$out"))"
@@ -283,7 +283,7 @@ CONFIG
   # A cover is not a title page: it prints even with titlepage: false.
   sed 's/  title: "Cover Doc"/  title: "Cover Doc"\n  titlepage: false/' \
     "${sandbox}/cover.config.yaml" >"${sandbox}/notitle.config.yaml"
-  if (cd "$elsewhere" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/notitle.config.yaml" >"$out" 2>&1); then
+  if (cd "$elsewhere" && "${sandbox}/bin/skelepress" render -c "${sandbox}/notitle.config.yaml" >"$out" 2>&1); then
     pass "render writes a PDF with a cover image and titlepage: false"
   else
     fail "render should write a PDF with a cover image and titlepage: false ($(tail -3 "$out"))"
@@ -354,7 +354,7 @@ runtime:
   strict: true
 CONFIG
 
-  if (cd "$elsewhere" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/plain.config.yaml" >"$out" 2>&1); then
+  if (cd "$elsewhere" && "${sandbox}/bin/skelepress" render -c "${sandbox}/plain.config.yaml" >"$out" 2>&1); then
     pass "render succeeds without cover-image"
   else
     fail "render should succeed without cover-image ($(tail -3 "$out"))"

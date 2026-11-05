@@ -56,7 +56,7 @@ local function simple_hash(s)
                 failed:close()
             end
             io.stderr:write("[mermaid.lua] ERROR: mmdc failed; diagram " .. h .. " left as a code block.\n")
-            io.stderr:write("[mermaid.lua] Check `pandoc-pdf doctor`: it renders a test diagram and reports the fix.\n")
+            io.stderr:write("[mermaid.lua] Check `skelepress doctor`: it renders a test diagram and reports the fix.\n")
             return nil
         end
     else
