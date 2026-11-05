@@ -63,6 +63,7 @@ main() {
   run_render_no_yaml_parser_hints_i18n_test
   run_render_native_test
   run_render_native_advanced_paths_test
+  run_render_python39_test
   run_render_missing_explicit_file_test
   run_render_top_level_division_test
   run_no_hidden_defaults_test
@@ -71,6 +72,7 @@ main() {
   run_render_document_vars_test
   run_render_ballot_icons_test
   run_doctor_strict_semantics_test
+  run_doctor_python_minimum_test
   run_doctor_mermaid_smoke_test
   run_emoji_source_allowlist_test
   run_template_modern_pandoc_guard_test

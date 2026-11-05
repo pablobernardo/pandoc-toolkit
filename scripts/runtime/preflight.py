@@ -23,6 +23,10 @@ except Exception:  # imported as a module from elsewhere: fix the path
 
 
 DEFAULT_REQUIRED = ["pandoc", "python3", "curl", "mmdc"]
+# The minimum interpreter the renderer runs on: the Python macOS ships
+# (3.9.6). bin/pandoc-pdf starts render-native.py with `python3` from PATH, so
+# doctor checks that resolved interpreter, and an older one cannot render.
+PYTHON_MINIMUM = (3, 9)
 TEX_ENGINES = ["xelatex", "lualatex", "pdflatex"]
 FORMAT_PDF = "pdf"
 FORMAT_EPUB = "epub"
@@ -200,6 +204,35 @@ def command_exists(cmd: str) -> bool:
     return shutil.which(cmd) is not None
 
 
+def resolved_python3_version() -> tuple[int, int, int] | None:
+    """Ask the python3 the renderer will run for its version.
+
+    The renderer is started as ``python3 render-native.py``, so the check probes
+    the ``python3`` resolved from PATH instead of assuming the interpreter
+    running this preflight. Only ``--version`` is asked: no network and no
+    package operation. Returns None when the version cannot be read; the
+    missing-command check already covers a python3 that does not run at all.
+    """
+    import subprocess
+
+    python3 = shutil.which("python3")
+    if python3 is None:
+        return None
+
+    try:
+        proc = subprocess.run([python3, "--version"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    if proc.returncode != 0:
+        return None
+
+    match = re.search(r"Python (\d+)\.(\d+)(?:\.(\d+))?", proc.stdout or "")
+    if not match:
+        return None
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3) or 0))
+
+
 def is_valid_command_name(cmd: str) -> bool:
     return re.match(r"^[A-Za-z0-9._+-]+$", cmd) is not None
 
@@ -316,6 +349,17 @@ def main() -> None:
                     output_formats = declared_formats
 
     needs_tex = FORMAT_PDF in output_formats
+    # A python3 below the declared minimum cannot run the renderer, so this is
+    # not waivable by runtime.strict=false: without an interpreter there is no
+    # render to continue with.
+    found_python = resolved_python3_version()
+    if found_python is not None and found_python < PYTHON_MINIMUM:
+        found_str = ".".join(str(part) for part in found_python)
+        required_str = ".".join(str(part) for part in PYTHON_MINIMUM)
+        fail(
+            f"❌ {t('doctor.error.python_version', 'python3 {found} is below the required minimum {required}', found=found_str, required=required_str)}"
+        )
+
     missing: list[str] = []
     missing_engine: list[str] = []
     for cmd in required:

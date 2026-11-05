@@ -191,6 +191,63 @@ EOF
   rm -f "$out"
 }
 
+run_doctor_python_minimum_test() {
+  # The toolkit declares Python 3.9 as the minimum (the interpreter macOS
+  # ships), so doctor must refuse an older python3 naming both versions. The
+  # mocked python3 answers the version probe with an old release but otherwise
+  # behaves like the real one, because preflight itself runs under python3.
+  local tmpbin out code
+  tmpbin="$(mktemp -d)"
+  out="$(mktemp)"
+
+  for c in pandoc curl mmdc xelatex; do
+    cat >"${tmpbin}/${c}" <<'EOF'
+#!/bin/bash
+exit 0
+EOF
+    chmod +x "${tmpbin}/${c}"
+  done
+
+  cat >"${tmpbin}/python3" <<EOF
+#!/bin/bash
+if [[ "\${1:-}" == "--version" ]]; then
+  echo "Python 3.8.0"
+  exit 0
+fi
+exec "${REAL_PYTHON3}" "\$@"
+EOF
+  chmod +x "${tmpbin}/python3"
+
+  set +e
+  PANDOC_PDF_LANG=en PATH="${tmpbin}" /bin/bash "$CLI" doctor >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "doctor refuses python3 below the declared minimum"
+  assert_contains "$out" "3\.8\.0" "the refusal names the version found"
+  assert_contains "$out" "3\.9" "the refusal names the required minimum"
+
+  # The supported interpreter passes: same PATH, python3 at the minimum.
+  cat >"${tmpbin}/python3" <<EOF
+#!/bin/bash
+if [[ "\${1:-}" == "--version" ]]; then
+  echo "Python 3.9.6"
+  exit 0
+fi
+exec "${REAL_PYTHON3}" "\$@"
+EOF
+  chmod +x "${tmpbin}/python3"
+
+  if PANDOC_PDF_LANG=en PATH="${tmpbin}" /bin/bash "$CLI" doctor >"$out" 2>&1; then
+    pass "doctor accepts python3 at the declared minimum"
+  else
+    fail "doctor should accept python3 at the declared minimum"
+  fi
+  assert_contains "$out" "Doctor OK" "doctor still reports OK on the supported interpreter"
+
+  rm -rf "$tmpbin"
+  rm -f "$out"
+}
+
 run_doctor_mermaid_smoke_test() {
   local tmpbin out code
   tmpbin="$(mktemp -d)"

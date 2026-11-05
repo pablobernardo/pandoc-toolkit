@@ -342,3 +342,87 @@ EOF2
   rm -rf "$sandbox" "$tmpbin"
   rm -f "$capture" "$out"
 }
+
+run_render_python39_test() {
+  # macOS ships /usr/bin/python3 (3.9.6) and bin/pandoc-pdf starts the renderer
+  # with `python3` from PATH. Rendering must work on that interpreter, so this
+  # test pins the 3.9 path explicitly and skips wherever it does not exist.
+  if [[ ! -x /usr/bin/python3 ]]; then
+    echo "SKIP python 3.9 render (/usr/bin/python3 does not exist here)"
+    return 0
+  fi
+  local ver
+  ver="$(/usr/bin/python3 --version 2>&1)"
+  if [[ "$ver" != "Python 3.9."* ]]; then
+    echo "SKIP python 3.9 render (/usr/bin/python3 is ${ver}, not 3.9)"
+    return 0
+  fi
+
+  local sandbox
+  sandbox="$(mktemp -d)"
+  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
+
+  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
+  chmod +x "${sandbox}/bin/pandoc-pdf"
+  for f in i18n.sh validate-config.py schema_runtime.py template_runtime.py top_level_division_runtime.py render-native.py prepare-emojis.py; do
+    cp "${ROOT_DIR}/scripts/runtime/${f}" "${sandbox}/scripts/runtime/${f}"
+  done
+  cp "${ROOT_DIR}/schemas/pdf-config.schema.json" "${sandbox}/schemas/pdf-config.schema.json"
+  cp "${FIXTURES_DIR}/render.config.yaml" "${sandbox}/render.config.yaml"
+
+  printf '# Chapter A\n\nContenido A\n' >"${sandbox}/chapters/title-a.md"
+  printf '# Chapter B\n\nContenido B\n' >"${sandbox}/chapters/title-b.md"
+  cat >"${sandbox}/templates/default.tex" <<'EOF'
+\documentclass{article}
+\begin{document}
+$body$
+\end{document}
+EOF
+  printf 'title: Render Test\n' >"${sandbox}/metadata.yaml"
+
+  # python3 on PATH is the macOS system interpreter; pandoc is a stub that
+  # produces the output artifact without typesetting anything.
+  local tmpbin
+  tmpbin="$(mktemp -d)"
+  ln -s /usr/bin/python3 "${tmpbin}/python3"
+  cat >"${tmpbin}/pandoc" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+out=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+if [[ -n "$out" ]]; then
+  mkdir -p "$(dirname "$out")"
+  : > "$out"
+fi
+exit 0
+EOF
+  chmod +x "${tmpbin}/pandoc"
+
+  local out pdf_file
+  out="$(mktemp)"
+  pdf_file="${sandbox}/custom-output/report-$(date +%Y%m%d).pdf"
+
+  if PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
+    pass "render completes under /usr/bin/python3 (3.9.6)"
+  else
+    fail "render should complete under /usr/bin/python3 (3.9.6)"
+  fi
+  if [[ -f "$pdf_file" ]]; then
+    pass "render under python 3.9 produces the output pdf"
+  else
+    fail "render under python 3.9 must produce the output pdf"
+  fi
+
+  rm -rf "$sandbox" "$tmpbin"
+  rm -f "$out"
+}

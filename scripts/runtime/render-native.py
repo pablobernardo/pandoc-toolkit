@@ -576,7 +576,23 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
     # for chapters something actually links to.
     markers = sibling_link_markers(chapters, texts)
     parts = []
-    for index, (raw_path, text) in enumerate(zip(chapters, texts, strict=True)):
+    # Unequal lists must fail loudly, never truncate silently: this keeps the
+    # guarantee zip(..., strict=True) gave on Python 3.10, which 3.9 does not
+    # support.
+    if len(chapters) != len(texts):
+        die(
+            t(
+                "render.error.chapter_count_mismatch",
+                "Chapter count mismatch: {chapters} chapters but {texts} chapter texts",
+                chapters=len(chapters),
+                texts=len(texts),
+            )
+        )
+    # Index access instead of zip(): the parameter that would pin this pair
+    # (strict=True) needs Python 3.10, and the equality check above is the 3.9
+    # way to keep the same guarantee.
+    for index, raw_path in enumerate(chapters):
+        text = texts[index]
         if markers:
             text = rewrite_sibling_links(text, markers)
         if index > 0 and insert_clearpage:

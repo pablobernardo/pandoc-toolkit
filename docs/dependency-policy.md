@@ -72,6 +72,25 @@ Supported engines for the mapping are XeLaTeX and LuaLaTeX, the branches that
 already use fontspec. pdfLaTeX keeps its historical behavior, degraded
 appearance included.
 
+## Python: the declared minimum
+
+The minimum interpreter is **Python 3.9** — the version macOS ships
+(`/usr/bin/python3`, 3.9.6). The toolkit deliberately supports it, so the bar
+cannot be raised silently: every module under `scripts/` must stay free of
+3.10-only constructs (`zip(..., strict=)`, `match` statements, runtime `X | Y`
+unions, `str.removeprefix`/`removesuffix`, `functools.cache`). Annotations that
+need them are only acceptable under `from __future__ import annotations`.
+
+`pandoc-pdf doctor` enforces the minimum. `bin/pandoc-pdf` starts the renderer
+with `python3` from `PATH`, so doctor probes that resolved interpreter with
+`--version` — nothing else, no network and no package operation — and refuses
+an older one, naming the version it found and the required minimum. The refusal
+is not waivable by `runtime.strict=false`: an interpreter that cannot run the
+renderer leaves nothing to continue with.
+
+A test under `tests/l1/render/` pins the 3.9 path by rendering through
+`/usr/bin/python3` where that exact interpreter exists.
+
 ## EPUBCheck: acceptance, not a runtime dependency
 
 EPUBCheck is the W3C conformance checker for EPUB publications. It is the only
@@ -195,6 +214,10 @@ and this list — and they must change together. `ci.yml` carries a comment
 pointing here for exactly that reason.
 - `pyyaml==6.0.2`
   - Usage: `scripts/delivery/bootstrap.sh` (assisted installation when the YAML parser is missing).
+- Python **3.9** (floor, not a pin: any newer interpreter is accepted)
+  - Usage: the renderer, `validate-config` and the preflight all run under
+    `python3` from `PATH`. The minimum is enforced by `pandoc-pdf doctor` and
+    documented in the "Python: the declared minimum" section above.
 - `semgrep/semgrep:1.86.0` container image
   - Usage: `.github/workflows/security.yml` (pinned image instead of `pip install`, which breaks with modern setuptools).
 - `ghcr.io/gitleaks/gitleaks:v8.24.2` container image
