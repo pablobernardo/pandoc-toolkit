@@ -27,6 +27,7 @@ main() {
   echo "== Running skelepress tests =="
   run_suite_registration_test
   run_rename_contract_tests
+  run_rename_symlink_root_test
   run_help_test
   run_help_i18n_notes_test
   run_version_tests

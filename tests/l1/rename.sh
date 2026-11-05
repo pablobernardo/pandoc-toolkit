@@ -12,7 +12,7 @@ import subprocess
 import sys
 import tempfile
 
-root = Path(sys.argv[1])
+root = Path(sys.argv[1]).resolve()
 cli = root / "bin/skelepress"
 
 def check(ok, message, result=None):
@@ -118,4 +118,40 @@ with tempfile.TemporaryDirectory(prefix="skelepress-rename-") as directory:
           "installer honors new overrides and preserves separate development layout", result)
 PY
   )
+}
+
+run_rename_symlink_root_test() {
+  local sandbox code=0
+  sandbox="$(mktemp -d)"
+  ln -s "$ROOT_DIR" "${sandbox}/checkout"
+
+  # Bash 3.2 otherwise brace-expands Python dictionaries in the sourced probe.
+  /bin/bash +B -s -- "${sandbox}/checkout" "$REAL_PYTHON3" \
+    >"${sandbox}/stdout" 2>"${sandbox}/stderr" <<'BASH' || code=$?
+set -euo pipefail
+ROOT_DIR="$1"
+REAL_PYTHON3="$2"
+PASS=0
+FAIL=0
+source "${ROOT_DIR}/tests/lib.sh"
+source "${ROOT_DIR}/tests/l1/rename.sh"
+run_rename_contract_tests
+printf "Summary: PASS=%s FAIL=%s\n" "$PASS" "$FAIL"
+[[ "$FAIL" -eq 0 ]]
+BASH
+
+  if [[ "$code" -ne 0 ]]; then
+    printf 'Symlink-root probe stdout:\n%s\n' "$(<"${sandbox}/stdout")"
+    printf 'Symlink-root probe stderr:\n%s\n' "$(<"${sandbox}/stderr")"
+  fi
+  assert_exit_code "0" "$code" "rename contract passes through a symlink root"
+  assert_contains "${sandbox}/stdout" '^Summary: PASS=14 FAIL=0$' \
+    "symlink-root probe preserves all fourteen rename assertions"
+  if [[ ! -s "${sandbox}/stderr" ]]; then
+    pass "symlink-root probe has empty stderr"
+  else
+    fail "symlink-root probe has empty stderr"
+  fi
+
+  rm -rf "$sandbox"
 }
