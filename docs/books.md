@@ -50,7 +50,7 @@ pandoc-pdf book --check my-book          # validate and emit the configurations 
 reports its own output and exit code, so anything the tool accepts works here.
 The complete field reference — every manifest key, its type and its default —
 lives with the tool, in
-[`scripts/tools/bookkit/README.md`](../scripts/tools/bookkit/README.md). This
+[`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/pandoc-toolkit/blob/main/scripts/tools/bookkit/README.md). This
 page is the story; that page is the contract.
 
 ## What a volume prints

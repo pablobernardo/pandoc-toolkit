@@ -270,3 +270,62 @@ PY
   rm -rf "$sandbox"
   rm -f "$out"
 }
+
+# An EPUB is a closed artefact: a document inside it can only link to something
+# the package carries. A relative link to a file elsewhere in the repository
+# renders happily and is then rejected by EPUBCheck with RSC-007, which is how
+# `docs/usage.md` and `docs/books.md` broke the documentation publication. The
+# same link also leads nowhere in the PDF's own index.
+run_epub_document_links_stay_inside_publication_test() {
+  local output
+
+  output="$("${REAL_PYTHON3}" - "$ROOT_DIR" <<'PY' 2>&1
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "scripts" / "runtime"))
+from schema_runtime import load_yaml  # noqa: E402
+
+config = load_yaml(root / "examples" / "documentation" / "pdf.config.yaml")
+given = config["input"]
+chapters = given.get("chapters_dir") or "."
+rendered = given.get("explicit_files") or []
+base = (root / "examples" / "documentation" / (config["project"].get("base_dir") or ".")).resolve()
+chapters_root = (base / chapters).resolve()
+
+if not rendered:
+    print("NO-RENDERED-FILES")
+    raise SystemExit(0)
+
+links = re.compile(r"\]\(([^)\s]+)")
+problems = []
+for name in rendered:
+    document = chapters_root / name
+    if not document.is_file():
+        problems.append("MISSING " + str(document))
+        continue
+    for target in links.findall(document.read_text(encoding="utf-8")):
+        if "://" in target or target.startswith("#") or target.startswith("mailto:"):
+            continue
+        resolved = (document.parent / target).resolve()
+        try:
+            resolved.relative_to(chapters_root)
+        except ValueError:
+            problems.append("ESCAPES " + chapters + "/" + name + " -> " + target)
+
+for line in problems:
+    print(line)
+print("CLEAN" if not problems else "DIRTY")
+PY
+)"
+
+  if printf '%s\n' "$output" | grep -q '^NO-RENDERED-FILES$'; then
+    fail "the documentation example must declare the documents it renders"
+  elif printf '%s\n' "$output" | grep -q '^CLEAN$'; then
+    pass "every link in a rendered document stays inside the publication"
+  else
+    fail "a rendered document links outside the publication: $(printf '%s\n' "$output" | grep -E '^(ESCAPES|MISSING) ' | head -4 | tr '\n' ' ')"
+  fi
+}

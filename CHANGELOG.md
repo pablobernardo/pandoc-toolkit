@@ -17,6 +17,13 @@ The project follows semantic versioning and keeps two versioned contracts:
   is accepted on, so packaging the same commit yields the same bytes whoever
   builds it. The local installer still packages the working tree, which is what a
   development install exists for.
+- The documentation no longer links to a repository file from inside a
+  publication. `docs/usage.md` and `docs/books.md` pointed at
+  `scripts/tools/bookkit/README.md` with a repository-relative path, which is a
+  valid link on the web and an unresolvable resource in the EPUB, so EPUBCheck
+  rejected the `documentation` publication with two `RSC-007` errors. They now use
+  the public URL, and a test fails if a document listed in the documentation
+  example links outside the publication again.
 
 ## [2.5.0] - 2026-11-04
 
