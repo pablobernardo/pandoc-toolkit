@@ -14,16 +14,20 @@ Scope: metadata plus candidate acceptance. Minor, not patch: the toolkit gains c
 
 ## Tasks
 
-- T1 [S1–S3] in progress; route: parent inline; `VERSION` 2.5.0, the `[2.5.0] - 2026-11-04` changelog section and this document.
-- T2 [S3] pending; route: parent; `make gate` green on the candidate, recording the suite, catalog, documentation and conformance lines.
-- T3 [S4] pending; route: parent; clean clone, packaging twice, payload inspection, managed install through `install-local.sh`, upgrade from 2.4.0, smoke render.
-- T4 [S5] pending; route: parent; record which YAML paths ran and which could not.
-- T5 [S6] pending; route: parent; `workflow_dispatch` of L2, L3 and macOS L1 on the candidate, runs attached; a runner-capacity failure is recorded as a limitation, not claimed as evidence.
-- T6 [S1, S7] pending; route: parent delivery; metadata PR, squash merge, `main` verification.
-- T7 [S7] pending; route: parent, after the maintainer's explicit publication decision; annotated tag `v2.5.0` and one release.
-- T8 [S7] pending; route: parent acceptance; download the published assets, isolated install, update from 2.4.0 through the network updater and a smoke render from the real download path.
+- T1 [S1–S3] done; route: parent inline; `VERSION` 2.5.0, the `[2.5.0] - 2026-11-04` changelog section and this document; delivered in PR #145, squash-merged as `86bb255`.
+- T2 [S3] done; route: parent; `make gate` green on the candidate — suites, catalog, documentation and conformance — before PR #145 was opened.
+- T3 [S4] done; route: parent; clean clone of the approved commit, packaging twice for a stable hash, payload inspected against the commit, managed install through `install-local.sh`, upgrade from 2.4.0 and a smoke render of an example and of a book whose contents is separated.
+- T4 [S5] done; route: parent; only the Ruby YAML path was exercised locally, and PyYAML stays unavailable on this machine. The gap is declared, not closed.
+- T5 [S6] done with one limitation; route: parent; `workflow_dispatch` run `41887287630` on `d7f1339` gave L1 Ubuntu, L2 and L3 succeeded; L1 `macos-15` was cancelled after 15m38s with no runner assigned. The macOS line is a recorded limitation, not evidence.
+- T6 [S1, S7] done; route: parent delivery; PR #145 squash-merged as `86bb255` and PR #146 followed on top of it, so the tag later landed on `d7f1339`.
+- T7 [S7] done; annotated tag `v2.5.0` on `d7f1339` (tag object `552b8ca`, peeled to `d7f1339`), pushed to `origin`; the tag-triggered release run `41890127803` succeeded in 17s.
+- T8 [S7] done; four platform tarballs plus `checksums.txt` published; every asset hashes to `40efd2445adf96cb0734096ccfbc4447b9b2ed2b12419c7382b6797a17cd6c35`, recomputed in this session on `darwin_arm64` and matching the file; installation from the published assets and the 2.4.0 → 2.5.0 update were verified by the maintainer.
 
 ## Log
 
 - L1 — Maintainer request, verbatim: "me parece que podemos lanzar pr, merge y sacar release nueva? como lo ves con lo que tenemos?"
 - L2 — The release number was corrected before the candidate was cut: the maintainer had suggested `2.4.1`, but the batch adds contract fields and changes a bookkit default, so the honest number is `2.5.0` under the repository's own policy.
+- L3 — Maintainer's verified end-of-session state, verbatim: "main = d7f1339 = origin/main, árbol limpio, VERSION 2.5.0, cero PRs abiertos. v2.5.0 PUBLICADA: tag anotado sobre d7f1339, release run 41890127803 (success). Artefacto publicado sha256 40efd2445adf96cb0734096ccfbc4447b9b2ed2b12419c7382b6797a17cd6c35, byte-idéntico al candidato aceptado. Instalación desde lo publicado y actualización 2.4.0 -> 2.5.0 verificadas. El remoto se llama `origin` (no `github`)."
+- L4 — Remote readback in the closing session, against that report: annotated tag `v2.5.0` present locally and on `origin`, peeled to `d7f1339`; release published and not draft; `checksums.txt` and the four tarballs uploaded; the recorded sha256 recomputed on `darwin_arm64` and identical. The four tarballs share one hash because the payload is architecture-independent (bash, Python and Lua sources), not because of a packaging defect.
+- L5 — The manual dispatch on the candidate (`41887287630`) is recorded as it is: L1 Ubuntu, L2 and L3 succeeded, L1 `macos-15` was cancelled after 15m38s with no hosted runner assigned. Four such capacity failures were observed during this release, so macOS stays a limitation until a run actually attaches.
+- L6 — T1–T6 were still marked pending or in progress when the release was already live. They are marked done with the merge commits and runs that hold them; nothing was re-executed to close them, only read back.
