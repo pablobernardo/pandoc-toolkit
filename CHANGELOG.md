@@ -7,7 +7,7 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
-## [Unreleased]
+## [2.5.2] - 2026-11-05
 
 ### Fixed
 
