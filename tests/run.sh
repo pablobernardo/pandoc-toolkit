@@ -123,6 +123,7 @@ main() {
   run_chapter_link_rewrite_test
   run_multi_format_export_test
   run_plan_conformance_tests
+  run_book_default_output_test
   run_bookkit_tests
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test

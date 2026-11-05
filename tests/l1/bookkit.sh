@@ -5,6 +5,93 @@
 # through its public interface only. No PDF renders here: --check validates the
 # manifests and emits the generated configurations, which is what L1 asserts.
 
+# Independent manifests pin the output-root contract without example coupling.
+run_book_default_output_test() {
+  local scratch code mode root project config
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/home" "$scratch/projects/single" "$scratch/projects/series/volume-1" \
+    "$scratch/default" "$scratch/explicit"
+  for project in single series/volume-1; do
+    printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Output Test"' \
+      'chapters: [chapter.md]' >"$scratch/projects/$project/manifest.yaml"
+    printf '# Chapter\n\nIndependent fixture.\n' >"$scratch/projects/$project/chapter.md"
+  done
+  printf '%s\n' 'manifest_version: 1' 'volumes: [volume-1]' \
+    >"$scratch/projects/series/series.yaml"
+
+  for mode in default explicit; do
+    local -a options=(--check)
+    root=".skelepress"
+    if [[ "$mode" == explicit ]]; then
+      root="chosen-output"
+      options+=(--out "$root")
+    fi
+    set +e
+    (cd "$scratch/$mode" && HOME="$scratch/home" SKELEPRESS_LANG=en \
+      "$CLI" book "${options[@]}" "$scratch/projects/single" "$scratch/projects/series") \
+      >"$scratch/$mode.stdout" 2>"$scratch/$mode.stderr"
+    code=$?
+    set -e
+    assert_exit_code "0" "$code" "book --check succeeds with the $mode output root"
+    printf '%s\n' '==> single/single' "    config: $root/single/skelepress.config.yaml" \
+      '==> series/volume-1' "    config: $root/series/volume-1/skelepress.config.yaml" \
+      "Check ok: 2 volume(s) validated, configurations in $root" >"$scratch/expected"
+    if cmp -s "$scratch/expected" "$scratch/$mode.stdout"; then
+      pass "book reports the exact $mode configuration layout and summary"
+    else
+      fail "book must report the exact $mode configuration layout and summary"
+    fi
+    if [[ ! -s "$scratch/$mode.stderr" ]]; then
+      pass "book $mode output has empty stderr"
+    else
+      fail "book $mode output must have empty stderr"
+    fi
+    assert_file_absent "$scratch/$mode/.output" "book $mode output does not create the old root"
+    for project in single series/volume-1; do
+      config="$scratch/$mode/$root/$project/skelepress.config.yaml"
+      assert_file_exists "$config" "book $mode preserves the $project configuration layout"
+    done
+  done
+  assert_file_absent "$scratch/explicit/.skelepress" "explicit --out does not create the default root"
+  assert_file_absent "$scratch/projects/single/.skelepress" "default root is not relative to the single project"
+  assert_file_absent "$scratch/projects/series/.skelepress" "default root is not relative to the series project"
+
+  # Resolve the generated configurations as a consumer would. Only paths that
+  # reference the selected output root may differ between the two invocations.
+  if "$REAL_PYTHON3" - "$scratch" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+scratch = Path(sys.argv[1]).resolve()
+for project in ("single", "series/volume-1"):
+    normalized = []
+    for mode, root in (("default", ".skelepress"), ("explicit", "chosen-output")):
+        output = scratch / mode / root / project
+        config = output / "skelepress.config.yaml"
+        text = config.read_text(encoding="utf-8")
+        base = (output / json.loads(re.search(r'^  base_dir: (.+)$', text, re.M)[1])).resolve()
+        assert base == scratch / "projects" / project
+        directory = json.loads(re.search(r'^  dir: (.+)$', text, re.M)[1])
+        assert (base / directory).resolve() == output
+        input_section = text.split("  explicit_files:\n", 1)[1].split("\noutput:", 1)[0]
+        entries = re.findall(r'^    - (".+")$', input_section, re.M)
+        assert [(base / json.loads(entry)).resolve() for entry in entries] == [
+            output / "generated/00-mainmatter.md", base / "chapter.md"
+        ]
+        assert (output / "generated/00-mainmatter.md").read_text().startswith("\\mainmatter\n")
+        normalized.append(text.replace(f"/{mode}/{root}/", "/OUTPUT/"))
+    assert normalized[0] == normalized[1], project
+PY
+  then
+    pass "default and explicit configurations resolve the same inputs and preserve output semantics"
+  else
+    fail "default and explicit configurations must preserve resolved layout and semantics"
+  fi
+  rm -rf "$scratch"
+}
+
 run_bookkit_tests() {
   local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
   local single="${ROOT_DIR}/examples/book-kit/single"

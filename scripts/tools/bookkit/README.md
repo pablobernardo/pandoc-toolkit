@@ -165,12 +165,19 @@ python3 scripts/tools/bookkit/build.py --check path/to/book-project
 # Validate, generate and render one or more projects:
 python3 scripts/tools/bookkit/build.py path/to/single path/to/series
 
-# Output directory (default: ./.output/bookkit):
+# Override the output directory (default: ./.skelepress):
 python3 scripts/tools/bookkit/build.py --out path/to/out path/to/project
 
 # A book-class LaTeX template of your own:
 python3 scripts/tools/bookkit/build.py --template path/to/book.tex path/to/project
 ```
+
+The default output root is `.skelepress/` relative to the invoking working
+directory, not the project directory. A single volume writes to
+`.skelepress/<project>/`; a series writes to
+`.skelepress/<project>/<volume>/`. Generated configurations, mode files and
+rendered PDFs share that layout. `--out` replaces only the root; existing
+`.output/` artifacts are left untouched.
 
 Without `--template`, the generated configurations carry the builtin name
 `book`: the toolkit ships `templates/book.tex` inside the artifact, so the

@@ -7,7 +7,7 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
-## [3.0.0] - Unreleased
+## [3.0.0] - 2026-11-05
 
 ### Changed — breaking
 
@@ -16,6 +16,9 @@ The project follows semantic versioning and keeps two versioned contracts:
   by bookkit are `skelepress.config.yaml`, and the schema is
   `schemas/skelepress-config.schema.json`. The configuration structure and its
   `version` field are unchanged, as are commands, flags and rendering semantics.
+- `skelepress book` defaults to `.skelepress/` instead of `.output/bookkit/`,
+  relative to the invoking working directory. Per-project/per-volume layout and
+  explicit `--out` overrides are unchanged; existing artifacts are not migrated.
 - All `PANDOC_PDF_*` variables become `SKELEPRESS_*`. Managed installations use
   `~/.local/share/skelepress`, global locale settings use
   `~/.config/skelepress/config.env`, and project locale settings use
