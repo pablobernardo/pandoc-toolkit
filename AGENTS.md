@@ -102,7 +102,7 @@ Any breaking change in the CLI, the configuration contract, or default behaviour
 requires:
 
 1. a major toolkit version bump,
-2. an explicit migration guide,
+2. an explicit migration guide when the change reaches a consumer other than the maintainer,
 3. updated examples and reference configuration.
 
 ## Delivery criteria (definition of done)
