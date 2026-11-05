@@ -16,9 +16,11 @@ trap cleanup EXIT
 
 # One payload, shared with the local installer: what an installation carries is
 # decided in `payload.sh`, so the artifact and a local install cannot drift.
+# The packager asks for the committed content, so a file nobody versioned cannot
+# travel and an uncommitted edit cannot change the hash a release is accepted on.
 # shellcheck source=payload.sh
 source "${ROOT_DIR}/scripts/delivery/payload.sh"
-populate_payload "${STAGING_DIR}" "${ROOT_DIR}"
+populate_payload "${STAGING_DIR}" "${ROOT_DIR}" tracked
 
 chmod +x "${STAGING_DIR}/bin/pandoc-pdf"
 
