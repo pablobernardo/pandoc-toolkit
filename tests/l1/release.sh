@@ -109,3 +109,67 @@ run_package_release_reproducibility_test() {
 
   rm -rf "$first" "$second"
 }
+
+# A published artifact is acceptance evidence, so it must depend on the commit
+# and not on who built it: an untracked file inside a shipped directory, or an
+# uncommitted edit to a shipped file, must never reach the archive.
+run_package_release_tracked_tree_test() {
+  local out_dir probe backup clean_hash dirty_hash listed
+
+  out_dir="$(mktemp -d)"
+  probe="${ROOT_DIR}/templates/.untracked-payload-probe.tex"
+  printf 'untracked probe\n' > "$probe"
+
+  if bash "${ROOT_DIR}/scripts/delivery/package-release.sh" "$out_dir" >/dev/null 2>&1; then
+    listed="$(tar -tzf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" | sed 's|^\./||')"
+    if printf '%s\n' "$listed" | grep -qx 'templates/.untracked-payload-probe.tex'; then
+      fail "package-release must not ship an untracked file from a payload directory"
+    else
+      pass "package-release ships only tracked files from a payload directory"
+    fi
+    # Guard against a vacuous pass: the tracked payload has to still be there.
+    if printf '%s\n' "$listed" | grep -qx 'templates/book.tex'; then
+      pass "package-release still ships the tracked payload"
+    else
+      fail "package-release must ship tracked payload files such as templates/book.tex"
+    fi
+  else
+    fail "package-release should build artifacts while an untracked file sits in a payload directory"
+  fi
+  rm -f "$probe"
+  rm -rf "$out_dir"
+
+  out_dir="$(mktemp -d)"
+  if ! bash "${ROOT_DIR}/scripts/delivery/package-release.sh" "$out_dir" >/dev/null 2>&1; then
+    fail "package-release should build a clean artifact for the dirty-tree comparison"
+    rm -rf "$out_dir"
+    return
+  fi
+  clean_hash="$(release_sha256 "${out_dir}/pandoc-pdf_linux_arm64.tar.gz")"
+  rm -rf "$out_dir"
+
+  backup="$(mktemp)"
+  cp "${ROOT_DIR}/README.md" "$backup"
+  printf '\n<!-- uncommitted local marker -->\n' >> "${ROOT_DIR}/README.md"
+  out_dir="$(mktemp -d)"
+  if bash "${ROOT_DIR}/scripts/delivery/package-release.sh" "$out_dir" >/dev/null 2>&1; then
+    dirty_hash="$(release_sha256 "${out_dir}/pandoc-pdf_linux_arm64.tar.gz")"
+    if [[ -n "$clean_hash" && "$clean_hash" == "$dirty_hash" ]]; then
+      pass "package-release produces the same artifact from a dirty tree"
+    else
+      fail "package-release must ignore uncommitted edits: ${clean_hash} != ${dirty_hash}"
+    fi
+    if tar -xzOf "${out_dir}/pandoc-pdf_linux_arm64.tar.gz" README.md 2>/dev/null | grep -q 'uncommitted local marker'; then
+      fail "package-release must not ship an uncommitted edit to a tracked file"
+    else
+      pass "package-release ships committed content for a modified tracked file"
+    fi
+  else
+    fail "package-release should build artifacts while a tracked payload file is modified"
+  fi
+
+  # Restore the working copy even if an assertion above already failed.
+  cp "$backup" "${ROOT_DIR}/README.md"
+  rm -f "$backup"
+  rm -rf "$out_dir"
+}
