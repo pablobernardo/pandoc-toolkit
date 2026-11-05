@@ -21,8 +21,10 @@ the actual release candidate still need to run and be recorded.
   to a published release go into a new patch version, not a replacement tag.
 - [ ] **Compatibility assessed**: toolkit version and configuration contract
   version are independent. A breaking contract change needs a contract version
-  change and an explicit migration guide; breaking CLI or default
-  behaviour also requires a major toolkit version under `AGENTS.md`.
+  change; breaking the contract, CLI or default behaviour requires a major
+  toolkit version under `AGENTS.md`, plus an explicit migration guide when the
+  change reaches a consumer other than the maintainer. The 3.0.0 clean break
+  leaves the schema shape and configuration contract version unchanged.
 - [ ] **Dependencies pinned**: action SHAs and the images and tool versions in
   `docs/dependency-policy.md` match CI.
 
@@ -48,11 +50,20 @@ perform for the release, not claims that a future candidate has passed:
 - [ ] **Clean install**: install the candidate artifact in a clean managed layout,
   confirm `skelepress --version`, and run `doctor` and `validate-config`. Follow
   `docs/install.md`; use disposable state rather than an everyday installation.
-- [ ] **Upgrade**: from the previous published version, exercise the updater
-  against the candidate artifact; confirm checksum verification, the installed
-  version and the managed `current` pointer. Check rollback on a failed
-  post-install version check. After publication, verify the real release
-  download path as well.
+- [ ] **Compatible upgrades**: from the previous published version, exercise the
+  updater against the candidate artifact; confirm checksum verification, the
+  installed version and the managed `current` pointer. Check rollback on a
+  failed post-install version check. After publication, verify the real release
+  download path as well. For 3.0.0, use the clean-break check below instead of
+  requiring a successful upgrade from 2.5.2.
+- [ ] **3.0.0 clean-break exception**: present only the `skelepress_*` 3.0.0
+  assets to the previous `pandoc-pdf` 2.5.2 updater. Require rejection with a
+  nonzero exit and an unchanged old managed root, binary directory and `current`
+  pointer, then verify a clean Skelepress installation. There is no successful
+  2.5.2 upgrade, migration path, alias or duplicate release artifact; do not add
+  any to make the check pass. The maintainer removes the old installation
+  manually. Repeat this rejection and clean-install check against the actual
+  release assets after publication.
 - [ ] **Smoke rendering**: render representative examples, including highlighted
   and untagged code, inline code and heading pagination. Inspect the PDFs, not
   just the exit status. H6 remains plain text, arbitrary unbreakable content may
@@ -103,9 +114,14 @@ an existing tag. A pull request does not exercise this tag/manual workflow.
 
 1. Verify the release tag, notes, asset contents and checksums against the
    approved candidate.
-2. In a disposable installation of the previous published version, run
-   `skelepress update --check`, then `skelepress update`, and confirm the version
-   and a smoke render. Also verify a clean install from the published assets.
+2. For compatible upgrades, in a disposable installation of the previous
+   published version, run `skelepress update --check`, then `skelepress update`,
+   and confirm the version and a smoke render. Also verify a clean install from
+   the published assets. For 3.0.0, apply the clean-break exception above instead:
+   the `pandoc-pdf` 2.5.2 updater must reject the Skelepress-only assets with a
+   nonzero exit and leave its managed root, binary directory and `current`
+   pointer unchanged; then clean-install Skelepress and confirm its version and
+   a smoke render. No aliases or duplicate artifacts are an acceptable workaround.
 3. Preserve published tags and assets. If a correction is needed, document it
    and publish a new patch release through the same checks and approval.
 

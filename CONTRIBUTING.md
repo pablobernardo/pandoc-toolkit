@@ -82,7 +82,7 @@ the others are translations, not copies.
 | Rendering | `scripts/runtime/render-native.py`, plus the checks in `scripts/runtime/preflight.py`; the matching file under `tests/l1/render/` |
 | A filter | `filters/<name>.lua`; a failure must be loud, never silent |
 | Dependencies | `scripts/delivery/bootstrap.sh`, `.github/workflows/`, `docs/dependency-policy.md` |
-| A breaking change | The affected areas, an explicit migration guide, updated examples and a `CHANGELOG.md` entry; apply the toolkit and contract version rules in `AGENTS.md` |
+| A breaking change | The affected areas, an explicit migration guide when the change reaches a consumer other than the maintainer, updated examples and a `CHANGELOG.md` entry; apply the toolkit and contract version rules in `AGENTS.md` |
 
 [`docs/README.md`](docs/README.md) maps every document to the question it answers.
 
