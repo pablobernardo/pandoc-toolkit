@@ -58,6 +58,7 @@
   "doctor.warn.missing": "Avisos de doctor: faltan dependencias (runtime.strict=false):",
   "doctor.warn.continue": "Se continúa porque runtime.strict=false",
   "doctor.error.tex_required": "Se necesita un motor TeX para generar el PDF; runtime.strict=false no puede omitirlo.",
+  "doctor.error.python_version": "python3 {found} está por debajo del mínimo obligatorio {required}",
   "doctor.mermaid.failed": "Los diagramas Mermaid no se pueden renderizar: mmdc está instalado pero no produjo ninguna imagen",
   "doctor.mermaid.version": "   mermaid-cli {version} detectado",
   "doctor.mermaid.hint1": "   Remedio A: instala el navegador de Puppeteer: npx puppeteer browsers install chrome-headless-shell",
@@ -129,6 +130,7 @@
   ,"render.error.chapters_dir_missing": "No existe input.chapters_dir: {path}"
   ,"render.error.explicit_file_missing": "Archivo explícito no encontrado: {path}"
   ,"render.error.no_chapters": "No se encontraron capítulos para renderizar"
+  ,"render.error.chapter_count_mismatch": "Desajuste en el número de capítulos: {chapters} capítulos pero {texts} textos de capítulo"
   ,"render.error.order_invalid": "Valor no válido en 'input.order': {value}. Valores admitidos: {supported}"
   ,"render.error.format_invalid": "Valor no válido en 'output.formats': {value}. Valores admitidos: {supported}"
   ,"render.error.format_failed": "Falló la exportación ({format}); se conservan los archivos generados correctamente."

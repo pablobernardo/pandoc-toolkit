@@ -7,6 +7,27 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Fixed
+
+- Rendering no longer crashes on Python 3.9, the interpreter macOS ships
+  (`/usr/bin/python3`, 3.9.6). `render-native.py` called `zip(..., strict=True)`,
+  which needs Python 3.10, so a stock macOS died mid-render with
+  `TypeError: zip() takes no keyword arguments`. The merge now checks the chapter
+  and text counts explicitly and fails loudly with
+  `render.error.chapter_count_mismatch` when they disagree, keeping the guarantee
+  `strict=True` provided.
+
+### Added
+
+- `pandoc-pdf doctor` enforces the declared Python minimum (3.9): it probes the
+  `python3` resolved from `PATH` — the interpreter the renderer actually runs
+  under — and refuses an older one, naming the version found and the required
+  minimum through the catalogs in `en`, `es`, `gl` and `pt`. The refusal is not
+  waivable by `runtime.strict=false`. The minimum is documented in
+  `docs/dependency-policy.md` and `docs/install.md`.
+
 ## [2.5.1] - 2026-11-05
 
 ### Fixed

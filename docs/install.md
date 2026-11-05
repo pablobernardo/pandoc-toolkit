@@ -115,7 +115,9 @@ Install at least:
 
 - `pandoc`
 - a TeX engine (`xelatex` or `lualatex` or `pdflatex`)
-- `python3`
+- `python3` — **3.9 or newer**; `pandoc-pdf doctor` refuses an older
+  interpreter, naming the version it found and the required minimum
+  (`docs/dependency-policy.md` records why 3.9 is the line)
 - YAML parser: **PyYAML** for Python or **Ruby's stdlib YAML**
 - `curl`
 - `mmdc` (Mermaid CLI)
