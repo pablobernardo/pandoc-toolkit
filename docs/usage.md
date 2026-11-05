@@ -54,7 +54,7 @@ pandoc-pdf book --out ../.output examples/book-kit/single examples/book-kit/seri
 ```
 
 The field reference for a manifest lives with the tool, in
-[`scripts/tools/bookkit/README.md`](../scripts/tools/bookkit/README.md).
+[`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/pandoc-toolkit/blob/main/scripts/tools/bookkit/README.md).
 
 ## Configuration contract
 
