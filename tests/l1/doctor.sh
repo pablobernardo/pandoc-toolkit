@@ -326,3 +326,138 @@ YAML
   rm -rf "$cfgdir_cleanup"
   rm -f "$out_file"
 }
+
+# docs/dependency-policy.md declares Python 3.9 as the floor. The test that proves
+# a render works there only runs on a machine that has 3.9 — macOS, and the weekly
+# job — so a pull request on Linux would not notice a 3.10-only construct coming
+# back. This scans the source instead, which runs everywhere.
+#
+# Only constructs that genuinely need more than 3.9 are listed. `dict | dict`,
+# `functools.cache`, `str.removeprefix` and `str.removesuffix` arrived in 3.9 and
+# are allowed; flagging them would be a false positive.
+run_scripts_python_minimum_guard_test() {
+  local output
+
+  output="$("${REAL_PYTHON3}" - "$ROOT_DIR" <<'PY' 2>&1
+import io
+import re
+import sys
+import tokenize
+from pathlib import Path
+
+root = Path(sys.argv[1])
+
+RULES = [
+    (re.compile(r"\bzip\s*\([^)]*\bstrict\s*="), "zip(..., strict=) needs Python 3.10"),
+    (re.compile(r"^\s*match\s+[^=]" ), "match statements need Python 3.10"),
+    (re.compile(r"\bitertools\.pairwise\b"), "itertools.pairwise needs Python 3.10"),
+    (re.compile(r"\basyncio\.timeout\b"), "asyncio.timeout needs Python 3.11"),
+    (re.compile(r"^\s*except\s*\*"), "except* needs Python 3.11"),
+    (re.compile(r"\bimport\s+tomllib\b|\bfrom\s+tomllib\b"), "tomllib needs Python 3.11"),
+    (re.compile(r"^\s*type\s+\w+\s*="), "the type statement needs Python 3.12"),
+]
+
+# Self-check: a detector that matches nothing would pass this test while hiding
+# everything. Each snippet must be caught, and each allowed one must not be.
+MUST_FLAG = [
+    "zip(chapters, texts, strict=True)",
+    "match value:",
+    "itertools.pairwise(items)",
+    "asyncio.timeout(5)",
+    "except* ValueError:",
+    "import tomllib",
+    "type Alias = int",
+]
+MUST_ALLOW = [
+    "merged = first | second",
+    "@functools.cache",
+    "name.removeprefix('x')",
+    "name.removesuffix('x')",
+    "for index, raw_path in enumerate(chapters):",
+    "# zip(..., strict=True) needs 3.10, so this uses index access",
+    "'zip(..., strict=True) sits in a string, not in code'",
+]
+
+# Comments and string literals are not code: a comment may name a construct, and
+# a guard that fires on documentation of the rule would punish explaining it.
+SKIPPED = {
+    tokenize.COMMENT,
+    tokenize.STRING,
+    tokenize.NL,
+    tokenize.NEWLINE,
+    tokenize.INDENT,
+    tokenize.DEDENT,
+    tokenize.ENDMARKER,
+}
+
+
+def code_lines(text):
+    """Return {row: (spaced, compact)} built from code tokens only."""
+    lines = {}
+    for token in tokenize.generate_tokens(io.StringIO(text).readline):
+        if token.type in SKIPPED:
+            continue
+        row = token.start[0]
+        spaced, compact = lines.setdefault(row, [[], []])
+        spaced.append(token.string)
+        compact.append(token.string)
+    return {
+        row: (" ".join(spaced), "".join(compact))
+        for row, (spaced, compact) in lines.items()
+    }
+
+
+def hits(text):
+    # Two renderings, because the rules need both: keyword rules rely on the
+    # spacing that keeps `type Alias` apart, and dotted names need it removed.
+    try:
+        lines = code_lines(text)
+    except (tokenize.TokenError, IndentationError):
+        return []
+    found = []
+    for row in sorted(lines):
+        spaced, compact = lines[row]
+        for pattern, reason in RULES:
+            if pattern.search(spaced) or pattern.search(compact):
+                found.append((row, reason))
+                break
+    return found
+
+
+problems = []
+for snippet in MUST_FLAG:
+    if not hits(snippet):
+        problems.append("DETECTOR-MISS " + snippet)
+for snippet in MUST_ALLOW:
+    if hits(snippet):
+        problems.append("FALSE-POSITIVE " + snippet)
+
+sources = sorted(root.glob("scripts/**/*.py"))
+if not sources:
+    problems.append("NO-SOURCES scripts/**/*.py matched nothing")
+
+for source in sources:
+    relative = source.relative_to(root)
+    text = source.read_text(encoding="utf-8", errors="replace")
+    try:
+        code_lines(text)
+    except (tokenize.TokenError, IndentationError) as exc:
+        problems.append(f"UNSCANNABLE {relative}: {exc}")
+        continue
+    for row, reason in hits(text):
+        problems.append(f"{relative}:{row} {reason}")
+
+for line in problems:
+    print(line)
+print(f"SCANNED {len(sources)}")
+PY
+)"
+
+  if printf '%s\n' "$output" | grep -qE '^(DETECTOR-MISS|FALSE-POSITIVE|NO-SOURCES|UNSCANNABLE)'; then
+    fail "the Python minimum scan is broken: $(printf '%s\n' "$output" | grep -E '^(DETECTOR-MISS|FALSE-POSITIVE|NO-SOURCES|UNSCANNABLE)' | head -3 | tr '\n' ' ')"
+  elif printf '%s\n' "$output" | grep -qE '^scripts/'; then
+    fail "a construct newer than the declared 3.9 minimum is in the tree: $(printf '%s\n' "$output" | grep -E '^scripts/' | head -3 | tr '\n' ' ')"
+  else
+    pass "no script uses a construct newer than the declared Python minimum"
+  fi
+}

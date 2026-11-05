@@ -76,10 +76,16 @@ appearance included.
 
 The minimum interpreter is **Python 3.9** — the version macOS ships
 (`/usr/bin/python3`, 3.9.6). The toolkit deliberately supports it, so the bar
-cannot be raised silently: every module under `scripts/` must stay free of
-3.10-only constructs (`zip(..., strict=)`, `match` statements, runtime `X | Y`
-unions, `str.removeprefix`/`removesuffix`, `functools.cache`). Annotations that
-need them are only acceptable under `from __future__ import annotations`.
+cannot be raised silently: every module under `scripts/` must stay free of what
+arrived after it — `zip(..., strict=)` and `match` statements and
+`itertools.pairwise` (3.10), `isinstance(x, A | B)` at runtime (3.10),
+`asyncio.timeout`, `except*` and `tomllib` (3.11), and the `type` statement
+(3.12). Annotations using `X | Y` are fine under
+`from __future__ import annotations`, which every module already carries.
+
+Careful with the floor itself: `dict | dict`, `functools.cache`,
+`str.removeprefix` and `str.removesuffix` are **3.9**, so they are allowed and
+flagging them would be a false positive.
 
 `pandoc-pdf doctor` enforces the minimum. `bin/pandoc-pdf` starts the renderer
 with `python3` from `PATH`, so doctor probes that resolved interpreter with
@@ -89,7 +95,12 @@ is not waivable by `runtime.strict=false`: an interpreter that cannot run the
 renderer leaves nothing to continue with.
 
 A test under `tests/l1/render/` pins the 3.9 path by rendering through
-`/usr/bin/python3` where that exact interpreter exists.
+`/usr/bin/python3` where that exact interpreter exists. That job runs on macOS
+and on the weekly schedule, so it cannot guard a pull request on Linux: a scan in
+`tests/l1/doctor.sh` reads the source instead, ignores comments and string
+literals, and fails with `path:line` and the construct name wherever a forbidden
+one appears. The scan checks itself against known snippets, so a detector that
+stopped matching cannot pass quietly.
 
 ## EPUBCheck: acceptance, not a runtime dependency
 
