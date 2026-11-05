@@ -20,15 +20,15 @@ run_book_default_output_test() {
     >"$scratch/projects/series/series.yaml"
 
   for mode in default explicit; do
-    local -a options=()
+    local -a options=(--check)
     root=".skelepress"
     if [[ "$mode" == explicit ]]; then
       root="chosen-output"
-      options=(--out "$root")
+      options+=(--out "$root")
     fi
     set +e
     (cd "$scratch/$mode" && HOME="$scratch/home" SKELEPRESS_LANG=en \
-      "$CLI" book --check "${options[@]}" "$scratch/projects/single" "$scratch/projects/series") \
+      "$CLI" book "${options[@]}" "$scratch/projects/single" "$scratch/projects/series") \
       >"$scratch/$mode.stdout" 2>"$scratch/$mode.stderr"
     code=$?
     set -e

@@ -1,10 +1,9 @@
 #!/bin/bash
 # Public clean-break contract. Old identifiers below are intentional negative probes.
 run_rename_contract_tests() {
-  local result message
-  while IFS=$'\t' read -r result message; do
-    if [[ "$result" == "0" ]]; then pass "$message"; else fail "$message"; fi
-  done < <("${REAL_PYTHON3}" - "$ROOT_DIR" <<'PY'
+  local result message output
+  output="$(mktemp)" || { fail "rename contract output file could not be created"; return 1; }
+  if "${REAL_PYTHON3}" - "$ROOT_DIR" >"$output" <<'PY'
 import json
 import os
 from pathlib import Path
@@ -117,7 +116,16 @@ with tempfile.TemporaryDirectory(prefix="skelepress-rename-") as directory:
           and not (work / "managed/current").exists(),
           "installer honors new overrides and preserves separate development layout", result)
 PY
-  )
+  then
+    while IFS=$'\t' read -r result message; do
+      if [[ "$result" == "0" ]]; then pass "$message"; else fail "$message"; fi
+    done < "$output"
+  else
+    rm -f "$output"
+    fail "rename contract producer failed"
+    return 1
+  fi
+  rm -f "$output"
 }
 
 run_rename_symlink_root_test() {
@@ -125,8 +133,7 @@ run_rename_symlink_root_test() {
   sandbox="$(mktemp -d)"
   ln -s "$ROOT_DIR" "${sandbox}/checkout"
 
-  # Bash 3.2 otherwise brace-expands Python dictionaries in the sourced probe.
-  /bin/bash +B -s -- "${sandbox}/checkout" "$REAL_PYTHON3" \
+  /bin/bash -s -- "${sandbox}/checkout" "$REAL_PYTHON3" \
     >"${sandbox}/stdout" 2>"${sandbox}/stderr" <<'BASH' || code=$?
 set -euo pipefail
 ROOT_DIR="$1"

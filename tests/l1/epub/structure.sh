@@ -8,7 +8,7 @@ run_epub_render_structure_test() {
     return 0
   fi
 
-  local sandbox out epub md pdf code=0
+  local sandbox out epub md pdf result message code=0
   sandbox="$(new_epub_sandbox)"
   out="$(mktemp)"
   epub="${sandbox}/work/out/epub-guide-manual.epub"
@@ -47,9 +47,7 @@ PY
   fi
   assert_contains "$out" "epub-guide-manual\.epub" "the renderer reports the epub output path"
 
-  while IFS=$'\t' read -r result message; do
-    if [[ "$result" == "0" ]]; then pass "$message"; else fail "$message"; fi
-  done < <("${REAL_PYTHON3}" - "$epub" <<'PY'
+  if "${REAL_PYTHON3}" - "$epub" >"$out" <<'PY'
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -190,7 +188,16 @@ check('After table.' in ''.join(chapter_root.itertext()),
       "EPUB retains the paragraph following a table")
 archive.close()
 PY
-)
+  then
+    while IFS=$'\t' read -r result message; do
+      if [[ "$result" == "0" ]]; then pass "$message"; else fail "$message"; fi
+    done < "$out"
+  else
+    rm -rf "$sandbox"
+    rm -f "$out"
+    fail "EPUB structure producer failed"
+    return 1
+  fi
 
   rm -rf "$sandbox"
   rm -f "$out"
