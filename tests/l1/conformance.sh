@@ -15,7 +15,7 @@ import tempfile
 
 root = Path(sys.argv[1])
 checker = root / "scripts/dev/check-plan-conformance.py"
-env = dict(os.environ, PANDOC_PDF_BIN=sys.argv[2], PANDOC_PDF_LANG="en")
+env = dict(os.environ, SKELEPRESS_BIN=sys.argv[2], SKELEPRESS_LANG="en")
 
 def check(ok, message):
     print(f"{0 if ok else 1}\t{message}")

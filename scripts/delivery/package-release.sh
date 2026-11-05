@@ -22,13 +22,13 @@ trap cleanup EXIT
 source "${ROOT_DIR}/scripts/delivery/payload.sh"
 populate_payload "${STAGING_DIR}" "${ROOT_DIR}" tracked
 
-chmod +x "${STAGING_DIR}/bin/pandoc-pdf"
+chmod +x "${STAGING_DIR}/bin/skelepress"
 
 artifacts=(
-  "pandoc-pdf_darwin_amd64.tar.gz"
-  "pandoc-pdf_darwin_arm64.tar.gz"
-  "pandoc-pdf_linux_amd64.tar.gz"
-  "pandoc-pdf_linux_arm64.tar.gz"
+  "skelepress_darwin_amd64.tar.gz"
+  "skelepress_darwin_arm64.tar.gz"
+  "skelepress_linux_amd64.tar.gz"
+  "skelepress_linux_arm64.tar.gz"
 )
 
 # The payload is platform-independent (shell + Python + Lua + assets), so the

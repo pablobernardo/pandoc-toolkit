@@ -17,10 +17,10 @@ run_chapter_link_rewrite_test() {
 
   printf '# First Chapter\n\nSee [the second chapter](chapter-2.md).\n' >"${sandbox}/work/chapters/chapter-1.md"
   printf '# Second Chapter\n\nText only.\n' >"${sandbox}/work/chapters/chapter-2.md"
-  write_epub_config "${sandbox}/pdf.config.yaml" epub "EPUB Sandbox Guide" es true
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
 
   (
-    cd "${sandbox}/work" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml"
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
   ) >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "EPUB renders with a link to a sibling chapter"
   assert_contains "$md" '\]\(#ch-chapter-2\)' "a sibling chapter link becomes an in-document anchor"
@@ -40,10 +40,10 @@ run_chapter_link_rewrite_test() {
   plain_md="${sandbox}/work/out/epub-guide-manual.md"
   printf '# First Chapter\n\nPlain text.\n' >"${sandbox}/work/chapters/chapter-1.md"
   printf '# Second Chapter\n\nText only.\n' >"${sandbox}/work/chapters/chapter-2.md"
-  write_epub_config "${sandbox}/pdf.config.yaml" epub "EPUB Sandbox Guide" es true
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
   code=0
   (
-    cd "${sandbox}/work" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml"
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
   ) >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "EPUB renders without sibling links"
   assert_not_contains "$plain_md" '\[\]\{#' "a project without sibling links gets no injected anchors"

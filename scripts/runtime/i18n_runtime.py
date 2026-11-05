@@ -19,7 +19,7 @@ def _available_locales() -> set[str]:
 
 
 def _resolve_lang(raw: str | None = None) -> str:
-    value = raw or os.environ.get("PANDOC_PDF_LANG") or os.environ.get("LC_ALL") or os.environ.get("LANG") or "en"
+    value = raw or os.environ.get("SKELEPRESS_LANG") or os.environ.get("LC_ALL") or os.environ.get("LANG") or "en"
     value = value.split(".", 1)[0].split("@", 1)[0].replace("_", "-").lower()
     available = _available_locales()
 

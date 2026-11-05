@@ -23,12 +23,12 @@ happens. For every volume the tool then:
    ``\\setcounter{chapter}`` when the volume declares ``chapter_start``,
    and ``\\appendix`` before the back matter) into the run output, so the
    content files carry no LaTeX markers;
-4. writes one ``pdf.config.yaml`` per volume into the run output;
-5. renders it through the public CLI (``bin/pandoc-pdf render``), unless
+4. writes one ``skelepress.config.yaml`` per volume into the run output;
+5. renders it through the public CLI (``bin/skelepress render``), unless
    ``--check`` asked only for validation and the generated configurations.
 
 The tool belongs to the book, not to the pdf.config contract: the toolkit
-only ever sees a standard ``pdf.config.yaml``. It runs from any working
+only ever sees a standard ``skelepress.config.yaml``. It runs from any working
 directory, uses no absolute paths and no network, and reads YAML through the
 toolkit's own shared loader (``scripts/runtime/schema_runtime.py``): PyYAML
 when available, Ruby's stdlib YAML through a subprocess otherwise; without
@@ -61,14 +61,14 @@ validate_with_schema = schema_runtime.validate_with_schema
 template_runtime = importlib.import_module("template_runtime")
 is_bare_name = template_runtime.is_bare_name
 
-CLI = TOOLKIT_ROOT / "bin" / "pandoc-pdf"
+CLI = TOOLKIT_ROOT / "bin" / "skelepress"
 MANIFEST_SCHEMA = TOOL_DIR / "manifest.schema.json"
 SERIES_SCHEMA = TOOL_DIR / "series.schema.json"
 # The default template is the builtin name: the toolkit ships templates/book.tex
 # inside the artifact, so one generated configuration works in a checkout and in
 # an installation. --template still accepts a path.
 DEFAULT_TEMPLATE = "book"
-DEFAULT_OUT = Path(".output") / "bookkit"
+DEFAULT_OUT = Path(".skelepress")
 
 LANG_CODES = ("en", "es", "pt", "gl")
 
@@ -372,7 +372,7 @@ def build_volume(
     out_volume_dir: Path,
     template: str,
 ) -> Path:
-    """Write the generated files and one pdf.config.yaml; return the config path."""
+    """Write the generated files and one skelepress.config.yaml; return the config path."""
 
     merged = merge_defaults(manifest, defaults)
 
@@ -461,7 +461,7 @@ def build_volume(
         explicit_files += with_toc_guards(back, generated_dir, volume_dir, guard_counter)
 
     out_volume_dir.mkdir(parents=True, exist_ok=True)
-    config_path = out_volume_dir / "pdf.config.yaml"
+    config_path = out_volume_dir / "skelepress.config.yaml"
     config_path.write_text(
         emit_config(merged, title, volume_dir, out_volume_dir, explicit_files, template),
         encoding="utf-8",
@@ -477,7 +477,7 @@ def emit_config(
     explicit_files: list[str],
     template: str,
 ) -> str:
-    """One standard pdf.config.yaml per volume, emitted as canonical text.
+    """One standard skelepress.config.yaml per volume, emitted as canonical text.
 
     The text is written by hand instead of a YAML dumper so the result is
     byte-identical whichever parser read the manifests.
@@ -589,7 +589,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "bookkit: turn declarative book manifests (manifest.yaml, series.yaml)"
-            " into standard pdf.config.yaml files and render them through bin/pandoc-pdf."
+            " into standard skelepress.config.yaml files and render them through bin/skelepress."
         )
     )
     parser.add_argument(
@@ -662,7 +662,7 @@ def main() -> None:
             plans.append((project, project.name, project, {}, manifest, False, template))
 
     if not args.check and not CLI.is_file():
-        die(f"pandoc-pdf CLI not found: {CLI}")
+        die(f"skelepress CLI not found: {CLI}")
 
     out_root = Path(args.out).resolve()
     failures: list[str] = []

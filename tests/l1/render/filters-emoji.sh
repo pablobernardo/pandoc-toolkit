@@ -12,16 +12,16 @@ run_render_ballot_icons_test() {
 
   printf '# Chapter One\n\n- [ ] unchecked\n- [x] checked\n' >"${sandbox}/work/chapters/01-one.md"
 
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render accepts include_ballot_icons=true"
   else
     fail "render should accept include_ballot_icons=true ($(tail -2 "$out"))"
   fi
   assert_contains "$capture" "^PANDOC_EMOJI_BALLOT_ICONS=1$" "include_ballot_icons=true enables ballot glyphs"
 
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" false
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" false
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render accepts include_ballot_icons=false"
   else
     fail "render should accept include_ballot_icons=false ($(tail -2 "$out"))"
@@ -145,7 +145,7 @@ run_render_filter_defaults_test() {
 
   # stdout only: the human-readable confirmation goes to stderr, and merging the
   # two streams turns the plan into something json.load cannot read.
-  PANDOC_PDF_LANG=en "$CLI" render -c "${FIXTURES_DIR}/valid-filter-defaults.config.yaml" \
+  SKELEPRESS_LANG=en "$CLI" render -c "${FIXTURES_DIR}/valid-filter-defaults.config.yaml" \
     --dry-run --json >"$plan" 2>/dev/null || true
 
   # The plan carries the environment as key/value pairs, so read it as JSON

@@ -87,7 +87,7 @@ Careful with the floor itself: `dict | dict`, `functools.cache`,
 `str.removeprefix` and `str.removesuffix` are **3.9**, so they are allowed and
 flagging them would be a false positive.
 
-`pandoc-pdf doctor` enforces the minimum. `bin/pandoc-pdf` starts the renderer
+`skelepress doctor` enforces the minimum. `bin/skelepress` starts the renderer
 with `python3` from `PATH`, so doctor probes that resolved interpreter with
 `--version` — nothing else, no network and no package operation — and refuses
 an older one, naming the version it found and the required minimum. The refusal
@@ -169,7 +169,7 @@ the question is "is this publication conformant", not "is this diff correct".
 
 For the published 2.1.0 candidate (`6b45317`), the four shipped examples —
 `documentation`, `manual`, `test` and `ohmyfake` — passed EPUBCheck 5.4.0 with no
-errors and no warnings in [CI run 41308070176](https://github.com/pablobernardo/pandoc-toolkit/actions/runs/41308070176). The inter-chapter link defect
+errors and no warnings in [CI run 41308070176](https://github.com/pablobernardo/skelepress/actions/runs/41308070176). The inter-chapter link defect
 that `documentation` used to report no longer occurs: links between selected
 chapters are rewritten to internal anchors that resolve inside the merged
 publication (#94). EPUBCheck remains acceptance, not a gate: it runs only
@@ -182,7 +182,7 @@ standard library in a subprocess. That is deliberate (D1), and it creates a gap
 worth knowing about: **each environment exercises only one of the two paths.**
 
 - Locally, `python3` may have no PyYAML, so the Ruby path is the one the suite
-  runs. `pandoc-pdf info --json` reports which parser is active (`yaml_parser`).
+  runs. `skelepress info --json` reports which parser is active (`yaml_parser`).
 - In CI the Python path is the one that runs.
 
 The `tests/fixtures/yaml_shim/` double does not close this: it delegates to Ruby,
@@ -212,7 +212,7 @@ So the contract is the smoke test, not the number:
 
 - **10.9.1** is what the toolkit installs and what CI renders with. It is the
   version to compare against when reporting a bug.
-- **Any other version is accepted** if `pandoc-pdf doctor` renders its test
+- **Any other version is accepted** if `skelepress doctor` renders its test
   diagram. `doctor` reports the version it found, and on failure prints the two
   fixes from `docs/install.md`.
 - **Do not pin a user's system-wide install from this repository.** The
@@ -227,7 +227,7 @@ pointing here for exactly that reason.
   - Usage: `scripts/delivery/bootstrap.sh` (assisted installation when the YAML parser is missing).
 - Python **3.9** (floor, not a pin: any newer interpreter is accepted)
   - Usage: the renderer, `validate-config` and the preflight all run under
-    `python3` from `PATH`. The minimum is enforced by `pandoc-pdf doctor` and
+    `python3` from `PATH`. The minimum is enforced by `skelepress doctor` and
     documented in the "Python: the declared minimum" section above.
 - `semgrep/semgrep:1.86.0` container image
   - Usage: `.github/workflows/security.yml` (pinned image instead of `pip install`, which breaks with modern setuptools).

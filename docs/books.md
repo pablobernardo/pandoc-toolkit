@@ -1,6 +1,6 @@
 # Building a book
 
-A book is not a second renderer. It is the same `pandoc-pdf render`, with a
+A book is not a second renderer. It is the same `skelepress render`, with a
 `book`-class template and, when the book is declared as volumes, a manifest that
 turns into one configuration per volume.
 
@@ -42,15 +42,24 @@ around.
 Build it:
 
 ```bash
-pandoc-pdf book my-book                  # one configuration per volume, then render
-pandoc-pdf book --check my-book          # validate and emit the configurations only
+skelepress book my-book                  # one configuration per volume, then render
+skelepress book --check my-book          # validate and emit the configurations only
+skelepress book --out build my-book      # override the output root
 ```
 
-`pandoc-pdf book` forwards every argument to the shipped bookkit tool and
+By default, generated configurations and rendered PDFs go under
+`.skelepress/<project>/` for a single volume, or
+`.skelepress/<project>/<volume>/` for a series. The root is relative to the
+working directory where you invoke the command, not the project directory.
+`--out` replaces that root without changing the layout. Existing `.output/`
+artifacts are not moved or removed; renderer paths in your own configurations
+are unchanged.
+
+`skelepress book` forwards every argument to the shipped bookkit tool and
 reports its own output and exit code, so anything the tool accepts works here.
 The complete field reference — every manifest key, its type and its default —
 lives with the tool, in
-[`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/pandoc-toolkit/blob/main/scripts/tools/bookkit/README.md). This
+[`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/skelepress/blob/main/scripts/tools/bookkit/README.md). This
 page is the story; that page is the contract.
 
 ## What a volume prints
@@ -133,8 +142,9 @@ directory and in both formats.
 ## See it work
 
 ```bash
-pandoc-pdf book --out .output examples/book-kit/single    # one volume
-pandoc-pdf book --out .output examples/book-kit/series    # two volumes, shared defaults
+skelepress book examples/book-kit/single                 # default: .skelepress/single/
+skelepress book examples/book-kit/series                 # default: .skelepress/series/<volume>/
+skelepress book --out build examples/book-kit/single     # explicit: build/single/
 ```
 
 The examples are the reference for both shapes: a single volume with every field

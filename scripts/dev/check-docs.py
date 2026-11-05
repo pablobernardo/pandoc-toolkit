@@ -24,7 +24,7 @@ REPO_ROOTS = (
 )
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)")
 # A path mention is a backticked token anchored on a real top-level directory
-# and ending in a file extension, so prose like `pdf.config.yaml` is ignored.
+# and ending in a file extension, so prose like `skelepress.config.yaml` is ignored.
 _ROOTS = "|".join(re.escape(r) for r in REPO_ROOTS)
 MENTION = re.compile(rf"`((?:{_ROOTS})/[\w./-]*\.\w+)`")
 

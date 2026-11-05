@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OWNER="${PANDOC_PDF_RELEASE_OWNER:-pablobernardo}"
-REPO="${PANDOC_PDF_RELEASE_REPO:-pandoc-toolkit}"
-API_BASE="${PANDOC_PDF_RELEASE_API_BASE:-https://api.github.com/repos/${OWNER}/${REPO}/releases}"
+OWNER="${SKELEPRESS_RELEASE_OWNER:-pablobernardo}"
+REPO="${SKELEPRESS_RELEASE_REPO:-skelepress}"
+API_BASE="${SKELEPRESS_RELEASE_API_BASE:-https://api.github.com/repos/${OWNER}/${REPO}/releases}"
 
-INSTALL_BIN_DIR="${PANDOC_PDF_INSTALL_DIR:-${HOME}/.local/bin}"
-MANAGED_HOME="${PANDOC_PDF_INSTALL_HOME:-${HOME}/.local/share/pandoc-pdf}"
+INSTALL_BIN_DIR="${SKELEPRESS_INSTALL_DIR:-${HOME}/.local/bin}"
+MANAGED_HOME="${SKELEPRESS_INSTALL_HOME:-${HOME}/.local/share/skelepress}"
 
 if ! command -v curl >/dev/null 2>&1; then
   echo "❌ install requires curl" >&2
@@ -26,7 +26,7 @@ case "$arch" in
   *) echo "❌ unsupported architecture: ${arch}" >&2; exit 1 ;;
 esac
 
-artifact="pandoc-pdf_${os}_${arch}.tar.gz"
+artifact="skelepress_${os}_${arch}.tar.gz"
 
 curl_json() {
   curl -fsSL "$1"
@@ -102,8 +102,8 @@ if [[ "$expected" != "$actual" ]]; then
 fi
 
 tar -xzf "$artifact_path" -C "$extract_dir"
-if [[ ! -x "${extract_dir}/bin/pandoc-pdf" ]]; then
-  echo "❌ extracted artifact does not contain bin/pandoc-pdf" >&2
+if [[ ! -x "${extract_dir}/bin/skelepress" ]]; then
+  echo "❌ extracted artifact does not contain bin/skelepress" >&2
   exit 1
 fi
 
@@ -114,8 +114,8 @@ rm -rf "$version_dir"
 mkdir -p "$version_dir"
 cp -R "${extract_dir}/." "$version_dir/"
 ln -sfn "$version_dir" "$current_link"
-ln -sfn "${current_link}/bin/pandoc-pdf" "${INSTALL_BIN_DIR}/pandoc-pdf"
+ln -sfn "${current_link}/bin/skelepress" "${INSTALL_BIN_DIR}/skelepress"
 
-echo "✅ Installed pandoc-pdf ${tag}"
-echo "   Binary: ${INSTALL_BIN_DIR}/pandoc-pdf"
+echo "✅ Installed skelepress ${tag}"
+echo "   Binary: ${INSTALL_BIN_DIR}/skelepress"
 echo "   Managed root: ${MANAGED_HOME}"

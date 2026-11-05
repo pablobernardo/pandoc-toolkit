@@ -113,7 +113,7 @@ STUB
   chmod +x "${tmpbin}/python3"
 
   set +e
-  PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" bash "${ROOT_DIR}/scripts/delivery/bootstrap.sh" --no-install --skip-link >"$out" 2>&1
+  SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" bash "${ROOT_DIR}/scripts/delivery/bootstrap.sh" --no-install --skip-link >"$out" 2>&1
   code=$?
   set -e
 

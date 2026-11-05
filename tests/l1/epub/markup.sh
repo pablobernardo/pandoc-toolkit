@@ -18,7 +18,7 @@ run_epub_latex_markup_test() {
   # command; an EPUB has no TeX to interpret it and must not carry it at all.
   # Run from the project base so this test isolates the LaTeX markup, not paths.
   (
-    cd "${sandbox}/work" && "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml"
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
   ) >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "EPUB renders with the legacy clearpage switch enabled"
 

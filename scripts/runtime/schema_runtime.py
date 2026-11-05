@@ -8,13 +8,13 @@ Two pieces live here so they exist exactly once:
   through one shared rule, the usual install locations first and PATH second,
   so no entry point can disagree about which parser is reachable. Without
   either parser it fails with a clear message, and
-* the JSON-Schema-subset validator that applies `schemas/pdf-config.schema.json`
+* the JSON-Schema-subset validator that applies `schemas/skelepress-config.schema.json`
   (via `validate-config.py`) and the tool-local contracts under
   `scripts/tools/bookkit/` (via its `build.py`).
 
 Supported JSON-Schema subset: `type`, `properties`, `required`,
 `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`
-and `anyOf`. tests/run.sh fails if `schemas/pdf-config.schema.json` starts
+and `anyOf`. tests/run.sh fails if `schemas/skelepress-config.schema.json` starts
 using anything else, so a keyword can never be silently ignored; a new
 keyword needs support here first.
 

@@ -19,7 +19,7 @@ EOF
   out="$(mktemp)"
 
   set +e
-  TMP_UPDATE_TAG=v9.9.9 PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
+  TMP_UPDATE_TAG=v9.9.9 SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" SKELEPRESS_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
   local code=$?
   set -e
   assert_exit_code "0" "$code" "update --check succeeds when release metadata is available"
@@ -28,7 +28,7 @@ EOF
   assert_contains "$out" "Update available: [0-9]+\.[0-9]+\.[0-9]+ -> 9\.9\.9" "update --check reports available update"
 
   set +e
-  TMP_UPDATE_TAG="v${current_version}" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
+  TMP_UPDATE_TAG="v${current_version}" SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" SKELEPRESS_UPDATE_API_URL="https://example.invalid/releases/latest" "$CLI" update --check >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "update --check succeeds when already up to date"
@@ -37,7 +37,7 @@ EOF
   assert_exit_code "0" "$code" "update --check sends auth header when token is configured"
 
   set +e
-  PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update >"$out" 2>&1
+  SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "update without --check fails with incomplete release metadata"
@@ -66,20 +66,20 @@ run_update_install_tests() {
     arm64|aarch64) arch="arm64" ;;
     *) arch="amd64" ;;
   esac
-  artifact_name="pandoc-pdf_${os}_${arch}.tar.gz"
+  artifact_name="skelepress_${os}_${arch}.tar.gz"
 
   local payload_dir
   payload_dir="${sandbox}/payload"
   mkdir -p "$payload_dir"
-  cat >"${payload_dir}/pandoc-pdf" <<'EOF'
+  cat >"${payload_dir}/skelepress" <<'EOF'
 #!/bin/bash
-echo "pandoc-pdf 9.9.9"
+echo "skelepress 9.9.9"
 EOF
-  chmod +x "${payload_dir}/pandoc-pdf"
+  chmod +x "${payload_dir}/skelepress"
 
   local artifact_path
   artifact_path="${sandbox}/${artifact_name}"
-  tar -czf "$artifact_path" -C "$payload_dir" pandoc-pdf
+  tar -czf "$artifact_path" -C "$payload_dir" skelepress
 
   local checksums_path
   checksums_path="${sandbox}/checksums.txt"
@@ -152,42 +152,42 @@ EOF
   install_dir_dry="${sandbox}/dry-bin"
 
   set +e
-  TMP_UPDATE_RELEASE_JSON="$release_json" TMP_UPDATE_ARTIFACT="$artifact_name" TMP_UPDATE_ARTIFACT_PATH="$artifact_path" TMP_UPDATE_CHECKSUMS_PATH="$checksums_path" PANDOC_PDF_UPDATE_HOME="${sandbox}/managed" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run --install-dir "$install_dir_dry" >"$out" 2>&1
+  TMP_UPDATE_RELEASE_JSON="$release_json" TMP_UPDATE_ARTIFACT="$artifact_name" TMP_UPDATE_ARTIFACT_PATH="$artifact_path" TMP_UPDATE_CHECKSUMS_PATH="$checksums_path" SKELEPRESS_UPDATE_HOME="${sandbox}/managed" SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run --install-dir "$install_dir_dry" >"$out" 2>&1
   local code=$?
   set -e
   assert_exit_code "0" "$code" "update --dry-run returns success"
   assert_contains "$out" "Target version: 9\.9\.9" "update --dry-run prints target version"
-  assert_contains "$out" "Install path: .*/dry-bin/pandoc-pdf" "update --dry-run prints install path"
+  assert_contains "$out" "Install path: .*/dry-bin/skelepress" "update --dry-run prints install path"
   assert_contains "$out" "Managed root: .*/managed" "update --dry-run prints managed root"
 
-  if [[ -f "${install_dir_dry}/pandoc-pdf" ]]; then
+  if [[ -f "${install_dir_dry}/skelepress" ]]; then
     fail "update --dry-run should not install binary"
   else
     pass "update --dry-run does not write binary"
   fi
 
   set +e
-  TMP_UPDATE_RELEASE_JSON="$release_json" TMP_UPDATE_ARTIFACT="$artifact_name" TMP_UPDATE_ARTIFACT_PATH="$artifact_path" TMP_UPDATE_CHECKSUMS_PATH="$checksums_path" PANDOC_PDF_UPDATE_HOME="${sandbox}/managed" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --yes --install-dir "$install_dir" >"$out" 2>&1
+  TMP_UPDATE_RELEASE_JSON="$release_json" TMP_UPDATE_ARTIFACT="$artifact_name" TMP_UPDATE_ARTIFACT_PATH="$artifact_path" TMP_UPDATE_CHECKSUMS_PATH="$checksums_path" SKELEPRESS_UPDATE_HOME="${sandbox}/managed" SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --yes --install-dir "$install_dir" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "update --to installs target version"
   assert_contains "$out" "Updated to version 9\.9\.9" "update --to reports installed version"
 
-  if [[ -x "${install_dir}/pandoc-pdf" ]]; then
+  if [[ -x "${install_dir}/skelepress" ]]; then
     pass "update --to writes executable binary"
   else
     fail "update --to should write executable binary"
   fi
 
-  if [[ -x "${sandbox}/managed/versions/v9.9.9/bin/pandoc-pdf" ]]; then
+  if [[ -x "${sandbox}/managed/versions/v9.9.9/bin/skelepress" ]]; then
     pass "update --to stores toolkit under managed versions directory"
   else
     fail "update --to should store toolkit in managed versions directory"
   fi
 
   local installed_version_out
-  installed_version_out="$("${install_dir}/pandoc-pdf")"
-  if [[ "$installed_version_out" == "pandoc-pdf 9.9.9" ]]; then
+  installed_version_out="$("${install_dir}/skelepress")"
+  if [[ "$installed_version_out" == "skelepress 9.9.9" ]]; then
     pass "installed binary reports target version"
   else
     fail "installed binary should report target version"
@@ -202,30 +202,30 @@ run_update_dev_command_blocked_test() {
   local sandbox
   sandbox="$(mktemp -d)"
   mkdir -p "${sandbox}/bin"
-  ln -sf "$CLI" "${sandbox}/bin/pandoc-pdf-dev"
+  ln -sf "$CLI" "${sandbox}/bin/skelepress-dev"
 
   local out
   out="$(mktemp)"
 
   set +e
-  PANDOC_PDF_LANG=en "${sandbox}/bin/pandoc-pdf-dev" update --yes >"$out" 2>&1
+  SKELEPRESS_LANG=en "${sandbox}/bin/skelepress-dev" update --yes >"$out" 2>&1
   local code=$?
   set -e
 
-  assert_exit_code "1" "$code" "update install is blocked for pandoc-pdf-dev invocation"
-  assert_contains "$out" "update is disabled for pandoc-pdf-dev" "update reports dev invocation policy"
+  assert_exit_code "1" "$code" "update install is blocked for skelepress-dev invocation"
+  assert_contains "$out" "update is disabled for skelepress-dev" "update reports dev invocation policy"
 
   rm -rf "$sandbox"
   rm -f "$out"
 }
 
-# The installers declare where they put things with PANDOC_PDF_INSTALL_HOME and
-# PANDOC_PDF_INSTALL_DIR; the updater used to ignore both and silently write to
+# The installers declare where they put things with SKELEPRESS_INSTALL_HOME and
+# SKELEPRESS_INSTALL_DIR; the updater used to ignore both and silently write to
 # the default locations. The resolution order is: the variable named for this
 # command, then the installer variable, then the historical default; for the
-# binary directory --install-dir comes first, then PANDOC_PDF_INSTALL_DIR (a
-# declared directory beats the pandoc-pdf found on PATH), then the writable
-# directory of the pandoc-pdf on PATH, then ~/.local/bin.
+# binary directory --install-dir comes first, then SKELEPRESS_INSTALL_DIR (a
+# declared directory beats the skelepress found on PATH), then the writable
+# directory of the skelepress on PATH, then ~/.local/bin.
 run_update_resolution_precedence_tests() {
   local sandbox tmpbin out code
   sandbox="$(mktemp -d)"
@@ -245,7 +245,7 @@ run_update_resolution_precedence_tests() {
     arm64|aarch64) arch="arm64" ;;
     *) arch="amd64" ;;
   esac
-  artifact_name="pandoc-pdf_${os}_${arch}.tar.gz"
+  artifact_name="skelepress_${os}_${arch}.tar.gz"
 
   local release_json
   release_json="${sandbox}/release.json"
@@ -270,53 +270,53 @@ MOCK
   flag_dir="${sandbox}/flag-bin"
   readonly_dir="${sandbox}/readonly-bin"
   mkdir -p "$home_dir" "$path_dir" "$declared_dir" "$flag_dir" "$readonly_dir"
-  printf '#!/bin/bash\n' >"${path_dir}/pandoc-pdf"
-  printf '#!/bin/bash\n' >"${readonly_dir}/pandoc-pdf"
-  chmod +x "${path_dir}/pandoc-pdf" "${readonly_dir}/pandoc-pdf"
+  printf '#!/bin/bash\n' >"${path_dir}/skelepress"
+  printf '#!/bin/bash\n' >"${readonly_dir}/skelepress"
+  chmod +x "${path_dir}/skelepress" "${readonly_dir}/skelepress"
   chmod 555 "$readonly_dir"
 
   set +e
-  PANDOC_PDF_UPDATE_HOME="$update_home" PANDOC_PDF_INSTALL_HOME="$install_home" HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  SKELEPRESS_UPDATE_HOME="$update_home" SKELEPRESS_INSTALL_HOME="$install_home" HOME="$home_dir" SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "update --dry-run resolves with both managed-home variables set"
-  assert_contains "$out" "Managed root: ${update_home}" "PANDOC_PDF_UPDATE_HOME beats PANDOC_PDF_INSTALL_HOME"
+  assert_contains "$out" "Managed root: ${update_home}" "SKELEPRESS_UPDATE_HOME beats SKELEPRESS_INSTALL_HOME"
 
   set +e
-  PANDOC_PDF_INSTALL_HOME="$install_home" HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  SKELEPRESS_INSTALL_HOME="$install_home" HOME="$home_dir" SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
   code=$?
   set -e
-  assert_contains "$out" "Managed root: ${install_home}" "PANDOC_PDF_INSTALL_HOME sets the managed root"
+  assert_contains "$out" "Managed root: ${install_home}" "SKELEPRESS_INSTALL_HOME sets the managed root"
 
   set +e
-  HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  HOME="$home_dir" SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
   code=$?
   set -e
-  assert_contains "$out" "Managed root: ${home_dir}/\.local/share/pandoc-pdf" "without variables the managed root is the default under HOME"
+  assert_contains "$out" "Managed root: ${home_dir}/\.local/share/skelepress" "without variables the managed root is the default under HOME"
 
   set +e
-  PANDOC_PDF_INSTALL_DIR="$declared_dir" HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:${path_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  SKELEPRESS_INSTALL_DIR="$declared_dir" HOME="$home_dir" SKELEPRESS_LANG=en PATH="${tmpbin}:${path_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
   code=$?
   set -e
-  assert_contains "$out" "Install path: ${declared_dir}/pandoc-pdf" "PANDOC_PDF_INSTALL_DIR beats the pandoc-pdf found on PATH"
+  assert_contains "$out" "Install path: ${declared_dir}/skelepress" "SKELEPRESS_INSTALL_DIR beats the skelepress found on PATH"
 
   set +e
-  PANDOC_PDF_INSTALL_DIR="$declared_dir" HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run --install-dir "$flag_dir" >"$out" 2>&1
+  SKELEPRESS_INSTALL_DIR="$declared_dir" HOME="$home_dir" SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --dry-run --install-dir "$flag_dir" >"$out" 2>&1
   code=$?
   set -e
-  assert_contains "$out" "Install path: ${flag_dir}/pandoc-pdf" "--install-dir beats PANDOC_PDF_INSTALL_DIR"
+  assert_contains "$out" "Install path: ${flag_dir}/skelepress" "--install-dir beats SKELEPRESS_INSTALL_DIR"
 
   set +e
-  HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:${path_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  HOME="$home_dir" SKELEPRESS_LANG=en PATH="${tmpbin}:${path_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
   code=$?
   set -e
-  assert_contains "$out" "Install path: ${path_dir}/pandoc-pdf" "the writable directory of the pandoc-pdf on PATH is the install dir"
+  assert_contains "$out" "Install path: ${path_dir}/skelepress" "the writable directory of the skelepress on PATH is the install dir"
 
   set +e
-  HOME="$home_dir" PANDOC_PDF_LANG=en PATH="${tmpbin}:${readonly_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
+  HOME="$home_dir" SKELEPRESS_LANG=en PATH="${tmpbin}:${readonly_dir}:$PATH" "$CLI" update --to v9.9.9 --dry-run >"$out" 2>&1
   code=$?
   set -e
-  assert_contains "$out" "Install path: ${home_dir}/\.local/bin/pandoc-pdf" "an unwritable PATH directory falls back to HOME/.local/bin"
+  assert_contains "$out" "Install path: ${home_dir}/\.local/bin/skelepress" "an unwritable PATH directory falls back to HOME/.local/bin"
 
   chmod 755 "$readonly_dir"
   rm -rf "$sandbox" "$tmpbin"
@@ -342,20 +342,20 @@ run_update_rollback_on_validation_failure_test() {
     arm64|aarch64) arch="arm64" ;;
     *) arch="amd64" ;;
   esac
-  artifact_name="pandoc-pdf_${os}_${arch}.tar.gz"
+  artifact_name="skelepress_${os}_${arch}.tar.gz"
 
   local payload_dir
   payload_dir="${sandbox}/payload"
   mkdir -p "$payload_dir"
-  cat >"${payload_dir}/pandoc-pdf" <<'EOF'
+  cat >"${payload_dir}/skelepress" <<'EOF'
 #!/bin/bash
-echo "pandoc-pdf invalid"
+echo "skelepress invalid"
 EOF
-  chmod +x "${payload_dir}/pandoc-pdf"
+  chmod +x "${payload_dir}/skelepress"
 
   local artifact_path
   artifact_path="${sandbox}/${artifact_name}"
-  tar -czf "$artifact_path" -C "$payload_dir" pandoc-pdf
+  tar -czf "$artifact_path" -C "$payload_dir" skelepress
 
   local checksums_path
   checksums_path="${sandbox}/checksums.txt"
@@ -427,20 +427,20 @@ EOF
   install_dir="${sandbox}/bin"
   mkdir -p "${managed_root}/versions/v1.0.0/bin" "$install_dir"
 
-  cat >"${managed_root}/versions/v1.0.0/bin/pandoc-pdf" <<'EOF'
+  cat >"${managed_root}/versions/v1.0.0/bin/skelepress" <<'EOF'
 #!/bin/bash
-echo "pandoc-pdf 1.0.0"
+echo "skelepress 1.0.0"
 EOF
-  chmod +x "${managed_root}/versions/v1.0.0/bin/pandoc-pdf"
+  chmod +x "${managed_root}/versions/v1.0.0/bin/skelepress"
 
   ln -sfn "${managed_root}/versions/v1.0.0" "${managed_root}/current"
-  ln -sfn "${managed_root}/current/bin/pandoc-pdf" "${install_dir}/pandoc-pdf"
+  ln -sfn "${managed_root}/current/bin/skelepress" "${install_dir}/skelepress"
 
   local out
   out="$(mktemp)"
 
   set +e
-  TMP_UPDATE_RELEASE_JSON="$release_json" TMP_UPDATE_ARTIFACT="$artifact_name" TMP_UPDATE_ARTIFACT_PATH="$artifact_path" TMP_UPDATE_CHECKSUMS_PATH="$checksums_path" PANDOC_PDF_UPDATE_HOME="$managed_root" PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --yes --install-dir "$install_dir" >"$out" 2>&1
+  TMP_UPDATE_RELEASE_JSON="$release_json" TMP_UPDATE_ARTIFACT="$artifact_name" TMP_UPDATE_ARTIFACT_PATH="$artifact_path" TMP_UPDATE_CHECKSUMS_PATH="$checksums_path" SKELEPRESS_UPDATE_HOME="$managed_root" SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" "$CLI" update --to v9.9.9 --yes --install-dir "$install_dir" >"$out" 2>&1
   local code=$?
   set -e
 
@@ -448,8 +448,8 @@ EOF
   assert_contains "$out" "update installation failed" "update reports install failure after rollback"
 
   local after_version
-  after_version="$("${install_dir}/pandoc-pdf")"
-  if [[ "$after_version" == "pandoc-pdf 1.0.0" ]]; then
+  after_version="$("${install_dir}/skelepress")"
+  if [[ "$after_version" == "skelepress 1.0.0" ]]; then
     pass "rollback restores previously installed binary"
   else
     fail "rollback should restore previous binary"
@@ -492,8 +492,8 @@ MOCK
   # 404: the release does not exist yet.
   set +e
   TMP_UPDATE_HTTP_STATUS=404 TMP_UPDATE_BODY='{"message":"Not Found"}' \
-    PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" \
-    PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" \
+    SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" \
+    SKELEPRESS_UPDATE_API_URL="https://example.invalid/releases/latest" \
     "$CLI" update --check >"$out" 2>&1
   code=$?
   set -e
@@ -503,8 +503,8 @@ MOCK
   # 403: the anonymous quota is spent.
   set +e
   TMP_UPDATE_HTTP_STATUS=403 TMP_UPDATE_BODY='{"message":"rate limit exceeded"}' \
-    PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" \
-    PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" \
+    SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" \
+    SKELEPRESS_UPDATE_API_URL="https://example.invalid/releases/latest" \
     "$CLI" update --check >"$out" 2>&1
   code=$?
   set -e
@@ -514,8 +514,8 @@ MOCK
   # Anything else: the status is reported rather than guessed.
   set +e
   TMP_UPDATE_HTTP_STATUS=500 TMP_UPDATE_BODY='{"message":"boom"}' \
-    PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" \
-    PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" \
+    SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" \
+    SKELEPRESS_UPDATE_API_URL="https://example.invalid/releases/latest" \
     "$CLI" update --check >"$out" 2>&1
   code=$?
   set -e
@@ -525,9 +525,9 @@ MOCK
   # The token is gone: no Authorization header may be sent even when the old
   # variable is exported, or the removal is cosmetic.
   set +e
-  TMP_FORBID_AUTH=1 TMP_UPDATE_HTTP_STATUS=200 PANDOC_PDF_UPDATE_TOKEN=token-123 \
-    PANDOC_PDF_LANG=en PATH="${tmpbin}:$PATH" \
-    PANDOC_PDF_UPDATE_API_URL="https://example.invalid/releases/latest" \
+  TMP_FORBID_AUTH=1 TMP_UPDATE_HTTP_STATUS=200 SKELEPRESS_UPDATE_TOKEN=token-123 \
+    SKELEPRESS_LANG=en PATH="${tmpbin}:$PATH" \
+    SKELEPRESS_UPDATE_API_URL="https://example.invalid/releases/latest" \
     "$CLI" update --check >"$out" 2>&1
   code=$?
   set -e

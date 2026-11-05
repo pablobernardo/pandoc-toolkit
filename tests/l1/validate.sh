@@ -112,7 +112,7 @@ run_schema_keyword_support_test() {
 
   local out
   out="$(mktemp)"
-  if "${REAL_PYTHON3}" - "${ROOT_DIR}/schemas/pdf-config.schema.json" >"$out" 2>&1 <<'PY'
+  if "${REAL_PYTHON3}" - "${ROOT_DIR}/schemas/skelepress-config.schema.json" >"$out" 2>&1 <<'PY'
 import json
 import sys
 
@@ -201,7 +201,7 @@ root = Path(sys.argv[1])
 sys.path.insert(0, str(root / "scripts/runtime"))
 import top_level_division_runtime
 
-schema = json.loads((root / "schemas/pdf-config.schema.json").read_text(encoding="utf-8"))
+schema = json.loads((root / "schemas/skelepress-config.schema.json").read_text(encoding="utf-8"))
 enum = schema["properties"]["pandoc"]["properties"]["top_level_division"]["enum"]
 assert list(enum) == list(top_level_division_runtime.ALLOWED_VALUES), (
     f"schema enum {enum} != module values {top_level_division_runtime.ALLOWED_VALUES}"
@@ -223,7 +223,7 @@ run_validate_metadata_contract_tests() {
   # the renderer uses instead.
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-no-metadata.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-no-metadata.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "a config without pandoc.metadata_file is valid"
@@ -233,7 +233,7 @@ run_validate_metadata_contract_tests() {
   # contract instead of being rejected as extra fields.
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-document-metadata.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-document-metadata.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "document.language, titlepage and a metadata map are accepted"
@@ -243,7 +243,7 @@ run_validate_metadata_contract_tests() {
   # message must name the offending key.
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/invalid-document-metadata.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/invalid-document-metadata.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   if [[ "$code" -ne 0 ]]; then
@@ -262,7 +262,7 @@ run_validate_optional_inert_fields_tests() {
   # mandatory to write down.
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-no-compat.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-no-compat.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "a config without the compat section is valid"
@@ -271,7 +271,7 @@ run_validate_optional_inert_fields_tests() {
   # A disabled filter says nothing about the document, so its settings are noise.
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-disabled-filters.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-disabled-filters.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "a disabled filter does not need its settings"
@@ -280,7 +280,7 @@ run_validate_optional_inert_fields_tests() {
   # And an enabled filter without settings falls back to what the renderer assumes.
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-filter-defaults.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en "$CLI" validate-config -c "${FIXTURES_DIR}/valid-filter-defaults.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "an enabled filter without settings is valid"

@@ -123,7 +123,7 @@ EOF
   local out
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=es PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-invalid-required-cmd.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=es PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-invalid-required-cmd.yaml" >"$out" 2>&1
   local code=$?
   set -e
   assert_exit_code "1" "$code" "doctor -c fails with invalid command name"
@@ -155,13 +155,13 @@ EOF
 
   out="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-required-cmd.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-required-cmd.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "runtime.strict=true fails on missing required command"
 
   set +e
-  PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-strict-false.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-strict-false.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "runtime.strict=false does not fail on missing required command"
@@ -181,7 +181,7 @@ EOF
   chmod +x "${tmpbin_no_tex}/pandoc" "${tmpbin_no_tex}/python3"
 
   set +e
-  PANDOC_PDF_LANG=en PATH="$tmpbin_no_tex" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-strict-false.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en PATH="$tmpbin_no_tex" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-config-strict-false.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "runtime.strict=false still fails when the TeX engine is missing"
@@ -219,7 +219,7 @@ EOF
   chmod +x "${tmpbin}/python3"
 
   set +e
-  PANDOC_PDF_LANG=en PATH="${tmpbin}" /bin/bash "$CLI" doctor >"$out" 2>&1
+  SKELEPRESS_LANG=en PATH="${tmpbin}" /bin/bash "$CLI" doctor >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "doctor refuses python3 below the declared minimum"
@@ -237,7 +237,7 @@ exec "${REAL_PYTHON3}" "\$@"
 EOF
   chmod +x "${tmpbin}/python3"
 
-  if PANDOC_PDF_LANG=en PATH="${tmpbin}" /bin/bash "$CLI" doctor >"$out" 2>&1; then
+  if SKELEPRESS_LANG=en PATH="${tmpbin}" /bin/bash "$CLI" doctor >"$out" 2>&1; then
     pass "doctor accepts python3 at the declared minimum"
   else
     fail "doctor should accept python3 at the declared minimum"
@@ -277,7 +277,7 @@ STUB
   chmod +x "${tmpbin}/pandoc" "${tmpbin}/xelatex" "${tmpbin}/mmdc" "${tmpbin}/python3"
 
   set +e
-  PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-mermaid.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-mermaid.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "doctor fails when mmdc cannot render a diagram"
@@ -286,7 +286,7 @@ STUB
   assert_contains "$out" "12.0.0" "doctor names the mermaid-cli version it found"
 
   set +e
-  PANDOC_PDF_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-mermaid-warn.config.yaml" >"$out" 2>&1
+  SKELEPRESS_LANG=en PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${FIXTURES_DIR}/doctor-mermaid-warn.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "0" "$code" "runtime.strict=false keeps doctor green on a mermaid failure"
@@ -316,7 +316,7 @@ YAML
   local out_file
   out_file="$(mktemp)"
   set +e
-  PANDOC_PDF_LANG=en /bin/bash "$CLI" doctor -c "${cfgdir}/broken.config.yaml" >"$out_file" 2>&1
+  SKELEPRESS_LANG=en /bin/bash "$CLI" doctor -c "${cfgdir}/broken.config.yaml" >"$out_file" 2>&1
   local code=$?
   set -e
   assert_exit_code "1" "$code" "doctor -c fails when the YAML does not parse"

@@ -718,7 +718,7 @@ def execute_single_plan(plan: dict) -> int:
         print(
             t(
                 "render.error.mermaid_failed.hint",
-                "   Run `pandoc-pdf doctor` to diagnose, or set filters.mermaid.enabled: false to drop the diagrams on purpose.",
+                "   Run `skelepress doctor` to diagnose, or set filters.mermaid.enabled: false to drop the diagrams on purpose.",
             )
         )
         return 1

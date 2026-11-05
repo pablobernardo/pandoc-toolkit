@@ -14,8 +14,8 @@ run_render_order_semantics_test() {
   printf '# Chapter Two\n\ncontent two\n' >"${sandbox}/work/chapters/chapter-2.md"
   printf '# Chapter Ten\n\ncontent ten\n' >"${sandbox}/work/chapters/chapter-10.md"
 
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render accepts input.order=natural"
   else
     fail "render should accept input.order=natural ($(tail -2 "$out"))"
@@ -30,9 +30,9 @@ run_render_order_semantics_test() {
     fail "input.order=natural must sort chapter-2 before chapter-10 (two=${pos_two:-none}, ten=${pos_ten:-none})"
   fi
 
-  write_contract_config "${sandbox}/pdf.config.yaml" alphabetical true "" true
+  write_contract_config "${sandbox}/skelepress.config.yaml" alphabetical true "" true
   rm -f "$merged"
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render accepts input.order=alphabetical"
   else
     fail "render should accept input.order=alphabetical ($(tail -2 "$out"))"
@@ -46,10 +46,10 @@ run_render_order_semantics_test() {
     fail "input.order=alphabetical must sort chapter-10 before chapter-2 (two=${pos_two:-none}, ten=${pos_ten:-none})"
   fi
 
-  write_contract_config "${sandbox}/pdf.config.yaml" bogus true "" true
+  write_contract_config "${sandbox}/skelepress.config.yaml" bogus true "" true
   local code
   set +e
-  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1
   code=$?
   set -e
   assert_exit_code "1" "$code" "render rejects an unsupported input.order"
@@ -72,8 +72,8 @@ run_render_keep_merged_markdown_test() {
 
   printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
 
-  write_contract_config "${sandbox}/pdf.config.yaml" natural false "" true
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural false "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render accepts output.keep_merged_markdown=false"
   else
     fail "render should accept output.keep_merged_markdown=false ($(tail -2 "$out"))"
@@ -91,8 +91,8 @@ run_render_keep_merged_markdown_test() {
     pass "keep_merged_markdown=false removes the merged markdown"
   fi
 
-  write_contract_config "${sandbox}/pdf.config.yaml" natural true "" true
-  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1; then
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural true "" true
+  if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
     pass "render accepts output.keep_merged_markdown=true"
   else
     fail "render should accept output.keep_merged_markdown=true ($(tail -2 "$out"))"
@@ -126,12 +126,12 @@ EOF
   chmod +x "${tmpbin}/pandoc"
 
   printf '# Chapter One\n\ncontent one\n' >"${sandbox}/work/chapters/01-one.md"
-  write_contract_config "${sandbox}/pdf.config.yaml" natural false "" true
+  write_contract_config "${sandbox}/skelepress.config.yaml" natural false "" true
   merged="${sandbox}/work/out/s1-manual.md"
 
   set +e
-  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/pandoc-pdf" render \
-    -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1
+  TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render \
+    -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1
   code=$?
   set -e
 

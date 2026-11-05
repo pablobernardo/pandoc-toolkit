@@ -98,8 +98,8 @@ new_contract_sandbox() {
   local sandbox
   sandbox="$(mktemp -d)"
   mkdir -p "${sandbox}/bin" "${sandbox}/work/chapters" "${sandbox}/templates"
-  cp "$CLI" "${sandbox}/bin/pandoc-pdf"
-  chmod +x "${sandbox}/bin/pandoc-pdf"
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
   cp -R "${ROOT_DIR}/scripts" "${sandbox}/scripts"
   rm -rf "${sandbox}/scripts/__pycache__"
   cp -R "${ROOT_DIR}/schemas" "${sandbox}/schemas"

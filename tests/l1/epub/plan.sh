@@ -8,8 +8,8 @@ run_epub_plan_json_test() {
   plan="$(mktemp)"
   out="$(mktemp)"
 
-  write_epub_config "${sandbox}/pdf.config.yaml" epub
-  if "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$plan" 2>"$out"; then
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub
+  if "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" --dry-run --json >"$plan" 2>"$out"; then
     pass "render --dry-run --json exits 0 for output.formats=epub"
   else
     fail "render --dry-run --json should support output.formats=epub ($(tail -2 "$out"))"
@@ -41,11 +41,11 @@ run_epub_explicit_pdf_matches_default_test() {
   without_format="$(mktemp)"
   out="$(mktemp)"
 
-  write_epub_config "${sandbox}/pdf.config.yaml" pdf
-  "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$with_format" 2>"$out" || code=$?
+  write_epub_config "${sandbox}/skelepress.config.yaml" pdf
+  "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" --dry-run --json >"$with_format" 2>"$out" || code=$?
 
-  write_epub_config "${sandbox}/pdf.config.yaml" epub
-  "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" <<'PY'
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub
+  "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" <<'PY'
 import sys
 from pathlib import Path
 
@@ -53,7 +53,7 @@ path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8")
 path.write_text(text.replace("  formats: [epub]\n", ""), encoding="utf-8")
 PY
-  "${sandbox}/bin/pandoc-pdf" render -c "${sandbox}/pdf.config.yaml" --dry-run --json >"$without_format" 2>"$out" || code=$?
+  "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" --dry-run --json >"$without_format" 2>"$out" || code=$?
 
   assert_exit_code "0" "$code" "an omitted output.formats still plans a PDF"
   if "${REAL_PYTHON3}" - "$with_format" "$without_format" <<'PY'
@@ -94,21 +94,21 @@ exec "${REAL_PYTHON3}" "\$@"
 EOF
   chmod +x "${tmpbin}/python3"
 
-  write_epub_config "${sandbox}/pdf.config.yaml" epub
-  PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub
+  PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1 || code=$?
   assert_exit_code "0" "$code" "doctor passes an epub config without any TeX engine"
   assert_contains "$out" "Doctor OK" "doctor reports OK for epub without TeX"
 
-  write_epub_config "${sandbox}/pdf.config.yaml" pdf
+  write_epub_config "${sandbox}/skelepress.config.yaml" pdf
   code=0
-  PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+  PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1 || code=$?
   assert_exit_code "1" "$code" "doctor still requires a TeX engine for pdf"
   assert_contains "$out" "xelatex" "the pdf failure names the missing engine"
 
   local formats
   for formats in epub 'epub, pdf'; do
-    write_epub_config "${sandbox}/pdf.config.yaml" "$formats"
-    "${REAL_PYTHON3}" - "${sandbox}/pdf.config.yaml" "$formats" <<'PY'
+    write_epub_config "${sandbox}/skelepress.config.yaml" "$formats"
+    "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" "$formats" <<'PY'
 import sys
 from pathlib import Path
 p = Path(sys.argv[1])
@@ -117,7 +117,7 @@ p.write_text(p.read_text().replace("formats: [" + sys.argv[2] + "]",
                                   "formats:\n" + "\n".join("    - " + f for f in formats)))
 PY
     code=0
-    PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/pdf.config.yaml" >"$out" 2>&1 || code=$?
+    PATH="$tmpbin" /bin/bash "$CLI" doctor -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1 || code=$?
     if [[ "$formats" == epub ]]; then
       assert_exit_code "0" "$code" "doctor reads a block EPUB formats list without TeX"
     else
