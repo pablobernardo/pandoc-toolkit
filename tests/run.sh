@@ -96,6 +96,7 @@ main() {
   run_locale_project_file_location_test
   run_package_release_artifact_test
   run_package_release_reproducibility_test
+  run_package_release_tracked_tree_test
   run_emoji_filter_plain_heading_test
   run_emoji_filter_contexts_test
   run_render_keep_merged_on_pandoc_failure_test

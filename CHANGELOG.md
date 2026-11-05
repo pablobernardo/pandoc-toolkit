@@ -7,6 +7,17 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `pdf.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Fixed
+
+- The release packager builds its payload from the committed tree instead of the
+  working copy. An untracked file inside a shipped directory no longer travels
+  into the artifact, and an uncommitted edit no longer changes the hash a release
+  is accepted on, so packaging the same commit yields the same bytes whoever
+  builds it. The local installer still packages the working tree, which is what a
+  development install exists for.
+
 ## [2.5.0] - 2026-11-04
 
 ### Changed
