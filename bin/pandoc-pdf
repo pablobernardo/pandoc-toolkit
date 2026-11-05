@@ -53,6 +53,7 @@ usage() {
   note_render_native="$(t "cli.help.note.render_native" "render uses native implementation.")"
   note_yaml_parsing="$(t "cli.help.note.yaml_parsing" "Config parsing supports Python+PyYAML or Ruby stdlib YAML.")"
   note_book="$(t "cli.help.note.book" "book forwards to the shipped bookkit tool (scripts/tools/bookkit/build.py).")"
+  note_update_resolution="$(t "cli.help.note.update_resolution" "update honours PANDOC_PDF_UPDATE_HOME or PANDOC_PDF_INSTALL_HOME for the managed root and --install-dir or PANDOC_PDF_INSTALL_DIR for the binary; a declared install dir beats the pandoc-pdf found on PATH.")"
 
   cat <<EOF
 Pandoc PDF Toolkit CLI
@@ -65,6 +66,7 @@ ${usage_title}
   pandoc-pdf update --check
   pandoc-pdf update
   pandoc-pdf update --to vX.Y.Z
+  pandoc-pdf update --install-dir <path>
   pandoc-pdf doctor [-c <pdf.config.yaml>]
   pandoc-pdf validate-config -c <pdf.config.yaml>
   pandoc-pdf render -c <pdf.config.yaml> [--dry-run] [--json]
@@ -74,6 +76,7 @@ ${notes_title}
   - ${note_render_native}
   - ${note_yaml_parsing}
   - ${note_book}
+  - ${note_update_resolution}
 EOF
 }
 
@@ -323,6 +326,14 @@ resolve_install_dir() {
     return 0
   fi
 
+  # The installers put the entrypoint where PANDOC_PDF_INSTALL_DIR says, so a
+  # declared directory beats the pandoc-pdf found on PATH; otherwise the
+  # updater would relocate an installation behind the user's back.
+  if [[ -n "${PANDOC_PDF_INSTALL_DIR:-}" ]]; then
+    printf '%s\n' "$PANDOC_PDF_INSTALL_DIR"
+    return 0
+  fi
+
   local current_bin
   current_bin="$(command -v pandoc-pdf || true)"
   if [[ -n "$current_bin" ]]; then
@@ -338,7 +349,17 @@ resolve_install_dir() {
 }
 
 resolve_managed_home() {
-  printf '%s\n' "${PANDOC_PDF_UPDATE_HOME:-${HOME}/.local/share/pandoc-pdf}"
+  # Precedence: the variable named for this command wins over the one the
+  # installers honour, which wins over the historical default.
+  if [[ -n "${PANDOC_PDF_UPDATE_HOME:-}" ]]; then
+    printf '%s\n' "$PANDOC_PDF_UPDATE_HOME"
+    return 0
+  fi
+  if [[ -n "${PANDOC_PDF_INSTALL_HOME:-}" ]]; then
+    printf '%s\n' "$PANDOC_PDF_INSTALL_HOME"
+    return 0
+  fi
+  printf '%s\n' "${HOME}/.local/share/pandoc-pdf"
 }
 
 update_log_event() {
