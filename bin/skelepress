@@ -80,6 +80,17 @@ ${notes_title}
 EOF
 }
 
+# Explicit help is richer than the compact usage retained in error diagnostics.
+show_help() {
+  usage
+  printf '\n%s\n' "$(t "cli.help.commands" "cli.help.commands")"
+  local command
+  for command in version info locale update doctor validate-config render book help; do
+    printf '  %-18s %s\n' "$command" "$(t "cli.help.command.${command}" "cli.help.command.${command}")"
+  done
+  printf '\n%s\n' "$(t "cli.help.details" "cli.help.details")"
+}
+
 parse_semver() {
   local raw="$1"
   raw="${raw#v}"
@@ -1113,7 +1124,7 @@ main() {
       exec python3 "${ROOT_DIR}/scripts/tools/bookkit/build.py" "$@"
       ;;
     help|-h|--help)
-      usage
+      show_help
       ;;
     *)
       local msg

@@ -585,32 +585,54 @@ def load_contract(path: Path, schema_path: Path) -> dict:
 # --- Main -------------------------------------------------------------------
 
 
+def help_text(key: str, **values: object) -> str:
+    return importlib.import_module("i18n_runtime").t(key, key, **values)
+
+
+class BookArgumentParser(argparse.ArgumentParser):
+    def format_help(self, formatter: argparse.HelpFormatter | None = None) -> str:
+        # Keep the existing program name in errors; only help uses the public CLI.
+        original = self.prog
+        self.prog = "skelepress book"
+        try:
+            # Python 3.15 passes a formatter made before the public name is set.
+            # Rebuild it here; older Python versions call without one.
+            if formatter is not None:
+                return super().format_help(self._get_formatter())
+            return super().format_help()
+        finally:
+            self.prog = original
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description=(
-            "bookkit: turn declarative book manifests (manifest.yaml, series.yaml)"
-            " into standard skelepress.config.yaml files and render them through bin/skelepress."
-        )
+    parser = BookArgumentParser(
+        description=help_text("book.help.description"),
+        epilog=help_text("book.help.examples"),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        add_help=False,
     )
+    parser._positionals.title = help_text("book.help.positionals")
+    parser._optionals.title = help_text("book.help.options")
+    parser.add_argument("-h", "--help", action="help", help=help_text("book.help.help"))
     parser.add_argument(
         "projects",
         nargs="+",
-        help="project directories: a volume directory with manifest.yaml, or a series directory with series.yaml",
+        help=help_text("book.help.projects"),
     )
     parser.add_argument(
         "--check",
         action="store_true",
-        help="validate the manifests against the contract and emit the generated configurations without rendering",
+        help=help_text("book.help.check"),
     )
     parser.add_argument(
         "--out",
         default=str(DEFAULT_OUT),
-        help=f"run output directory (default: {DEFAULT_OUT.as_posix()})",
+        help=help_text("book.help.out", out=DEFAULT_OUT.as_posix()),
     )
     parser.add_argument(
         "--template",
         default=None,
-        help="book-class LaTeX template for the generated configurations (default: <project>/templates/book.tex)",
+        help=help_text("book.help.template", template=DEFAULT_TEMPLATE),
     )
     args = parser.parse_args()
 

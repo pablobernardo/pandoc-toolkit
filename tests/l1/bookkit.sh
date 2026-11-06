@@ -401,6 +401,52 @@ run_book_command_test() {
   assert_contains "$help_out" "skelepress book" "--help lists the book subcommand"
   rm -f "$help_out"
 
+  # --- Detailed help describes the public interface without writing ------
+
+  mkdir -p "$scratch/help-work"
+  local book_help="$scratch/book-help" book_err="$scratch/book-help.err"
+  local flat="$scratch/book-help-flat" translated="$scratch/book-help-translated"
+  if (cd "$scratch/help-work" && SKELEPRESS_LANG=en "$CLI" book --help) >"$book_help" 2>"$book_err"; then
+    pass "book --help exits successfully"
+  else
+    fail "book --help must exit successfully"
+  fi
+  assert_contains "$book_help" "^usage: skelepress book " "book help uses its public command name"
+  assert_not_contains "$book_help" "build\\.py|<project>/templates/book\\.tex" "book help hides internal naming and the stale template default"
+  tr '\n' ' ' <"$book_help" >"$flat"
+  assert_contains "$flat" "manifest.yaml.*series.yaml" "book help explains volume and series inputs"
+  assert_contains "$flat" "default:[[:space:]]+\\.skelepress" "book help states the default output directory"
+  assert_contains "$flat" "working[[:space:]]+directory" "book help explains relative output resolution"
+  assert_contains "$flat" "default:[[:space:]]+book" "book help states the actual builtin template default"
+  assert_contains "$flat" "without rendering" "book help explains check-only behavior"
+  assert_contains "$book_help" "skelepress book --check path/to/volume" "book help includes a check-only example"
+  assert_contains "$book_help" "skelepress book --out output path/to/volume path/to/series" "book help includes a multiple-project example"
+  if [[ ! -s "$book_err" ]]; then pass "successful book help has empty stderr"; else fail "book help must not emit stderr"; fi
+  local lang
+  for lang in es pt gl; do
+    if (cd "$scratch/help-work" && SKELEPRESS_LANG="$lang" "$CLI" book --help) >"$translated" 2>"$book_err"; then
+      pass "book help succeeds in ${lang}"
+    else
+      fail "book help must succeed in ${lang}"
+    fi
+    if cmp -s "$book_help" "$translated"; then fail "book help must translate ${lang}"; else pass "book help translates ${lang}"; fi
+    assert_contains "$translated" "usage: skelepress book " "localized help retains the public command in ${lang}"
+    assert_not_contains "$translated" "\\{out\\}|\\{template\\}" "localized help substitutes defaults in ${lang}"
+    if [[ ! -s "$book_err" ]]; then pass "localized book help has empty stderr in ${lang}"; else fail "localized help must not emit stderr"; fi
+  done
+  set +e
+  (cd "$scratch/help-work" && "$CLI" book --unknown-option) >"$translated" 2>"$book_err"
+  local argument_code=$?
+  set -e
+  assert_exit_code "2" "$argument_code" "book argument errors retain their exit code"
+  assert_contains "$book_err" "^usage: build\\.py " "non-help argument diagnostics retain their previous program name"
+  if [[ ! -s "$translated" ]]; then pass "book argument errors retain empty stdout"; else fail "book argument errors must not emit stdout"; fi
+  if [[ -z "$(find "$scratch/help-work" -mindepth 1 -print -quit)" ]]; then
+    pass "help and rejected arguments do not create output or mutate the working directory"
+  else
+    fail "help and rejected arguments must not write project data"
+  fi
+
   # --- The subcommand matches the direct tool invocation ------------------
 
   local direct_out cli_out
@@ -408,19 +454,19 @@ run_book_command_test() {
   cli_out="$(mktemp)"
   mkdir -p "$scratch/run-direct" "$scratch/run-cli"
   set +e
-  (cd "$scratch/run-direct" && python3 "$tool" --check --out out "$proj") >"$direct_out" 2>&1
+  (cd "$scratch/run-direct" && python3 "$tool" --check --out out "$proj") >"$direct_out" 2>"$direct_out.err"
   local direct_code=$?
-  (cd "$scratch/run-cli" && "$CLI" book --check --out out "$proj") >"$cli_out" 2>&1
+  (cd "$scratch/run-cli" && "$CLI" book --check --out out "$proj") >"$cli_out" 2>"$cli_out.err"
   local cli_code=$?
   set -e
   assert_exit_code "0" "$direct_code" "the direct tool invocation passes for the example project"
   assert_exit_code "$direct_code" "$cli_code" "skelepress book exits with the tool's own exit code"
-  if cmp -s "$direct_out" "$cli_out"; then
-    pass "skelepress book prints exactly what the direct tool invocation prints"
+  if cmp -s "$direct_out" "$cli_out" && cmp -s "$direct_out.err" "$cli_out.err"; then
+    pass "skelepress book forwards exact stdout and stderr from the direct tool"
   else
-    fail "skelepress book must forward stdout unchanged to the tool"
+    fail "skelepress book must forward stdout and stderr unchanged to the tool"
   fi
-  rm -f "$direct_out" "$cli_out"
+  rm -f "$direct_out" "$cli_out" "$direct_out.err" "$cli_out.err"
 
   # --- A failing invocation still fails with the tool's own message -------
 

@@ -38,6 +38,21 @@ original and released under CC0: they exercise the toolkit rather than serve
 as product documentation. The `documentation` example renders the repository
 documentation, which is MIT licensed.
 
+### Command help
+
+`skelepress help`, `skelepress -h` and `skelepress --help` show the command
+summary, purpose descriptions and how to discover more detail. For book inputs,
+options and examples, run `skelepress book --help` (or `skelepress book -h`).
+Book help follows `SKELEPRESS_LANG` or the process locale; its existing options
+and argument forwarding are unchanged. Other command details are documented in
+this guide; not every command accepts its own `--help` flag.
+
+Book inputs can be one or more volume directories with `manifest.yaml` or series
+directories with `series.yaml`. `--check` validates and emits configurations
+without rendering. By default, output goes to `.skelepress` relative to the
+working directory and the template is the builtin `book`; `--out` and
+`--template` override them.
+
 ### Books
 
 A book is the same renderer with a `book`-class template and, when the volumes
