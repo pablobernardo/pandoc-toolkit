@@ -11,7 +11,31 @@ run_help_test() {
   fi
   assert_contains "$out" "Usage:" "--help prints usage"
   assert_contains "$out" "skelepress update --check" "--help includes update check command"
-  rm -f "$out"
+  local command description
+  while IFS="|" read -r command description; do
+    assert_contains "$out" "${command}[[:space:]]+${description}" "help explains ${command}"
+  done <<'EOF'
+version|Show the toolkit version
+info|Show installation and runtime information
+locale|Show or save the CLI language
+update|Check for or install a toolkit release
+doctor|Check dependencies before rendering
+validate-config|Validate a configuration against its schema
+render|Render a validated configuration to PDF or EPUB
+book|Validate manifests and build volumes or series
+EOF
+  assert_contains "$out" "skelepress book --help" "help points to working detailed book help"
+  assert_contains "$out" "docs/usage.md" "help points to other command documentation"
+  local alias alias_out
+  alias_out="$(mktemp)"
+  for alias in help -h; do
+    if "$CLI" "$alias" >"$alias_out" 2>&1 && cmp -s "$out" "$alias_out"; then
+      pass "${alias} returns the same successful general help"
+    else
+      fail "${alias} must return the same successful general help"
+    fi
+  done
+  rm -f "$out" "$alias_out"
 }
 
 run_help_i18n_notes_test() {
