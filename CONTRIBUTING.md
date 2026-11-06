@@ -46,6 +46,11 @@ The suite is one process: `tests/run.sh` sources every area file under `tests/l1
 runs them in order. There is no per-area flag, so when you touch one area, read
 its file and expect the whole suite to tell you what else broke.
 
+### Opt-in real EPUB reader proof
+
+Real-reader acceptance is separate from the normal suite and does not replace
+EPUBCheck. Record reader observations and limitations in the relevant issue.
+
 ## Test first
 
 A behaviour change comes with a test that fails before it. The suite is shell,
