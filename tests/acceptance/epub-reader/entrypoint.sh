@@ -5,6 +5,8 @@ mkdir -p "$HOME" "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
 : > /evidence/viewer.log
 exec >> /evidence/viewer.log 2>&1
+# Invoked indirectly by the EXIT trap below.
+# shellcheck disable=SC2329
 finish() {
   local status=$?
   printf '%s\n' "$status" > /evidence/exit-code.txt
