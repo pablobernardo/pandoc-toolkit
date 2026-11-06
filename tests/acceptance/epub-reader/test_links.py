@@ -1,6 +1,7 @@
 """Regressions from the actual Calibre documentation-link observations."""
 import unittest
 
+from driver import Reader
 from evidence import link_matches
 from scenarios import scenario_for
 
@@ -22,6 +23,18 @@ class LinkTests(unittest.TestCase):
                     self.assertFalse(link_matches({'text': spec['text'], 'href': href}, spec))
                 self.assertFalse(link_matches({'text': 'unrelated', 'href': 'javascript:void(0)'}, spec))
 
+    def test_handler_activation_still_requires_changed_correct_destination(self):
+        before = {'visible_text': 'Usage page with books.md'}
+        book = {'visible_text': 'The migration page', 'heading': 'Migrating to 2.1.0',
+                'width': 300, 'height': 30, 'body_chars': 200,
+                'images_broken': 0, 'is_book': True}
+        observation = {'book': book, 'welcome': False}
+        self.assertFalse(Reader.arrived(observation, before, True, 'Building a book'))
+        book.update(heading='Building a book', visible_text='Book building instructions')
+        self.assertTrue(Reader.arrived(observation, before, True, 'Building a book'))
+        self.assertFalse(Reader.arrived(observation, before, False, 'Building a book'))
+        book['visible_text'] = before['visible_text']
+        self.assertFalse(Reader.arrived(observation, before, True, 'Building a book'))
 
 
 if __name__ == '__main__':
