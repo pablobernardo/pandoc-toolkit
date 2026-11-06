@@ -17,3 +17,19 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/acceptance/epub-
 
 The real-reader observation and isolated Docker integration are subsequent
 dependent work units. A passing contract test is not a publication acceptance.
+
+## Observe the actual reader
+
+`native.py` runs Calibre's normal viewer entry point with native Qt observation.
+It exposes the real TOC model item coordinates and observes its clicked signal;
+it never replaces the normal navigation handler or synthesizes that signal.
+
+`observe.js` inspects only live Qt WebEngine frames in that viewer. It records
+visible text, table fragments, loaded images, emoji and layout geometry.
+These observations are necessary evidence, not a replacement HTML renderer.
+
+The controller sends sequence-numbered requests through the disposable profile.
+X11 clicks activate the native TOC; subsequent observations must prove the
+changed destination. Version-sensitive native APIs fail rather than silently
+fall back to static markup. The dependent Docker integration supplies the
+bounded controller, virtual display, presentation synchronization and captures.
